@@ -31,10 +31,10 @@ def compose_concept(
     pattern_detail_selected, evaluation = _select_pattern_detail_pair(parsed_candidates, rules)
     selected.update(pattern_detail_selected)
     constraint_notes = [*_must_have_notes(request, selected), *evaluation.compatibility_notes]
-    concept_score = sum(candidate.effective_score for candidate in selected.values()) / len(selected)
+    concept_score = _concept_score(selected, evaluation)
     return ComposedConcept(
         category=request.category,
-        concept_score=round(concept_score, 4),
+        concept_score=concept_score,
         selected_elements={
             slot: ComposedElement(element_id=candidate.element_id, value=candidate.value)
             for slot, candidate in selected.items()
@@ -127,6 +127,13 @@ def _selection_score(
     evaluation: CompatibilityEvaluation,
 ) -> float:
     return sum(candidate.effective_score for candidate in selected.values()) - evaluation.compatibility_penalty
+
+
+def _concept_score(
+    selected: dict[str, CandidateElement],
+    evaluation: CompatibilityEvaluation,
+) -> float:
+    return round(_selection_score(selected, evaluation) / len(selected), 4)
 
 
 def _selection_rank(
