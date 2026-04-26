@@ -78,6 +78,7 @@ def load_strategy_templates(path: Path = _DEFAULT_STRATEGIES_PATH) -> list[dict[
                 message="strategy record is missing required fields",
                 details={"path": str(path), "index": index, "missing": missing},
             )
+        _validate_strategy_record(path=path, index=index, strategy=strategy)
     return list(strategies)
 
 
@@ -107,6 +108,7 @@ def retrieve_candidates(
 
     grouped: dict[str, list[dict[str, Any]]] = {}
     avoid_filtered_count = 0
+    avoid_matched_tags: set[str] = set()
     for element in elements:
         if element.get("status") != "active" or element.get("category") != request.category:
             continue
@@ -115,6 +117,7 @@ def retrieve_candidates(
         tags = set(element.get("tags", []))
         if request.avoid_tags and tags.intersection(request.avoid_tags):
             avoid_filtered_count += 1
+            avoid_matched_tags.update(tags.intersection(request.avoid_tags))
             continue
         if strategy_suppress_tags and tags.intersection(strategy_suppress_tags):
             continue
@@ -154,7 +157,8 @@ def retrieve_candidates(
 
     warnings: list[str] = []
     if avoid_filtered_count:
-        warnings.append(f"avoid_tags removed {avoid_filtered_count} candidates")
+        sorted_tags = ", ".join(sorted(avoid_matched_tags))
+        warnings.append(f"avoid_tags removed: {sorted_tags} ({avoid_filtered_count} candidates)")
 
     return grouped, tuple(warnings)
 
@@ -185,5 +189,41 @@ def _matches_price_band(request: NormalizedRequest, element: dict[str, Any]) -> 
     return request.price_band in element.get("price_bands", [])
 
 
-def _matches_occasion(request: NormalizedRequest, element: dict[str, Any]) -> bool:
-    return True
+def _validate_strategy_record(path: Path, index: int, strategy: dict[str, Any]) -> None:
+    date_window = strategy.get("date_window")
+    if not isinstance(date_window, dict):
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="strategy date_window must be an object",
+            details={"path": str(path), "index": index, "field": "date_window"},
+        )
+    if not isinstance(date_window.get("start"), str) or not isinstance(date_window.get("end"), str):
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="strategy date_window must include string start/end values",
+            details={"path": str(path), "index": index, "field": "date_window"},
+        )
+
+    for list_field in ("occasion_tags", "boost_tags", "suppress_tags", "prompt_hints"):
+        value = strategy.get(list_field)
+        if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+            raise GenerationError(
+                code="INVALID_EVIDENCE_STORE",
+                message=f"strategy field '{list_field}' must be a list of strings",
+                details={"path": str(path), "index": index, "field": list_field},
+            )
+
+    slot_preferences = strategy.get("slot_preferences")
+    if not isinstance(slot_preferences, dict):
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="strategy slot_preferences must be an object",
+            details={"path": str(path), "index": index, "field": "slot_preferences"},
+        )
+    for key, value in slot_preferences.items():
+        if not isinstance(key, str) or not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+            raise GenerationError(
+                code="INVALID_EVIDENCE_STORE",
+                message="strategy slot_preferences values must be arrays of strings",
+                details={"path": str(path), "index": index, "field": "slot_preferences"},
+            )

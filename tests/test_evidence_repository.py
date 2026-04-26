@@ -32,3 +32,41 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
                 load_strategy_templates(path)
 
         self.assertEqual(error_context.exception.code, "INVALID_EVIDENCE_STORE")
+
+    def test_reject_invalid_nested_strategy_shape(self) -> None:
+        from temu_y2_women.errors import GenerationError
+        from temu_y2_women.evidence_repository import load_strategy_templates
+
+        with TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "strategy_templates.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "mvp-v1",
+                        "strategy_templates": [
+                            {
+                                "strategy_id": "broken",
+                                "category": "dress",
+                                "target_market": "US",
+                                "priority": 1,
+                                "date_window": "05-15..08-31",
+                                "occasion_tags": [],
+                                "boost_tags": [],
+                                "suppress_tags": [],
+                                "slot_preferences": {},
+                                "score_boost": 0.1,
+                                "score_cap": 0.1,
+                                "prompt_hints": [],
+                                "reason_template": "broken",
+                                "status": "active",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(GenerationError) as error_context:
+                load_strategy_templates(path)
+
+        self.assertEqual(error_context.exception.code, "INVALID_EVIDENCE_STORE")

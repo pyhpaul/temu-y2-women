@@ -20,7 +20,7 @@ class OrchestratorTest(unittest.TestCase):
         self.assertIn("product appeal", " ".join(result["prompt_bundle"]["render_notes"]))
         self.assertEqual(result["composed_concept"]["selected_elements"]["silhouette"]["value"], "a-line")
         self.assertIn("must_have_tags satisfied: floral", result["composed_concept"]["constraint_notes"])
-        self.assertIn("avoid_tags removed", " ".join(result["warnings"]))
+        self.assertIn("avoid_tags removed: bodycon", " ".join(result["warnings"]))
 
     def test_successful_mode_b_flow(self) -> None:
         from temu_y2_women.orchestrator import generate_dress_concept
