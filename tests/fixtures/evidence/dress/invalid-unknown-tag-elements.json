@@ -1,0 +1,19 @@
+{
+  "schema_version": "mvp-v1",
+  "elements": [
+    {
+      "element_id": "dress-pattern-broken-001",
+      "category": "dress",
+      "slot": "pattern",
+      "value": "broken pattern",
+      "tags": ["unknown-tag"],
+      "base_score": 0.6,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "evidence_summary": "Fixture used to prove taxonomy validation rejects unsupported tags.",
+      "status": "active"
+    }
+  ]
+}

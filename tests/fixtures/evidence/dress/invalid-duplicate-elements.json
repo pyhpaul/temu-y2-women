@@ -1,0 +1,33 @@
+{
+  "schema_version": "mvp-v1",
+  "elements": [
+    {
+      "element_id": "dress-silhouette-a-line-001",
+      "category": "dress",
+      "slot": "silhouette",
+      "value": "a-line",
+      "tags": ["summer", "feminine"],
+      "base_score": 0.82,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "evidence_summary": "Fixture baseline silhouette used to prove duplicate active slot values fail.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-silhouette-a-line-002",
+      "category": "dress",
+      "slot": "silhouette",
+      "value": "a-line",
+      "tags": ["summer", "dress"],
+      "base_score": 0.79,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "evidence_summary": "Fixture duplicate silhouette record keeps every other field valid for conflict checks.",
+      "status": "active"
+    }
+  ]
+}

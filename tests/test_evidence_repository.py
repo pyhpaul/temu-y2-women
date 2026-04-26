@@ -251,6 +251,26 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
         self.assertEqual(error_context.exception.details["field"], "tags")
         self.assertEqual(error_context.exception.details["values"], ["unknown-tag"])
 
+    def test_reject_invalid_unknown_tag_fixture(self) -> None:
+        from temu_y2_women.errors import GenerationError
+        from temu_y2_women.evidence_repository import load_elements
+
+        fixture_path = Path("tests/fixtures/evidence/dress/invalid-unknown-tag-elements.json")
+        taxonomy_path = Path("data/mvp/dress/evidence_taxonomy.json")
+
+        with self.assertRaises(GenerationError) as error_context:
+            load_elements(fixture_path, taxonomy_path=taxonomy_path)
+
+        self.assertEqual(error_context.exception.code, "INVALID_EVIDENCE_STORE")
+        self.assertEqual(
+            error_context.exception.message,
+            "element field 'tags' contains unknown taxonomy values",
+        )
+        self.assertEqual(error_context.exception.details["path"], str(fixture_path))
+        self.assertEqual(error_context.exception.details["index"], 0)
+        self.assertEqual(error_context.exception.details["field"], "tags")
+        self.assertEqual(error_context.exception.details["values"], ["unknown-tag"])
+
     def test_reject_duplicate_active_slot_value(self) -> None:
         from temu_y2_women.errors import GenerationError
         from temu_y2_women.evidence_repository import load_elements
@@ -307,6 +327,26 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
             error_context.exception.message,
             "active element duplicates an existing slot/value record",
         )
+        self.assertEqual(error_context.exception.details["slot"], "silhouette")
+        self.assertEqual(error_context.exception.details["value"], "a-line")
+
+    def test_reject_invalid_duplicate_elements_fixture(self) -> None:
+        from temu_y2_women.errors import GenerationError
+        from temu_y2_women.evidence_repository import load_elements
+
+        fixture_path = Path("tests/fixtures/evidence/dress/invalid-duplicate-elements.json")
+        taxonomy_path = Path("data/mvp/dress/evidence_taxonomy.json")
+
+        with self.assertRaises(GenerationError) as error_context:
+            load_elements(fixture_path, taxonomy_path=taxonomy_path)
+
+        self.assertEqual(error_context.exception.code, "INVALID_EVIDENCE_STORE")
+        self.assertEqual(
+            error_context.exception.message,
+            "active element duplicates an existing slot/value record",
+        )
+        self.assertEqual(error_context.exception.details["path"], str(fixture_path))
+        self.assertEqual(error_context.exception.details["index"], 1)
         self.assertEqual(error_context.exception.details["slot"], "silhouette")
         self.assertEqual(error_context.exception.details["value"], "a-line")
 
@@ -698,3 +738,54 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
         )
         self.assertEqual(error_context.exception.details["field"], "slot_preferences")
         self.assertEqual(error_context.exception.details["values"], ["unknown-shape"])
+
+    def test_reject_invalid_strategy_slot_preference_fixture(self) -> None:
+        from temu_y2_women.errors import GenerationError
+        from temu_y2_women.evidence_repository import load_strategy_templates
+
+        fixture_path = Path("tests/fixtures/evidence/dress/invalid-strategy-slot-preference.json")
+        taxonomy_path = Path("data/mvp/dress/evidence_taxonomy.json")
+        with TemporaryDirectory() as temp_dir:
+            elements_path = Path(temp_dir) / "elements.json"
+            elements_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "mvp-v1",
+                        "elements": [
+                            {
+                                "element_id": "dress-neckline-square-001",
+                                "category": "dress",
+                                "slot": "neckline",
+                                "value": "square neckline",
+                                "tags": ["summer", "romantic", "feminine"],
+                                "base_score": 0.73,
+                                "price_bands": ["mid"],
+                                "occasion_tags": ["casual"],
+                                "season_tags": ["spring", "summer"],
+                                "risk_flags": [],
+                                "evidence_summary": "Known neckline fixture used to isolate strategy preference validation.",
+                                "status": "active",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(GenerationError) as error_context:
+                load_strategy_templates(
+                    fixture_path,
+                    taxonomy_path=taxonomy_path,
+                    elements_path=elements_path,
+                )
+
+        self.assertEqual(error_context.exception.code, "INVALID_EVIDENCE_STORE")
+        self.assertEqual(
+            error_context.exception.message,
+            "strategy slot_preferences references unknown active element values",
+        )
+        self.assertEqual(error_context.exception.details["path"], str(fixture_path))
+        self.assertEqual(error_context.exception.details["index"], 0)
+        self.assertEqual(error_context.exception.details["field"], "slot_preferences")
+        self.assertEqual(error_context.exception.details["slot"], "neckline")
+        self.assertEqual(error_context.exception.details["values"], ["unknown-neckline"])
