@@ -1,0 +1,14 @@
+{
+  "schema_version": "mvp-v1",
+  "rules": [
+    {
+      "left_slot": "pattern",
+      "left_value": "floral print",
+      "right_slot": "detail",
+      "right_value": "smocked bodice",
+      "severity": "weak",
+      "penalty": 0.08,
+      "reason": "floral print is paired with smocked bodice in the MVP rule set"
+    }
+  ]
+}
