@@ -10,6 +10,36 @@ from temu_y2_women.models import CandidateElement, NormalizedRequest, SelectedSt
 _DEFAULT_ELEMENTS_PATH = Path("data/mvp/dress/elements.json")
 _DEFAULT_STRATEGIES_PATH = Path("data/mvp/dress/strategy_templates.json")
 _DEFAULT_TAXONOMY_PATH = Path("data/mvp/dress/evidence_taxonomy.json")
+_ELEMENT_REQUIRED_FIELDS = {
+    "element_id",
+    "category",
+    "slot",
+    "value",
+    "tags",
+    "base_score",
+    "price_bands",
+    "occasion_tags",
+    "season_tags",
+    "risk_flags",
+    "evidence_summary",
+    "status",
+}
+_STRATEGY_REQUIRED_FIELDS = {
+    "strategy_id",
+    "category",
+    "target_market",
+    "priority",
+    "date_window",
+    "occasion_tags",
+    "boost_tags",
+    "suppress_tags",
+    "slot_preferences",
+    "score_boost",
+    "score_cap",
+    "prompt_hints",
+    "reason_template",
+    "status",
+}
 
 
 def load_evidence_taxonomy(path: Path = _DEFAULT_TAXONOMY_PATH) -> dict[str, Any]:
@@ -68,77 +98,32 @@ def load_elements(
     taxonomy_path: Path = _DEFAULT_TAXONOMY_PATH,
 ) -> list[dict[str, Any]]:
     taxonomy = load_evidence_taxonomy(taxonomy_path)
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise GenerationError(
-            code="INVALID_EVIDENCE_STORE",
-            message="elements evidence store root must be an object",
-            details={"path": str(path)},
-        )
-    elements = payload.get("elements")
-    if not isinstance(elements, list):
-        raise GenerationError(
-            code="INVALID_EVIDENCE_STORE",
-            message="elements evidence store must contain an 'elements' array",
-            details={"path": str(path)},
-        )
-    required_fields = {
-        "element_id",
-        "category",
-        "slot",
-        "value",
-        "tags",
-        "base_score",
-        "price_bands",
-        "occasion_tags",
-        "season_tags",
-        "risk_flags",
-        "evidence_summary",
-        "status",
-    }
+    elements = _load_record_array(
+        path=path,
+        root_message="elements evidence store root must be an object",
+        array_field="elements",
+        array_message="elements evidence store must contain an 'elements' array",
+    )
     seen_active_element_ids: set[str] = set()
     seen_active_slot_values: set[tuple[str, str]] = set()
     for index, element in enumerate(elements):
-        if not isinstance(element, dict):
-            raise GenerationError(
-                code="INVALID_EVIDENCE_STORE",
-                message="element record must be an object",
-                details={"path": str(path), "index": index},
-            )
-        missing = sorted(required_fields.difference(element.keys()))
-        if missing:
-            raise GenerationError(
-                code="INVALID_EVIDENCE_STORE",
-                message="element record is missing required fields",
-                details={"path": str(path), "index": index, "missing": missing},
-            )
+        _validate_record_shape(
+            path=path,
+            index=index,
+            record=element,
+            required_fields=_ELEMENT_REQUIRED_FIELDS,
+            record_type="element",
+        )
         if element.get("status") != "active":
             continue
         _validate_element_record(path=path, taxonomy=taxonomy, index=index, element=element)
-        element_id = str(element["element_id"])
-        if element_id in seen_active_element_ids:
-            raise GenerationError(
-                code="INVALID_EVIDENCE_STORE",
-                message="active element duplicates an existing element_id record",
-                details={"path": str(path), "index": index, "element_id": element_id},
-            )
-        seen_active_element_ids.add(element_id)
-        slot_value = _canonicalize_slot_value(
-            slot=str(element["slot"]),
-            value=str(element["value"]),
+        _validate_active_element_uniqueness(
+            path=path,
+            index=index,
+            element=element,
+            seen_active_element_ids=seen_active_element_ids,
+            seen_active_slot_values=seen_active_slot_values,
         )
-        if slot_value in seen_active_slot_values:
-            raise GenerationError(
-                code="INVALID_EVIDENCE_STORE",
-                message="active element duplicates an existing slot/value record",
-                details={
-                    "path": str(path),
-                    "index": index,
-                    "slot": str(element["slot"]),
-                    "value": str(element["value"]),
-                },
-            )
-        seen_active_slot_values.add(slot_value)
     return list(elements)
 
 
@@ -151,50 +136,20 @@ def load_strategy_templates(
     active_values_by_slot = _build_active_values_by_slot(
         load_elements(elements_path, taxonomy_path=taxonomy_path)
     )
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise GenerationError(
-            code="INVALID_EVIDENCE_STORE",
-            message="strategy evidence store root must be an object",
-            details={"path": str(path)},
-        )
-    strategies = payload.get("strategy_templates")
-    if not isinstance(strategies, list):
-        raise GenerationError(
-            code="INVALID_EVIDENCE_STORE",
-            message="strategy evidence store must contain a 'strategy_templates' array",
-            details={"path": str(path)},
-        )
-    required_fields = {
-        "strategy_id",
-        "category",
-        "target_market",
-        "priority",
-        "date_window",
-        "occasion_tags",
-        "boost_tags",
-        "suppress_tags",
-        "slot_preferences",
-        "score_boost",
-        "score_cap",
-        "prompt_hints",
-        "reason_template",
-        "status",
-    }
+    strategies = _load_record_array(
+        path=path,
+        root_message="strategy evidence store root must be an object",
+        array_field="strategy_templates",
+        array_message="strategy evidence store must contain a 'strategy_templates' array",
+    )
     for index, strategy in enumerate(strategies):
-        if not isinstance(strategy, dict):
-            raise GenerationError(
-                code="INVALID_EVIDENCE_STORE",
-                message="strategy record must be an object",
-                details={"path": str(path), "index": index},
-            )
-        missing = sorted(required_fields.difference(strategy.keys()))
-        if missing:
-            raise GenerationError(
-                code="INVALID_EVIDENCE_STORE",
-                message="strategy record is missing required fields",
-                details={"path": str(path), "index": index, "missing": missing},
-            )
+        _validate_record_shape(
+            path=path,
+            index=index,
+            record=strategy,
+            required_fields=_STRATEGY_REQUIRED_FIELDS,
+            record_type="strategy",
+        )
         if strategy.get("status") != "active":
             continue
         _validate_strategy_record(
@@ -212,71 +167,29 @@ def retrieve_candidates(
     elements: list[dict[str, Any]],
     selected_strategies: tuple[SelectedStrategy, ...],
 ) -> tuple[dict[str, list[dict[str, Any]]], tuple[str, ...]]:
-    strategy_boost_tags = {
-        tag
-        for selected in selected_strategies
-        for tag in selected.strategy.boost_tags
-    }
-    strategy_suppress_tags = {
-        tag
-        for selected in selected_strategies
-        for tag in selected.strategy.suppress_tags
-    }
+    strategy_suppress_tags = _collect_strategy_suppress_tags(selected_strategies)
     grouped: dict[str, list[dict[str, Any]]] = {}
     avoid_filtered_count = 0
     avoid_matched_tags: set[str] = set()
     for element in elements:
-        if element.get("status") != "active" or element.get("category") != request.category:
-            continue
-        if not _matches_price_band(request, element):
-            continue
-        tags = set(element.get("tags", []))
-        if request.avoid_tags and tags.intersection(request.avoid_tags):
-            avoid_filtered_count += 1
-            avoid_matched_tags.update(tags.intersection(request.avoid_tags))
-            continue
-        if strategy_suppress_tags and tags.intersection(strategy_suppress_tags):
-            continue
-
-        effective_score = float(element["base_score"])
-        matching_boosts = [
-            item.strategy.score_boost
-            for item in selected_strategies
-            if tags.intersection(item.strategy.boost_tags)
-            or _strategy_matches_element_value(item, element)
-        ]
-        matching_caps = [
-            item.strategy.score_cap
-            for item in selected_strategies
-            if tags.intersection(item.strategy.boost_tags)
-            or _strategy_matches_element_value(item, element)
-        ]
-        if matching_boosts:
-            averaged_boost = sum(matching_boosts) / len(selected_strategies)
-            effective_score += min(
-                averaged_boost,
-                sum(matching_caps) / len(matching_caps),
-            )
-        if request.must_have_tags and tags.intersection(request.must_have_tags):
-            effective_score += 0.02
-
-        candidate = dict(element)
-        candidate["effective_score"] = round(effective_score, 4)
-        grouped.setdefault(str(element["slot"]), []).append(candidate)
-
-    if not any(grouped.values()):
-        raise GenerationError(
-            code="NO_CANDIDATES",
-            message="no eligible dress elements found after filtering",
-            details={"category": request.category, "avoid_tags": list(request.avoid_tags)},
+        include_element, matched_avoid_tags = _is_candidate_element_eligible(
+            request=request,
+            element=element,
+            strategy_suppress_tags=strategy_suppress_tags,
         )
-
-    warnings: list[str] = []
-    if avoid_filtered_count:
-        sorted_tags = ", ".join(sorted(avoid_matched_tags))
-        warnings.append(f"avoid_tags removed: {sorted_tags} ({avoid_filtered_count} candidates)")
-
-    return grouped, tuple(warnings)
+        if matched_avoid_tags:
+            avoid_filtered_count += 1
+            avoid_matched_tags.update(matched_avoid_tags)
+        if not include_element:
+            continue
+        candidate = _build_scored_candidate(
+            request=request,
+            element=element,
+            selected_strategies=selected_strategies,
+        )
+        grouped.setdefault(str(element["slot"]), []).append(candidate)
+    _raise_if_no_candidates(request=request, grouped=grouped)
+    return grouped, _build_retrieval_warnings(avoid_filtered_count, avoid_matched_tags)
 
 
 def flatten_candidates(grouped_candidates: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
@@ -355,60 +268,232 @@ def _validate_element_record(
         allowed_values=set(taxonomy["allowed_slots"]),
         record_type="element",
     )
-    _validate_string_list_field(path=path, index=index, field="tags", value=element.get("tags"), record_type="element")
-    _validate_allowed_strings(
+    _validate_element_taxonomy_lists(path=path, taxonomy=taxonomy, index=index, element=element)
+    _validate_element_score(path=path, taxonomy=taxonomy, index=index, element=element)
+    _validate_element_summary(path=path, taxonomy=taxonomy, index=index, element=element)
+
+
+def _validate_strategy_record(
+    path: Path,
+    index: int,
+    strategy: dict[str, Any],
+    taxonomy: dict[str, Any],
+    active_values_by_slot: dict[str, set[str]],
+) -> None:
+    _validate_strategy_date_window(path=path, index=index, strategy=strategy)
+    _validate_strategy_list_fields(path=path, taxonomy=taxonomy, index=index, strategy=strategy)
+    _validate_strategy_slot_preferences(
         path=path,
+        taxonomy=taxonomy,
         index=index,
-        field="tags",
-        values=element["tags"],
-        allowed_values=set(taxonomy["allowed_tags"]),
-        record_type="element",
+        strategy=strategy,
+        active_values_by_slot=active_values_by_slot,
     )
-    _validate_string_list_field(
-        path=path,
-        index=index,
-        field="occasion_tags",
-        value=element.get("occasion_tags"),
-        record_type="element",
+
+
+def _load_record_array(
+    path: Path,
+    root_message: str,
+    array_field: str,
+    array_message: str,
+) -> list[dict[str, Any]]:
+    payload = _load_json_object(path=path, root_message=root_message)
+    values = payload.get(array_field)
+    if not isinstance(values, list):
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message=array_message,
+            details={"path": str(path)},
+        )
+    return list(values)
+
+
+def _load_json_object(path: Path, root_message: str) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message=root_message,
+            details={"path": str(path)},
+        )
+    return payload
+
+
+def _validate_record_shape(
+    path: Path,
+    index: int,
+    record: Any,
+    required_fields: set[str],
+    record_type: str,
+) -> None:
+    if not isinstance(record, dict):
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message=f"{record_type} record must be an object",
+            details={"path": str(path), "index": index},
+        )
+    missing = sorted(required_fields.difference(record.keys()))
+    if missing:
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message=f"{record_type} record is missing required fields",
+            details={"path": str(path), "index": index, "missing": missing},
+        )
+
+
+def _validate_active_element_uniqueness(
+    path: Path,
+    index: int,
+    element: dict[str, Any],
+    seen_active_element_ids: set[str],
+    seen_active_slot_values: set[tuple[str, str]],
+) -> None:
+    element_id = str(element["element_id"])
+    if element_id in seen_active_element_ids:
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="active element duplicates an existing element_id record",
+            details={"path": str(path), "index": index, "element_id": element_id},
+        )
+    seen_active_element_ids.add(element_id)
+    slot_value = _canonicalize_slot_value(
+        slot=str(element["slot"]),
+        value=str(element["value"]),
     )
-    _validate_allowed_strings(
-        path=path,
-        index=index,
-        field="occasion_tags",
-        values=element["occasion_tags"],
-        allowed_values=set(taxonomy["allowed_occasions"]),
-        record_type="element",
+    if slot_value in seen_active_slot_values:
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="active element duplicates an existing slot/value record",
+            details={"path": str(path), "index": index, "slot": str(element["slot"]), "value": str(element["value"])},
+        )
+    seen_active_slot_values.add(slot_value)
+
+
+def _collect_strategy_suppress_tags(selected_strategies: tuple[SelectedStrategy, ...]) -> set[str]:
+    return {
+        tag
+        for selected in selected_strategies
+        for tag in selected.strategy.suppress_tags
+    }
+
+
+def _is_candidate_element_eligible(
+    request: NormalizedRequest,
+    element: dict[str, Any],
+    strategy_suppress_tags: set[str],
+) -> tuple[bool, set[str]]:
+    if element.get("status") != "active" or element.get("category") != request.category:
+        return False, set()
+    if not _matches_price_band(request, element):
+        return False, set()
+    tags = set(element.get("tags", []))
+    matched_avoid_tags = tags.intersection(request.avoid_tags) if request.avoid_tags else set()
+    if matched_avoid_tags:
+        return False, matched_avoid_tags
+    if strategy_suppress_tags and tags.intersection(strategy_suppress_tags):
+        return False, set()
+    return True, set()
+
+
+def _build_scored_candidate(
+    request: NormalizedRequest,
+    element: dict[str, Any],
+    selected_strategies: tuple[SelectedStrategy, ...],
+) -> dict[str, Any]:
+    candidate = dict(element)
+    candidate["effective_score"] = round(
+        _calculate_effective_score(
+            request=request,
+            element=element,
+            selected_strategies=selected_strategies,
+        ),
+        4,
     )
-    _validate_string_list_field(
-        path=path,
-        index=index,
-        field="season_tags",
-        value=element.get("season_tags"),
-        record_type="element",
+    return candidate
+
+
+def _calculate_effective_score(
+    request: NormalizedRequest,
+    element: dict[str, Any],
+    selected_strategies: tuple[SelectedStrategy, ...],
+) -> float:
+    effective_score = float(element["base_score"])
+    tags = set(element.get("tags", []))
+    matching_strategies = _matching_strategies_for_element(selected_strategies, element, tags)
+    if matching_strategies:
+        effective_score += min(
+            sum(item.strategy.score_boost for item in matching_strategies) / len(selected_strategies),
+            sum(item.strategy.score_cap for item in matching_strategies) / len(matching_strategies),
+        )
+    if request.must_have_tags and tags.intersection(request.must_have_tags):
+        effective_score += 0.02
+    return effective_score
+
+
+def _matching_strategies_for_element(
+    selected_strategies: tuple[SelectedStrategy, ...],
+    element: dict[str, Any],
+    tags: set[str],
+) -> list[SelectedStrategy]:
+    return [
+        item
+        for item in selected_strategies
+        if tags.intersection(item.strategy.boost_tags)
+        or _strategy_matches_element_value(item, element)
+    ]
+
+
+def _raise_if_no_candidates(
+    request: NormalizedRequest,
+    grouped: dict[str, list[dict[str, Any]]],
+) -> None:
+    if any(grouped.values()):
+        return
+    raise GenerationError(
+        code="NO_CANDIDATES",
+        message="no eligible dress elements found after filtering",
+        details={"category": request.category, "avoid_tags": list(request.avoid_tags)},
     )
-    _validate_allowed_strings(
-        path=path,
-        index=index,
-        field="season_tags",
-        values=element["season_tags"],
-        allowed_values=set(taxonomy["allowed_seasons"]),
-        record_type="element",
-    )
-    _validate_string_list_field(
-        path=path,
-        index=index,
-        field="risk_flags",
-        value=element.get("risk_flags"),
-        record_type="element",
-    )
-    _validate_allowed_strings(
-        path=path,
-        index=index,
-        field="risk_flags",
-        values=element["risk_flags"],
-        allowed_values=set(taxonomy["allowed_risk_flags"]),
-        record_type="element",
-    )
+
+
+def _build_retrieval_warnings(
+    avoid_filtered_count: int,
+    avoid_matched_tags: set[str],
+) -> tuple[str, ...]:
+    if not avoid_filtered_count:
+        return ()
+    sorted_tags = ", ".join(sorted(avoid_matched_tags))
+    return (f"avoid_tags removed: {sorted_tags} ({avoid_filtered_count} candidates)",)
+
+
+def _validate_element_taxonomy_lists(
+    path: Path,
+    taxonomy: dict[str, Any],
+    index: int,
+    element: dict[str, Any],
+) -> None:
+    for field, taxonomy_field in (
+        ("tags", "allowed_tags"),
+        ("occasion_tags", "allowed_occasions"),
+        ("season_tags", "allowed_seasons"),
+        ("risk_flags", "allowed_risk_flags"),
+    ):
+        _validate_string_list_against_taxonomy(
+            path=path,
+            index=index,
+            field=field,
+            value=element.get(field),
+            allowed_values=set(taxonomy[taxonomy_field]),
+            record_type="element",
+        )
+
+
+def _validate_element_score(
+    path: Path,
+    taxonomy: dict[str, Any],
+    index: int,
+    element: dict[str, Any],
+) -> None:
     base_score = element.get("base_score")
     if not isinstance(base_score, (int, float)):
         raise GenerationError(
@@ -423,6 +508,14 @@ def _validate_element_record(
             message="element base_score is outside the allowed taxonomy range",
             details={"path": str(path), "index": index, "field": "base_score", "value": base_score},
         )
+
+
+def _validate_element_summary(
+    path: Path,
+    taxonomy: dict[str, Any],
+    index: int,
+    element: dict[str, Any],
+) -> None:
     summary = element.get("evidence_summary")
     if not isinstance(summary, str):
         raise GenerationError(
@@ -439,12 +532,10 @@ def _validate_element_record(
         )
 
 
-def _validate_strategy_record(
+def _validate_strategy_date_window(
     path: Path,
     index: int,
     strategy: dict[str, Any],
-    taxonomy: dict[str, Any],
-    active_values_by_slot: dict[str, set[str]],
 ) -> None:
     date_window = strategy.get("date_window")
     if not isinstance(date_window, dict):
@@ -460,15 +551,21 @@ def _validate_strategy_record(
             details={"path": str(path), "index": index, "field": "date_window"},
         )
 
-    for list_field in ("occasion_tags", "boost_tags", "suppress_tags", "prompt_hints"):
+
+def _validate_strategy_list_fields(
+    path: Path,
+    taxonomy: dict[str, Any],
+    index: int,
+    strategy: dict[str, Any],
+) -> None:
+    for field in ("occasion_tags", "boost_tags", "suppress_tags", "prompt_hints"):
         _validate_string_list_field(
             path=path,
             index=index,
-            field=list_field,
-            value=strategy.get(list_field),
+            field=field,
+            value=strategy.get(field),
             record_type="strategy",
         )
-
     _validate_allowed_strings(
         path=path,
         index=index,
@@ -477,16 +574,24 @@ def _validate_strategy_record(
         allowed_values=set(taxonomy["allowed_occasions"]),
         record_type="strategy",
     )
-    for list_field in ("boost_tags", "suppress_tags"):
+    for field in ("boost_tags", "suppress_tags"):
         _validate_allowed_strings(
             path=path,
             index=index,
-            field=list_field,
-            values=strategy[list_field],
+            field=field,
+            values=strategy[field],
             allowed_values=set(taxonomy["allowed_tags"]),
             record_type="strategy",
         )
 
+
+def _validate_strategy_slot_preferences(
+    path: Path,
+    taxonomy: dict[str, Any],
+    index: int,
+    strategy: dict[str, Any],
+    active_values_by_slot: dict[str, set[str]],
+) -> None:
     slot_preferences = strategy.get("slot_preferences")
     if not isinstance(slot_preferences, dict):
         raise GenerationError(
@@ -494,43 +599,88 @@ def _validate_strategy_record(
             message="strategy slot_preferences must be an object",
             details={"path": str(path), "index": index, "field": "slot_preferences"},
         )
-    for key, value in slot_preferences.items():
-        if not isinstance(key, str):
-            raise GenerationError(
-                code="INVALID_EVIDENCE_STORE",
-                message="strategy slot_preferences keys must be strings",
-                details={"path": str(path), "index": index, "field": "slot_preferences"},
-            )
-        if key not in taxonomy["allowed_slots"]:
-            raise GenerationError(
-                code="INVALID_EVIDENCE_STORE",
-                message="strategy slot_preferences references an unknown slot",
-                details={"path": str(path), "index": index, "field": "slot_preferences", "slot": key},
-            )
-        if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
-            raise GenerationError(
-                code="INVALID_EVIDENCE_STORE",
-                message="strategy slot_preferences values must be arrays of strings",
-                details={"path": str(path), "index": index, "field": "slot_preferences"},
-            )
-        canonical_slot = _canonicalize_value(key)
-        unknown_values = sorted(
-            item
-            for item in value
-            if _canonicalize_value(item) not in active_values_by_slot.get(canonical_slot, set())
+    for slot, values in slot_preferences.items():
+        _validate_strategy_slot_preference_entry(
+            path=path,
+            taxonomy=taxonomy,
+            index=index,
+            slot=slot,
+            values=values,
+            active_values_by_slot=active_values_by_slot,
         )
-        if unknown_values:
-            raise GenerationError(
-                code="INVALID_EVIDENCE_STORE",
-                message="strategy slot_preferences references unknown active element values",
-                details={
-                    "path": str(path),
-                    "index": index,
-                    "field": "slot_preferences",
-                    "slot": key,
-                    "values": unknown_values,
-                },
-            )
+
+
+def _validate_strategy_slot_preference_entry(
+    path: Path,
+    taxonomy: dict[str, Any],
+    index: int,
+    slot: Any,
+    values: Any,
+    active_values_by_slot: dict[str, set[str]],
+) -> None:
+    if not isinstance(slot, str):
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="strategy slot_preferences keys must be strings",
+            details={"path": str(path), "index": index, "field": "slot_preferences"},
+        )
+    if slot not in taxonomy["allowed_slots"]:
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="strategy slot_preferences references an unknown slot",
+            details={"path": str(path), "index": index, "field": "slot_preferences", "slot": slot},
+        )
+    if not isinstance(values, list) or any(not isinstance(item, str) for item in values):
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="strategy slot_preferences values must be arrays of strings",
+            details={"path": str(path), "index": index, "field": "slot_preferences"},
+        )
+    unknown_values = _unknown_slot_preference_values(slot, values, active_values_by_slot)
+    if unknown_values:
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="strategy slot_preferences references unknown active element values",
+            details={"path": str(path), "index": index, "field": "slot_preferences", "slot": slot, "values": unknown_values},
+        )
+
+
+def _unknown_slot_preference_values(
+    slot: str,
+    values: list[str],
+    active_values_by_slot: dict[str, set[str]],
+) -> list[str]:
+    canonical_slot = _canonicalize_value(slot)
+    return sorted(
+        value
+        for value in values
+        if _canonicalize_value(value) not in active_values_by_slot.get(canonical_slot, set())
+    )
+
+
+def _validate_string_list_against_taxonomy(
+    path: Path,
+    index: int,
+    field: str,
+    value: Any,
+    allowed_values: set[str],
+    record_type: str,
+) -> None:
+    _validate_string_list_field(
+        path=path,
+        index=index,
+        field=field,
+        value=value,
+        record_type=record_type,
+    )
+    _validate_allowed_strings(
+        path=path,
+        index=index,
+        field=field,
+        values=value,
+        allowed_values=allowed_values,
+        record_type=record_type,
+    )
 
 
 def _validate_string_list_field(
