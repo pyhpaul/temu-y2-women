@@ -23,6 +23,12 @@ def normalize_request(payload: dict[str, Any]) -> NormalizedRequest:
             message="target_market is required",
             details={"field": "target_market"},
         )
+    if target_market != "US":
+        raise GenerationError(
+            code="INVALID_REQUEST",
+            message="target_market must be 'US' in the MVP",
+            details={"field": "target_market", "target_market": target_market},
+        )
 
     raw_date = payload.get("target_launch_date")
     if not isinstance(raw_date, str):

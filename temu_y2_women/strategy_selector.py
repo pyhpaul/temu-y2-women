@@ -37,12 +37,10 @@ def select_strategies(
         ),
     )
     if prioritized:
-        top_priority = prioritized[0].priority
         selected = tuple(
             SelectedStrategy(strategy=strategy, reason=strategy.reason_template)
-            for strategy in prioritized
-            if strategy.priority == top_priority
-        )[:2]
+            for strategy in prioritized[:2]
+        )
         return StrategySelectionResult(selected=selected, warnings=())
 
     baselines = sorted(

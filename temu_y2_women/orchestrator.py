@@ -22,13 +22,13 @@ def generate_dress_concept(payload: dict[str, Any]) -> dict[str, Any]:
         strategies = load_strategy_templates()
         strategy_result = select_strategies(request, strategies)
         elements = load_elements()
-        grouped_candidates = retrieve_candidates(request, elements, strategy_result.selected)
+        grouped_candidates, retrieval_warnings = retrieve_candidates(request, elements, strategy_result.selected)
         concept = compose_concept(request, grouped_candidates)
         prompt_bundle = render_prompt_bundle(
             request=request,
             concept=concept,
             selected_strategies=strategy_result.selected,
-            warnings=strategy_result.warnings,
+            warnings=strategy_result.warnings + retrieval_warnings,
         )
         return package_success_result(
             request=request,
@@ -36,7 +36,7 @@ def generate_dress_concept(payload: dict[str, Any]) -> dict[str, Any]:
             retrieved_elements=flatten_candidates(grouped_candidates),
             composed_concept=concept,
             prompt_bundle=prompt_bundle,
-            warnings=strategy_result.warnings,
+            warnings=strategy_result.warnings + retrieval_warnings,
         )
     except GenerationError as error:
         return error.to_dict()

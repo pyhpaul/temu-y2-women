@@ -123,6 +123,52 @@ class StrategySelectorTest(unittest.TestCase):
             ("No specific strategy matched; using baseline strategy.",),
         )
 
+    def test_select_up_to_two_strategies_and_merge_equally(self) -> None:
+        from temu_y2_women.strategy_selector import select_strategies
+
+        request = _request(launch_date=date(2026, 7, 4), occasion_tags=("vacation",))
+        strategies = [
+            {
+                "strategy_id": "summer-vacation-dress",
+                "category": "dress",
+                "target_market": "US",
+                "priority": 10,
+                "date_window": {"start": "05-15", "end": "08-31"},
+                "occasion_tags": ["vacation"],
+                "boost_tags": ["summer", "vacation"],
+                "suppress_tags": [],
+                "slot_preferences": {},
+                "score_boost": 0.12,
+                "score_cap": 0.2,
+                "prompt_hints": ["vacation mood"],
+                "reason_template": "vacation window",
+                "status": "active",
+            },
+            {
+                "strategy_id": "summer-floral-dress",
+                "category": "dress",
+                "target_market": "US",
+                "priority": 9,
+                "date_window": {"start": "05-15", "end": "08-31"},
+                "occasion_tags": ["casual"],
+                "boost_tags": ["floral"],
+                "suppress_tags": [],
+                "slot_preferences": {},
+                "score_boost": 0.08,
+                "score_cap": 0.1,
+                "prompt_hints": ["floral direction"],
+                "reason_template": "summer floral window",
+                "status": "active",
+            },
+        ]
+
+        result = select_strategies(request, strategies)
+
+        self.assertEqual(
+            [item.strategy.strategy_id for item in result.selected],
+            ["summer-vacation-dress", "summer-floral-dress"],
+        )
+
 
 def _request(
     launch_date: date,

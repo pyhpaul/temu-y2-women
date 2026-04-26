@@ -20,6 +20,7 @@ class OrchestratorTest(unittest.TestCase):
         self.assertIn("product appeal", " ".join(result["prompt_bundle"]["render_notes"]))
         self.assertEqual(result["composed_concept"]["selected_elements"]["silhouette"]["value"], "a-line")
         self.assertIn("must_have_tags satisfied: floral", result["composed_concept"]["constraint_notes"])
+        self.assertIn("avoid_tags removed", " ".join(result["warnings"]))
 
     def test_successful_mode_b_flow(self) -> None:
         from temu_y2_women.orchestrator import generate_dress_concept
@@ -44,6 +45,20 @@ class OrchestratorTest(unittest.TestCase):
         result = generate_dress_concept(_read_request("failure-constraint-conflict-summer-vacation.json"))
 
         self.assertEqual(result["error"]["code"], "CONSTRAINT_CONFLICT")
+
+    def test_non_us_market_fails_in_mvp(self) -> None:
+        from temu_y2_women.orchestrator import generate_dress_concept
+
+        result = generate_dress_concept(
+            {
+                "category": "dress",
+                "target_market": "EU",
+                "target_launch_date": "2026-06-15",
+                "mode": "A",
+            }
+        )
+
+        self.assertEqual(result["error"]["code"], "INVALID_REQUEST")
 
 
 def _read_request(filename: str) -> dict[str, object]:

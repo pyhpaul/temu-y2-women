@@ -13,19 +13,79 @@ _DEFAULT_STRATEGIES_PATH = Path("data/mvp/dress/strategy_templates.json")
 
 def load_elements(path: Path = _DEFAULT_ELEMENTS_PATH) -> list[dict[str, Any]]:
     payload = json.loads(path.read_text(encoding="utf-8"))
-    return list(payload.get("elements", []))
+    elements = payload.get("elements")
+    if not isinstance(elements, list):
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="elements evidence store must contain an 'elements' array",
+            details={"path": str(path)},
+        )
+    required_fields = {
+        "element_id",
+        "category",
+        "slot",
+        "value",
+        "tags",
+        "base_score",
+        "price_bands",
+        "occasion_tags",
+        "season_tags",
+        "risk_flags",
+        "evidence_summary",
+        "status",
+    }
+    for index, element in enumerate(elements):
+        missing = sorted(required_fields.difference(element.keys()))
+        if missing:
+            raise GenerationError(
+                code="INVALID_EVIDENCE_STORE",
+                message="element record is missing required fields",
+                details={"path": str(path), "index": index, "missing": missing},
+            )
+    return list(elements)
 
 
 def load_strategy_templates(path: Path = _DEFAULT_STRATEGIES_PATH) -> list[dict[str, Any]]:
     payload = json.loads(path.read_text(encoding="utf-8"))
-    return list(payload.get("strategy_templates", []))
+    strategies = payload.get("strategy_templates")
+    if not isinstance(strategies, list):
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="strategy evidence store must contain a 'strategy_templates' array",
+            details={"path": str(path)},
+        )
+    required_fields = {
+        "strategy_id",
+        "category",
+        "target_market",
+        "priority",
+        "date_window",
+        "occasion_tags",
+        "boost_tags",
+        "suppress_tags",
+        "slot_preferences",
+        "score_boost",
+        "score_cap",
+        "prompt_hints",
+        "reason_template",
+        "status",
+    }
+    for index, strategy in enumerate(strategies):
+        missing = sorted(required_fields.difference(strategy.keys()))
+        if missing:
+            raise GenerationError(
+                code="INVALID_EVIDENCE_STORE",
+                message="strategy record is missing required fields",
+                details={"path": str(path), "index": index, "missing": missing},
+            )
+    return list(strategies)
 
 
 def retrieve_candidates(
     request: NormalizedRequest,
     elements: list[dict[str, Any]],
     selected_strategies: tuple[SelectedStrategy, ...],
-) -> dict[str, list[dict[str, Any]]]:
+) -> tuple[dict[str, list[dict[str, Any]]], tuple[str, ...]]:
     strategy_boost_tags = {
         tag
         for selected in selected_strategies
@@ -46,25 +106,38 @@ def retrieve_candidates(
     }
 
     grouped: dict[str, list[dict[str, Any]]] = {}
+    avoid_filtered_count = 0
     for element in elements:
         if element.get("status") != "active" or element.get("category") != request.category:
             continue
         if not _matches_price_band(request, element):
             continue
-        if not _matches_occasion(request, element):
-            continue
-
         tags = set(element.get("tags", []))
         if request.avoid_tags and tags.intersection(request.avoid_tags):
+            avoid_filtered_count += 1
             continue
         if strategy_suppress_tags and tags.intersection(strategy_suppress_tags):
             continue
 
         effective_score = float(element["base_score"])
-        if tags.intersection(strategy_boost_tags):
-            effective_score += max((item.strategy.score_boost for item in selected_strategies), default=0.0)
-        if element.get("value") in slot_preferences.get(element.get("slot"), set()):
-            effective_score += 0.03
+        matching_boosts = [
+            item.strategy.score_boost
+            for item in selected_strategies
+            if tags.intersection(item.strategy.boost_tags)
+            or element.get("value") in item.strategy.slot_preferences.get(element.get("slot"), ())
+        ]
+        matching_caps = [
+            item.strategy.score_cap
+            for item in selected_strategies
+            if tags.intersection(item.strategy.boost_tags)
+            or element.get("value") in item.strategy.slot_preferences.get(element.get("slot"), ())
+        ]
+        if matching_boosts:
+            averaged_boost = sum(matching_boosts) / len(selected_strategies)
+            effective_score += min(
+                averaged_boost,
+                sum(matching_caps) / len(matching_caps),
+            )
         if request.must_have_tags and tags.intersection(request.must_have_tags):
             effective_score += 0.02
 
@@ -79,7 +152,11 @@ def retrieve_candidates(
             details={"category": request.category, "avoid_tags": list(request.avoid_tags)},
         )
 
-    return grouped
+    warnings: list[str] = []
+    if avoid_filtered_count:
+        warnings.append(f"avoid_tags removed {avoid_filtered_count} candidates")
+
+    return grouped, tuple(warnings)
 
 
 def flatten_candidates(grouped_candidates: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
@@ -109,7 +186,4 @@ def _matches_price_band(request: NormalizedRequest, element: dict[str, Any]) -> 
 
 
 def _matches_occasion(request: NormalizedRequest, element: dict[str, Any]) -> bool:
-    if not request.occasion_tags:
-        return True
-    element_tags = set(element.get("occasion_tags", []))
-    return bool(element_tags.intersection(request.occasion_tags))
+    return True

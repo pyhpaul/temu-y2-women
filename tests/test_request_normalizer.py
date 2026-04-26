@@ -58,3 +58,19 @@ class NormalizeRequestTest(unittest.TestCase):
             )
 
         self.assertEqual(error_context.exception.code, "INVALID_DATE")
+
+    def test_reject_non_us_market_for_mvp(self) -> None:
+        from temu_y2_women.errors import GenerationError
+        from temu_y2_women.request_normalizer import normalize_request
+
+        with self.assertRaises(GenerationError) as error_context:
+            normalize_request(
+                {
+                    "category": "dress",
+                    "target_market": "EU",
+                    "target_launch_date": "2026-06-15",
+                    "mode": "A",
+                }
+            )
+
+        self.assertEqual(error_context.exception.code, "INVALID_REQUEST")
