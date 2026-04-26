@@ -1,0 +1,10 @@
+{
+  "category": "dress",
+  "target_market": "US",
+  "target_launch_date": "2026-06-15",
+  "mode": "A",
+  "price_band": "mid",
+  "occasion_tags": ["vacation"],
+  "must_have_tags": ["floral"],
+  "avoid_tags": ["bodycon"]
+}
