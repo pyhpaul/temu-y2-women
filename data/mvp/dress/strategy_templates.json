@@ -1,0 +1,62 @@
+{
+  "schema_version": "mvp-v1",
+  "strategy_templates": [
+    {
+      "strategy_id": "dress-us-baseline",
+      "category": "dress",
+      "target_market": "US",
+      "priority": 1,
+      "date_window": {
+        "start": "01-01",
+        "end": "12-31"
+      },
+      "occasion_tags": [],
+      "boost_tags": ["dress", "feminine"],
+      "suppress_tags": ["holiday", "heavy"],
+      "slot_preferences": {
+        "silhouette": ["a-line", "bodycon"],
+        "fabric": ["cotton poplin"],
+        "neckline": ["square neckline"],
+        "sleeve": ["flutter sleeve"]
+      },
+      "score_boost": 0.03,
+      "score_cap": 0.08,
+      "prompt_hints": [
+        "US ecommerce-ready dress concept",
+        "commercially clear silhouette direction"
+      ],
+      "reason_template": "baseline US dress strategy used when no narrower seasonal strategy outranks it",
+      "status": "active"
+    },
+    {
+      "strategy_id": "dress-us-summer-vacation",
+      "category": "dress",
+      "target_market": "US",
+      "priority": 10,
+      "date_window": {
+        "start": "05-15",
+        "end": "08-31"
+      },
+      "occasion_tags": ["vacation", "resort"],
+      "boost_tags": ["summer", "vacation", "lightweight", "floral", "airy"],
+      "suppress_tags": ["bodycon", "heavy", "holiday"],
+      "slot_preferences": {
+        "silhouette": ["a-line"],
+        "fabric": ["cotton poplin"],
+        "neckline": ["square neckline"],
+        "sleeve": ["flutter sleeve"],
+        "pattern": ["floral print"],
+        "detail": ["smocked bodice"]
+      },
+      "score_boost": 0.12,
+      "score_cap": 0.2,
+      "prompt_hints": [
+        "fresh summer styling",
+        "vacation-ready femininity",
+        "lightweight breathable dress construction"
+      ],
+      "reason_template": "launch date falls in the US summer vacation window and occasion tags align to vacation demand",
+      "status": "active"
+    }
+  ]
+}
