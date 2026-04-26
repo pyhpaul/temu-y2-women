@@ -1,0 +1,20 @@
+{
+  "schema_version": "signal-bundle-v1",
+  "signals": [
+    {
+      "signal_id": "invalid-signal-001",
+      "source_type": "manual_import",
+      "source_url": "https://example.com/invalid-001",
+      "captured_at": "2026-04-20",
+      "target_market": "US",
+      "category": "top",
+      "title": "Unsupported category signal",
+      "summary": "This should fail validation before ingestion proceeds.",
+      "observed_price_band": "mid",
+      "observed_occasion_tags": ["vacation"],
+      "observed_season_tags": ["summer"],
+      "manual_tags": ["summer"],
+      "status": "active"
+    }
+  ]
+}

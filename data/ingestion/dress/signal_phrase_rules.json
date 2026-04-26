@@ -1,0 +1,41 @@
+{
+  "schema_version": "signal-phrase-rules-v1",
+  "slot_value_rules": [
+    {
+      "slot": "silhouette",
+      "value": "a-line",
+      "phrases": ["a-line", "a line"],
+      "tags": ["dress", "feminine", "summer", "vacation"]
+    },
+    {
+      "slot": "fabric",
+      "value": "cotton poplin",
+      "phrases": ["cotton poplin"],
+      "tags": ["lightweight", "summer", "vacation"]
+    },
+    {
+      "slot": "neckline",
+      "value": "square neckline",
+      "phrases": ["square neckline", "square neck"],
+      "tags": ["feminine", "summer", "vacation"]
+    },
+    {
+      "slot": "sleeve",
+      "value": "flutter sleeve",
+      "phrases": ["flutter sleeve", "flutter sleeves"],
+      "tags": ["airy", "feminine", "vacation"]
+    },
+    {
+      "slot": "pattern",
+      "value": "floral print",
+      "phrases": ["floral print", "floral"],
+      "tags": ["floral", "summer", "vacation"]
+    },
+    {
+      "slot": "detail",
+      "value": "smocked bodice",
+      "phrases": ["smocked bodice"],
+      "tags": ["feminine", "vacation"]
+    }
+  ]
+}
