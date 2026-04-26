@@ -1,0 +1,19 @@
+{
+  "schema_version": "mvp-v1",
+  "elements": [
+    {
+      "element_id": "dress-silhouette-short-summary-001",
+      "category": "dress",
+      "slot": "silhouette",
+      "value": "a-line",
+      "tags": ["summer", "feminine"],
+      "base_score": 0.82,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "evidence_summary": "too short",
+      "status": "active"
+    }
+  ]
+}

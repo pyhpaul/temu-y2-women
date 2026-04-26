@@ -69,6 +69,12 @@ def load_elements(
 ) -> list[dict[str, Any]]:
     taxonomy = load_evidence_taxonomy(taxonomy_path)
     payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="elements evidence store root must be an object",
+            details={"path": str(path)},
+        )
     elements = payload.get("elements")
     if not isinstance(elements, list):
         raise GenerationError(
@@ -106,9 +112,9 @@ def load_elements(
                 message="element record is missing required fields",
                 details={"path": str(path), "index": index, "missing": missing},
             )
-        _validate_element_record(path=path, taxonomy=taxonomy, index=index, element=element)
         if element.get("status") != "active":
             continue
+        _validate_element_record(path=path, taxonomy=taxonomy, index=index, element=element)
         element_id = str(element["element_id"])
         if element_id in seen_active_element_ids:
             raise GenerationError(
@@ -146,6 +152,12 @@ def load_strategy_templates(
         load_elements(elements_path, taxonomy_path=taxonomy_path)
     )
     payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="strategy evidence store root must be an object",
+            details={"path": str(path)},
+        )
     strategies = payload.get("strategy_templates")
     if not isinstance(strategies, list):
         raise GenerationError(
@@ -183,6 +195,8 @@ def load_strategy_templates(
                 message="strategy record is missing required fields",
                 details={"path": str(path), "index": index, "missing": missing},
             )
+        if strategy.get("status") != "active":
+            continue
         _validate_strategy_record(
             path=path,
             index=index,

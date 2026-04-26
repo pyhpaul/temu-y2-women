@@ -81,6 +81,24 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
         self.assertEqual(error_context.exception.message, "evidence taxonomy root must be an object")
         self.assertEqual(error_context.exception.details["path"], str(taxonomy_path))
 
+    def test_reject_non_object_elements_root(self) -> None:
+        from temu_y2_women.errors import GenerationError
+        from temu_y2_women.evidence_repository import load_elements
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            taxonomy_path = temp_root / "evidence_taxonomy.json"
+            self._write_taxonomy(taxonomy_path)
+            elements_path = temp_root / "elements.json"
+            elements_path.write_text(json.dumps(["not", "an", "object"]), encoding="utf-8")
+
+            with self.assertRaises(GenerationError) as error_context:
+                load_elements(elements_path, taxonomy_path=taxonomy_path)
+
+        self.assertEqual(error_context.exception.code, "INVALID_EVIDENCE_STORE")
+        self.assertEqual(error_context.exception.message, "elements evidence store root must be an object")
+        self.assertEqual(error_context.exception.details["path"], str(elements_path))
+
     def test_reject_missing_strategy_templates_wrapper(self) -> None:
         from temu_y2_women.errors import GenerationError
         from temu_y2_women.evidence_repository import load_strategy_templates
@@ -130,6 +148,56 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
             "strategy evidence store must contain a 'strategy_templates' array",
         )
         self.assertEqual(error_context.exception.details["path"], str(path))
+
+    def test_reject_non_object_strategy_templates_root(self) -> None:
+        from temu_y2_women.errors import GenerationError
+        from temu_y2_women.evidence_repository import load_strategy_templates
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            taxonomy_path = temp_root / "evidence_taxonomy.json"
+            self._write_taxonomy(taxonomy_path)
+            elements_path = temp_root / "elements.json"
+            elements_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "mvp-v1",
+                        "elements": [
+                            {
+                                "element_id": "dress-silhouette-a-line-001",
+                                "category": "dress",
+                                "slot": "silhouette",
+                                "value": "a-line",
+                                "tags": ["summer", "feminine"],
+                                "base_score": 0.82,
+                                "price_bands": ["mid"],
+                                "occasion_tags": ["casual"],
+                                "season_tags": ["summer"],
+                                "risk_flags": [],
+                                "evidence_summary": "Known silhouette used to isolate strategy root validation.",
+                                "status": "active",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            strategies_path = temp_root / "strategy_templates.json"
+            strategies_path.write_text(json.dumps(["not", "an", "object"]), encoding="utf-8")
+
+            with self.assertRaises(GenerationError) as error_context:
+                load_strategy_templates(
+                    strategies_path,
+                    taxonomy_path=taxonomy_path,
+                    elements_path=elements_path,
+                )
+
+        self.assertEqual(error_context.exception.code, "INVALID_EVIDENCE_STORE")
+        self.assertEqual(
+            error_context.exception.message,
+            "strategy evidence store root must be an object",
+        )
+        self.assertEqual(error_context.exception.details["path"], str(strategies_path))
 
     def test_reject_invalid_nested_strategy_shape(self) -> None:
         from temu_y2_women.errors import GenerationError
@@ -250,6 +318,58 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
         )
         self.assertEqual(error_context.exception.details["field"], "tags")
         self.assertEqual(error_context.exception.details["values"], ["unknown-tag"])
+
+    def test_accepts_inactive_invalid_element_record(self) -> None:
+        from temu_y2_women.evidence_repository import load_elements
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            taxonomy_path = temp_root / "evidence_taxonomy.json"
+            self._write_taxonomy(taxonomy_path)
+            elements_path = temp_root / "elements.json"
+            elements_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "mvp-v1",
+                        "elements": [
+                            {
+                                "element_id": "dress-silhouette-a-line-001",
+                                "category": "dress",
+                                "slot": "silhouette",
+                                "value": "a-line",
+                                "tags": ["summer", "feminine"],
+                                "base_score": 0.82,
+                                "price_bands": ["mid"],
+                                "occasion_tags": ["casual"],
+                                "season_tags": ["summer"],
+                                "risk_flags": [],
+                                "evidence_summary": "Active element keeps the evidence store loadable for inactive validation.",
+                                "status": "active",
+                            },
+                            {
+                                "element_id": "draft-invalid-element",
+                                "category": "dress",
+                                "slot": "silhouette",
+                                "value": "draft-shape",
+                                "tags": ["unknown-tag"],
+                                "base_score": 9.5,
+                                "price_bands": ["mid"],
+                                "occasion_tags": ["casual"],
+                                "season_tags": ["summer"],
+                                "risk_flags": [],
+                                "evidence_summary": "short",
+                                "status": "inactive",
+                            },
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            elements = load_elements(elements_path, taxonomy_path=taxonomy_path)
+
+        self.assertEqual(len(elements), 2)
+        self.assertEqual(elements[1]["status"], "inactive")
 
     def test_reject_invalid_unknown_tag_fixture(self) -> None:
         from temu_y2_women.errors import GenerationError
@@ -557,6 +677,26 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
         self.assertEqual(error_context.exception.details["field"], "evidence_summary")
         self.assertEqual(error_context.exception.details["length"], len("too short"))
 
+    def test_reject_invalid_summary_fixture(self) -> None:
+        from temu_y2_women.errors import GenerationError
+        from temu_y2_women.evidence_repository import load_elements
+
+        fixture_path = Path("tests/fixtures/evidence/dress/invalid-short-summary-elements.json")
+        taxonomy_path = Path("data/mvp/dress/evidence_taxonomy.json")
+
+        with self.assertRaises(GenerationError) as error_context:
+            load_elements(fixture_path, taxonomy_path=taxonomy_path)
+
+        self.assertEqual(error_context.exception.code, "INVALID_EVIDENCE_STORE")
+        self.assertEqual(
+            error_context.exception.message,
+            "element evidence_summary is outside the allowed taxonomy range",
+        )
+        self.assertEqual(error_context.exception.details["path"], str(fixture_path))
+        self.assertEqual(error_context.exception.details["index"], 0)
+        self.assertEqual(error_context.exception.details["field"], "evidence_summary")
+        self.assertEqual(error_context.exception.details["length"], len("too short"))
+
     def test_accepts_canonical_slot_preferences_and_matches_runtime(self) -> None:
         from temu_y2_women.evidence_repository import load_elements, load_strategy_templates, retrieve_candidates
         from temu_y2_women.models import DateWindow, NormalizedRequest, SelectedStrategy, StrategyTemplate
@@ -738,6 +878,75 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
         )
         self.assertEqual(error_context.exception.details["field"], "slot_preferences")
         self.assertEqual(error_context.exception.details["values"], ["unknown-shape"])
+
+    def test_accepts_inactive_invalid_strategy_record(self) -> None:
+        from temu_y2_women.evidence_repository import load_strategy_templates
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            taxonomy_path = temp_root / "evidence_taxonomy.json"
+            self._write_taxonomy(taxonomy_path)
+            elements_path = temp_root / "elements.json"
+            elements_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "mvp-v1",
+                        "elements": [
+                            {
+                                "element_id": "dress-silhouette-a-line-001",
+                                "category": "dress",
+                                "slot": "silhouette",
+                                "value": "a-line",
+                                "tags": ["summer", "feminine"],
+                                "base_score": 0.82,
+                                "price_bands": ["mid"],
+                                "occasion_tags": ["casual"],
+                                "season_tags": ["summer"],
+                                "risk_flags": [],
+                                "evidence_summary": "Known silhouette used to isolate inactive strategy validation.",
+                                "status": "active",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            strategies_path = temp_root / "strategy_templates.json"
+            strategies_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "mvp-v1",
+                        "strategy_templates": [
+                            {
+                                "strategy_id": "dress-us-inactive-broken",
+                                "category": "dress",
+                                "target_market": "US",
+                                "priority": 1,
+                                "date_window": {"start": "01-01", "end": "12-31"},
+                                "occasion_tags": [],
+                                "boost_tags": ["unknown-tag"],
+                                "suppress_tags": [],
+                                "slot_preferences": {"silhouette": ["unknown-shape"]},
+                                "score_boost": 0.03,
+                                "score_cap": 0.08,
+                                "prompt_hints": ["inactive"],
+                                "reason_template": "inactive draft",
+                                "status": "inactive",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            strategies = load_strategy_templates(
+                strategies_path,
+                taxonomy_path=taxonomy_path,
+                elements_path=elements_path,
+            )
+
+        self.assertEqual(len(strategies), 1)
+        self.assertEqual(strategies[0]["status"], "inactive")
 
     def test_reject_invalid_strategy_slot_preference_fixture(self) -> None:
         from temu_y2_women.errors import GenerationError
