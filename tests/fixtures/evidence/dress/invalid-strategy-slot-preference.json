@@ -1,0 +1,26 @@
+{
+  "schema_version": "mvp-v1",
+  "strategy_templates": [
+    {
+      "strategy_id": "dress-us-broken-preference",
+      "category": "dress",
+      "target_market": "US",
+      "priority": 1,
+      "date_window": {
+        "start": "01-01",
+        "end": "12-31"
+      },
+      "occasion_tags": [],
+      "boost_tags": ["dress"],
+      "suppress_tags": [],
+      "slot_preferences": {
+        "neckline": ["unknown-neckline"]
+      },
+      "score_boost": 0.03,
+      "score_cap": 0.08,
+      "prompt_hints": ["Fixture to reject unknown strategy references."],
+      "reason_template": "broken fixture",
+      "status": "active"
+    }
+  ]
+}

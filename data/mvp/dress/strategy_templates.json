@@ -11,12 +11,12 @@
         "end": "12-31"
       },
       "occasion_tags": [],
-      "boost_tags": ["dress", "feminine"],
+      "boost_tags": ["dress", "feminine", "transitional"],
       "suppress_tags": ["holiday", "heavy"],
       "slot_preferences": {
         "silhouette": ["a-line", "bodycon"],
         "fabric": ["cotton poplin"],
-        "neckline": ["square neckline"],
+        "neckline": ["square neckline", "v-neckline"],
         "sleeve": ["flutter sleeve"]
       },
       "score_boost": 0.03,

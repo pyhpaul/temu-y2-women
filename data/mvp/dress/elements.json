@@ -58,6 +58,20 @@
       "status": "active"
     },
     {
+      "element_id": "dress-neckline-v-neckline-001",
+      "category": "dress",
+      "slot": "neckline",
+      "value": "v-neckline",
+      "tags": ["transitional", "feminine", "dress"],
+      "base_score": 0.78,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual"],
+      "season_tags": ["spring", "fall"],
+      "risk_flags": [],
+      "evidence_summary": "Reliable V-neck option for transitional dress coverage beyond summer vacation use.",
+      "status": "active"
+    },
+    {
       "element_id": "dress-sleeve-flutter-001",
       "category": "dress",
       "slot": "sleeve",

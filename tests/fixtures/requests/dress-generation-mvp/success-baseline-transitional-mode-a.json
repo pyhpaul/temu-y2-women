@@ -1,0 +1,10 @@
+{
+  "category": "dress",
+  "target_market": "US",
+  "target_launch_date": "2026-10-01",
+  "mode": "A",
+  "price_band": "mid",
+  "occasion_tags": ["casual"],
+  "must_have_tags": ["transitional"],
+  "avoid_tags": ["bodycon"]
+}

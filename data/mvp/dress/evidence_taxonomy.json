@@ -1,0 +1,50 @@
+{
+  "allowed_slots": [
+    "silhouette",
+    "fabric",
+    "neckline",
+    "sleeve",
+    "pattern",
+    "detail"
+  ],
+  "allowed_tags": [
+    "airy",
+    "bodycon",
+    "breathable",
+    "comfort",
+    "dress",
+    "feminine",
+    "fitted",
+    "floral",
+    "heavy",
+    "holiday",
+    "lightweight",
+    "night-out",
+    "romantic",
+    "summer",
+    "transitional",
+    "vacation"
+  ],
+  "allowed_occasions": [
+    "casual",
+    "party",
+    "resort",
+    "vacation"
+  ],
+  "allowed_seasons": [
+    "fall",
+    "spring",
+    "summer"
+  ],
+  "allowed_risk_flags": [
+    "fit_sensitivity"
+  ],
+  "summary": {
+    "min_length": 20,
+    "max_length": 140
+  },
+  "base_score": {
+    "min": 0.0,
+    "max": 1.0
+  }
+}
