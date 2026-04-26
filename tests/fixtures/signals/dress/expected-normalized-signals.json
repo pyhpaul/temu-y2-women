@@ -1,0 +1,37 @@
+{
+  "schema_version": "signal-ingestion-v1",
+  "signals": [
+    {
+      "signal_id": "dress-signal-001",
+      "source_type": "manual_import",
+      "source_url": "https://example.com/source-001",
+      "captured_at": "2026-04-20",
+      "target_market": "US",
+      "category": "dress",
+      "title": "Summer Vacation A-Line Dress",
+      "summary": "Cotton poplin dress with square neckline, flutter sleeves, and floral print.",
+      "observed_price_band": "mid",
+      "observed_occasion_tags": ["vacation"],
+      "observed_season_tags": ["summer"],
+      "manual_tags": ["feminine", "floral", "summer"],
+      "status": "active",
+      "normalized_text": "summer vacation a-line dress cotton poplin dress with square neckline, flutter sleeves, and floral print. feminine floral summer vacation summer"
+    },
+    {
+      "signal_id": "dress-signal-002",
+      "source_type": "manual_import",
+      "source_url": "https://example.com/source-002",
+      "captured_at": "2026-04-21",
+      "target_market": "US",
+      "category": "dress",
+      "title": "Resort A line dress with smocked bodice",
+      "summary": "A line cotton poplin resort dress with square neckline and flutter sleeve styling.",
+      "observed_price_band": "mid",
+      "observed_occasion_tags": ["resort", "vacation"],
+      "observed_season_tags": ["summer"],
+      "manual_tags": ["lightweight", "vacation"],
+      "status": "active",
+      "normalized_text": "resort a line dress with smocked bodice a line cotton poplin resort dress with square neckline and flutter sleeve styling. lightweight vacation resort vacation summer"
+    }
+  ]
+}

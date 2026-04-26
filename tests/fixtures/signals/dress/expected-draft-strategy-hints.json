@@ -1,0 +1,25 @@
+{
+  "schema_version": "signal-ingestion-v1",
+  "strategy_hints": [
+    {
+      "hint_id": "draft-strategy-us-summer-resort-vacation",
+      "category": "dress",
+      "target_market": "US",
+      "season_tags": ["summer"],
+      "occasion_tags": ["resort", "vacation"],
+      "boost_tags": ["airy", "dress", "feminine", "floral", "lightweight", "summer", "vacation"],
+      "slot_preferences": {
+        "detail": ["smocked bodice"],
+        "fabric": ["cotton poplin"],
+        "neckline": ["square neckline"],
+        "pattern": ["floral print"],
+        "silhouette": ["a-line"],
+        "sleeve": ["flutter sleeve"]
+      },
+      "priority_signal": 2,
+      "source_signal_ids": ["dress-signal-001", "dress-signal-002"],
+      "reason_summary": "Aggregated from 2 signals for US summer dress demand.",
+      "status": "draft"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": "signal-ingestion-v1",
+  "summary": {
+    "accepted_signal_count": 2,
+    "draft_element_count": 6,
+    "draft_strategy_hint_count": 1,
+    "warning_count": 0
+  },
+  "accepted_signal_ids": ["dress-signal-001", "dress-signal-002"],
+  "skipped_signal_ids": [],
+  "warnings": []
+}
