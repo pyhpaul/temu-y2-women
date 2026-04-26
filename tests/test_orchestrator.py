@@ -22,6 +22,23 @@ class OrchestratorTest(unittest.TestCase):
         self.assertIn("must_have_tags satisfied: floral", result["composed_concept"]["constraint_notes"])
         self.assertIn("avoid_tags removed: bodycon", " ".join(result["warnings"]))
 
+    def test_successful_baseline_mode_a_flow(self) -> None:
+        from temu_y2_women.orchestrator import generate_dress_concept
+
+        result = generate_dress_concept(_read_request("success-baseline-transitional-mode-a.json"))
+
+        self.assertEqual(result["request_normalized"]["mode"], "A")
+        self.assertEqual(result["selected_strategies"][0]["strategy_id"], "dress-us-baseline")
+        self.assertEqual(result["prompt_bundle"]["mode"], "A")
+        self.assertEqual(
+            result["composed_concept"]["selected_elements"]["neckline"]["value"],
+            "v-neckline",
+        )
+        self.assertIn(
+            "must_have_tags satisfied: transitional",
+            result["composed_concept"]["constraint_notes"],
+        )
+
     def test_successful_mode_b_flow(self) -> None:
         from temu_y2_women.orchestrator import generate_dress_concept
 
