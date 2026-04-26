@@ -120,6 +120,10 @@ class CompositionEngineTest(unittest.TestCase):
 
         self.assertEqual(concept.selected_elements["pattern"].value, "floral print")
         self.assertNotIn("detail", concept.selected_elements)
+        self.assertIn(
+            "style conflict avoided: floral print + smocked bodice",
+            concept.constraint_notes,
+        )
 
     def test_keeps_weak_conflict_pair_and_applies_penalty_when_no_better_option(self) -> None:
         from temu_y2_women.compatibility_evaluator import CompatibilityRule

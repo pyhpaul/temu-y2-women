@@ -96,6 +96,7 @@ def _select_pattern_detail_pair(
     best_selected: dict[str, CandidateElement] = {}
     best_evaluation = CompatibilityEvaluation((), (), 0.0, ())
     best_rank = _selection_rank(best_selected, best_evaluation)
+    skipped_conflicts: list[tuple[dict[str, CandidateElement], CompatibilityEvaluation]] = []
     pattern_options = [None, *_top_candidates(parsed_candidates.get("pattern", []))]
     detail_options = [None, *_top_candidates(parsed_candidates.get("detail", []))]
     for pattern in pattern_options:
@@ -103,11 +104,45 @@ def _select_pattern_detail_pair(
             current = _selected_pattern_detail(pattern, detail)
             evaluation = evaluate_selection_compatibility(current, rules)
             if evaluation.hard_conflicts:
+                skipped_conflicts.append((current, evaluation))
                 continue
             rank = _selection_rank(current, evaluation)
             if rank > best_rank:
                 best_selected, best_evaluation, best_rank = current, evaluation, rank
-    return best_selected, best_evaluation
+    return best_selected, _merge_avoided_conflict_notes(best_selected, best_evaluation, skipped_conflicts)
+
+
+def _merge_avoided_conflict_notes(
+    best_selected: dict[str, CandidateElement],
+    best_evaluation: CompatibilityEvaluation,
+    skipped_conflicts: list[tuple[dict[str, CandidateElement], CompatibilityEvaluation]],
+) -> CompatibilityEvaluation:
+    notes = list(best_evaluation.compatibility_notes)
+    for skipped_selected, evaluation in skipped_conflicts:
+        if not _is_omitted_subset(best_selected, skipped_selected):
+            continue
+        for note in evaluation.compatibility_notes:
+            if note not in notes:
+                notes.append(note)
+    return CompatibilityEvaluation(
+        best_evaluation.hard_conflicts,
+        best_evaluation.soft_conflicts,
+        best_evaluation.compatibility_penalty,
+        tuple(notes),
+    )
+
+
+def _is_omitted_subset(
+    best_selected: dict[str, CandidateElement],
+    skipped_selected: dict[str, CandidateElement],
+) -> bool:
+    if not best_selected or len(best_selected) >= len(skipped_selected):
+        return False
+    return all(
+        skipped_selected.get(slot) is not None
+        and skipped_selected[slot].element_id == candidate.element_id
+        for slot, candidate in best_selected.items()
+    )
 
 
 def _top_candidates(

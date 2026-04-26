@@ -120,7 +120,7 @@ def _parse_rule(
     left_slot, left_value = _canonicalize_slot_value(slot=str(record["left_slot"]), value=str(record["left_value"]))
     right_slot, right_value = _canonicalize_slot_value(slot=str(record["right_slot"]), value=str(record["right_value"]))
     severity = _parse_severity(path=path, index=index, record=record)
-    penalty = _parse_penalty(path=path, index=index, record=record)
+    penalty = _parse_penalty(path=path, index=index, record=record, severity=severity)
     reason = _require_text_field(path=path, index=index, record=record, field="reason")
     if (left_slot, right_slot) != _ALLOWED_PAIR:
         raise GenerationError(
@@ -193,7 +193,7 @@ def _require_text_field(
     return value.strip().casefold() if normalize else value.strip()
 
 
-def _parse_penalty(path: Path, index: int, record: dict[str, Any]) -> float:
+def _parse_penalty(path: Path, index: int, record: dict[str, Any], severity: str) -> float:
     value = record["penalty"]
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise GenerationError(
@@ -207,6 +207,18 @@ def _parse_penalty(path: Path, index: int, record: dict[str, Any]) -> float:
             code="INVALID_EVIDENCE_STORE",
             message="compatibility rule field 'penalty' must be finite",
             details={"path": str(path), "index": index, "field": "penalty"},
+        )
+    if penalty < 0.0:
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="compatibility rule field 'penalty' must be non-negative",
+            details={"path": str(path), "index": index, "field": "penalty"},
+        )
+    if severity == "strong" and penalty != 0.0:
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="compatibility rule field 'penalty' must be 0.0 for strong rules",
+            details={"path": str(path), "index": index, "field": "penalty", "severity": severity},
         )
     return penalty
 

@@ -275,6 +275,68 @@ class CompatibilityRulesTest(unittest.TestCase):
 
         self.assertEqual(error_context.exception.code, "INVALID_EVIDENCE_STORE")
 
+    def test_rejects_negative_penalty(self) -> None:
+        from temu_y2_women.compatibility_evaluator import load_compatibility_rules
+        from temu_y2_women.errors import GenerationError
+
+        with TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "compatibility_rules.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "mvp-v1",
+                        "rules": [
+                            {
+                                "left_slot": "pattern",
+                                "left_value": "floral print",
+                                "right_slot": "detail",
+                                "right_value": "smocked bodice",
+                                "severity": "weak",
+                                "penalty": -0.01,
+                                "reason": "floral print is paired with smocked bodice in the MVP rule set",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(GenerationError) as error_context:
+                load_compatibility_rules(path)
+
+        self.assertEqual(error_context.exception.code, "INVALID_EVIDENCE_STORE")
+
+    def test_rejects_non_zero_penalty_for_strong_rule(self) -> None:
+        from temu_y2_women.compatibility_evaluator import load_compatibility_rules
+        from temu_y2_women.errors import GenerationError
+
+        with TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "compatibility_rules.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "mvp-v1",
+                        "rules": [
+                            {
+                                "left_slot": "pattern",
+                                "left_value": "floral print",
+                                "right_slot": "detail",
+                                "right_value": "smocked bodice",
+                                "severity": "strong",
+                                "penalty": 0.01,
+                                "reason": "floral print is paired with smocked bodice in the MVP rule set",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(GenerationError) as error_context:
+                load_compatibility_rules(path)
+
+        self.assertEqual(error_context.exception.code, "INVALID_EVIDENCE_STORE")
+
     def test_rejects_invalid_severity_value(self) -> None:
         from temu_y2_women.compatibility_evaluator import load_compatibility_rules
         from temu_y2_women.errors import GenerationError
