@@ -45,6 +45,86 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
             encoding="utf-8",
         )
 
+    @staticmethod
+    def _base_element(**overrides: object) -> dict[str, object]:
+        element: dict[str, object] = {
+            "element_id": "dress-silhouette-a-line-001",
+            "category": "dress",
+            "slot": "silhouette",
+            "value": "a-line",
+            "tags": ["summer", "feminine"],
+            "base_score": 0.82,
+            "price_bands": ["mid"],
+            "occasion_tags": ["casual"],
+            "season_tags": ["summer"],
+            "risk_flags": [],
+            "evidence_summary": "Known silhouette fixture with valid taxonomy-backed authoring defaults.",
+            "status": "active",
+        }
+        element.update(overrides)
+        return element
+
+    @staticmethod
+    def _write_elements_store(path: Path, elements: list[dict[str, object]]) -> None:
+        path.write_text(
+            json.dumps({"schema_version": "mvp-v1", "elements": elements}),
+            encoding="utf-8",
+        )
+
+    @staticmethod
+    def _base_strategy(**overrides: object) -> dict[str, object]:
+        strategy: dict[str, object] = {
+            "strategy_id": "dress-us-baseline",
+            "category": "dress",
+            "target_market": "US",
+            "priority": 1,
+            "date_window": {"start": "01-01", "end": "12-31"},
+            "occasion_tags": [],
+            "boost_tags": ["summer"],
+            "suppress_tags": [],
+            "slot_preferences": {"silhouette": ["a-line"]},
+            "score_boost": 0.03,
+            "score_cap": 0.08,
+            "prompt_hints": ["baseline"],
+            "reason_template": "baseline",
+            "status": "active",
+        }
+        strategy.update(overrides)
+        return strategy
+
+    @staticmethod
+    def _write_strategy_store(path: Path, strategies: list[dict[str, object]]) -> None:
+        path.write_text(
+            json.dumps({"schema_version": "mvp-v1", "strategy_templates": strategies}),
+            encoding="utf-8",
+        )
+
+    @staticmethod
+    def _to_selected_strategy(strategy_record: dict[str, object], reason: str):
+        from temu_y2_women.models import DateWindow, SelectedStrategy, StrategyTemplate
+
+        return SelectedStrategy(
+            strategy=StrategyTemplate(
+                strategy_id=str(strategy_record["strategy_id"]),
+                category=str(strategy_record["category"]),
+                target_market=str(strategy_record["target_market"]),
+                priority=int(strategy_record["priority"]),
+                date_window=DateWindow(**strategy_record["date_window"]),
+                occasion_tags=tuple(strategy_record["occasion_tags"]),
+                boost_tags=tuple(strategy_record["boost_tags"]),
+                suppress_tags=tuple(strategy_record["suppress_tags"]),
+                slot_preferences={
+                    key: tuple(values) for key, values in strategy_record["slot_preferences"].items()
+                },
+                score_boost=float(strategy_record["score_boost"]),
+                score_cap=float(strategy_record["score_cap"]),
+                prompt_hints=tuple(strategy_record["prompt_hints"]),
+                reason_template=str(strategy_record["reason_template"]),
+                status=str(strategy_record["status"]),
+            ),
+            reason=reason,
+        )
+
     def test_reject_missing_elements_wrapper(self) -> None:
         from temu_y2_women.errors import GenerationError
         from temu_y2_women.evidence_repository import load_elements
@@ -208,56 +288,29 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
             taxonomy_path = temp_root / "evidence_taxonomy.json"
             self._write_taxonomy(taxonomy_path)
             elements_path = temp_root / "elements.json"
-            elements_path.write_text(
-                json.dumps(
-                    {
-                        "schema_version": "mvp-v1",
-                        "elements": [
-                            {
-                                "element_id": "dress-silhouette-a-line-001",
-                                "category": "dress",
-                                "slot": "silhouette",
-                                "value": "a-line",
-                                "tags": ["summer", "feminine"],
-                                "base_score": 0.82,
-                                "price_bands": ["mid"],
-                                "occasion_tags": ["casual"],
-                                "season_tags": ["summer"],
-                                "risk_flags": [],
-                                "evidence_summary": "Known silhouette used to isolate nested strategy validation.",
-                                "status": "active",
-                            }
-                        ],
-                    }
-                ),
-                encoding="utf-8",
+            self._write_elements_store(
+                elements_path,
+                [
+                    self._base_element(
+                        evidence_summary="Known silhouette used to isolate nested strategy validation."
+                    )
+                ],
             )
             path = temp_root / "strategy_templates.json"
-            path.write_text(
-                json.dumps(
-                    {
-                        "schema_version": "mvp-v1",
-                        "strategy_templates": [
-                            {
-                                "strategy_id": "broken",
-                                "category": "dress",
-                                "target_market": "US",
-                                "priority": 1,
-                                "date_window": "05-15..08-31",
-                                "occasion_tags": [],
-                                "boost_tags": [],
-                                "suppress_tags": [],
-                                "slot_preferences": {},
-                                "score_boost": 0.1,
-                                "score_cap": 0.1,
-                                "prompt_hints": [],
-                                "reason_template": "broken",
-                                "status": "active",
-                            }
-                        ],
-                    }
-                ),
-                encoding="utf-8",
+            self._write_strategy_store(
+                path,
+                [
+                    self._base_strategy(
+                        strategy_id="broken",
+                        date_window="05-15..08-31",
+                        boost_tags=[],
+                        slot_preferences={},
+                        score_boost=0.1,
+                        score_cap=0.1,
+                        prompt_hints=[],
+                        reason_template="broken",
+                    )
+                ],
             )
 
             with self.assertRaises(GenerationError) as error_context:
@@ -699,63 +752,30 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
 
     def test_accepts_canonical_slot_preferences_and_matches_runtime(self) -> None:
         from temu_y2_women.evidence_repository import load_elements, load_strategy_templates, retrieve_candidates
-        from temu_y2_women.models import DateWindow, NormalizedRequest, SelectedStrategy, StrategyTemplate
+        from temu_y2_women.models import NormalizedRequest
 
         with TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             taxonomy_path = temp_root / "evidence_taxonomy.json"
             self._write_taxonomy(taxonomy_path)
             elements_path = temp_root / "elements.json"
-            elements_path.write_text(
-                json.dumps(
-                    {
-                        "schema_version": "mvp-v1",
-                        "elements": [
-                            {
-                                "element_id": "dress-silhouette-a-line-001",
-                                "category": "dress",
-                                "slot": "silhouette",
-                                "value": "a-line",
-                                "tags": ["summer", "feminine"],
-                                "base_score": 0.82,
-                                "price_bands": ["mid"],
-                                "occasion_tags": ["casual"],
-                                "season_tags": ["summer"],
-                                "risk_flags": [],
-                                "evidence_summary": "Known silhouette used to validate canonical strategy preferences.",
-                                "status": "active",
-                            }
-                        ],
-                    }
-                ),
-                encoding="utf-8",
+            self._write_elements_store(
+                elements_path,
+                [
+                    self._base_element(
+                        evidence_summary="Known silhouette used to validate canonical strategy preferences."
+                    )
+                ],
             )
             strategies_path = temp_root / "strategy_templates.json"
-            strategies_path.write_text(
-                json.dumps(
-                    {
-                        "schema_version": "mvp-v1",
-                        "strategy_templates": [
-                            {
-                                "strategy_id": "dress-us-baseline",
-                                "category": "dress",
-                                "target_market": "US",
-                                "priority": 1,
-                                "date_window": {"start": "01-01", "end": "12-31"},
-                                "occasion_tags": [],
-                                "boost_tags": [],
-                                "suppress_tags": [],
-                                "slot_preferences": {"silhouette": ["  A-LINE  "]},
-                                "score_boost": 0.03,
-                                "score_cap": 0.08,
-                                "prompt_hints": ["baseline"],
-                                "reason_template": "baseline",
-                                "status": "active",
-                            }
-                        ],
-                    }
-                ),
-                encoding="utf-8",
+            self._write_strategy_store(
+                strategies_path,
+                [
+                    self._base_strategy(
+                        boost_tags=[],
+                        slot_preferences={"silhouette": ["  A-LINE  "]},
+                    )
+                ],
             )
 
             strategy_records = load_strategy_templates(
@@ -765,7 +785,6 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
             )
             elements = load_elements(elements_path, taxonomy_path=taxonomy_path)
 
-        strategy_record = strategy_records[0]
         request = NormalizedRequest(
             category="dress",
             target_market="US",
@@ -776,27 +795,7 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
             must_have_tags=(),
             avoid_tags=(),
         )
-        selected = SelectedStrategy(
-            strategy=StrategyTemplate(
-                strategy_id=strategy_record["strategy_id"],
-                category=strategy_record["category"],
-                target_market=strategy_record["target_market"],
-                priority=strategy_record["priority"],
-                date_window=DateWindow(**strategy_record["date_window"]),
-                occasion_tags=tuple(strategy_record["occasion_tags"]),
-                boost_tags=tuple(strategy_record["boost_tags"]),
-                suppress_tags=tuple(strategy_record["suppress_tags"]),
-                slot_preferences={
-                    key: tuple(values) for key, values in strategy_record["slot_preferences"].items()
-                },
-                score_boost=strategy_record["score_boost"],
-                score_cap=strategy_record["score_cap"],
-                prompt_hints=tuple(strategy_record["prompt_hints"]),
-                reason_template=strategy_record["reason_template"],
-                status=strategy_record["status"],
-            ),
-            reason="canonical preference test",
-        )
+        selected = self._to_selected_strategy(strategy_records[0], "canonical preference test")
 
         grouped, warnings = retrieve_candidates(request, elements, (selected,))
 
@@ -812,56 +811,18 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
             taxonomy_path = temp_root / "evidence_taxonomy.json"
             self._write_taxonomy(taxonomy_path)
             elements_path = temp_root / "elements.json"
-            elements_path.write_text(
-                json.dumps(
-                    {
-                        "schema_version": "mvp-v1",
-                        "elements": [
-                            {
-                                "element_id": "dress-silhouette-a-line-001",
-                                "category": "dress",
-                                "slot": "silhouette",
-                                "value": "a-line",
-                                "tags": ["summer", "feminine"],
-                                "base_score": 0.82,
-                                "price_bands": ["mid"],
-                                "occasion_tags": ["casual"],
-                                "season_tags": ["summer"],
-                                "risk_flags": [],
-                                "evidence_summary": "Known silhouette used to validate strategy references.",
-                                "status": "active",
-                            }
-                        ],
-                    }
-                ),
-                encoding="utf-8",
+            self._write_elements_store(
+                elements_path,
+                [
+                    self._base_element(
+                        evidence_summary="Known silhouette used to validate strategy references."
+                    )
+                ],
             )
             strategies_path = temp_root / "strategy_templates.json"
-            strategies_path.write_text(
-                json.dumps(
-                    {
-                        "schema_version": "mvp-v1",
-                        "strategy_templates": [
-                            {
-                                "strategy_id": "dress-us-baseline",
-                                "category": "dress",
-                                "target_market": "US",
-                                "priority": 1,
-                                "date_window": {"start": "01-01", "end": "12-31"},
-                                "occasion_tags": [],
-                                "boost_tags": ["summer"],
-                                "suppress_tags": [],
-                                "slot_preferences": {"silhouette": ["unknown-shape"]},
-                                "score_boost": 0.03,
-                                "score_cap": 0.08,
-                                "prompt_hints": ["baseline"],
-                                "reason_template": "baseline",
-                                "status": "active",
-                            }
-                        ],
-                    }
-                ),
-                encoding="utf-8",
+            self._write_strategy_store(
+                strategies_path,
+                [self._base_strategy(slot_preferences={"silhouette": ["unknown-shape"]})],
             )
 
             with self.assertRaises(GenerationError) as error_context:
@@ -887,56 +848,27 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
             taxonomy_path = temp_root / "evidence_taxonomy.json"
             self._write_taxonomy(taxonomy_path)
             elements_path = temp_root / "elements.json"
-            elements_path.write_text(
-                json.dumps(
-                    {
-                        "schema_version": "mvp-v1",
-                        "elements": [
-                            {
-                                "element_id": "dress-silhouette-a-line-001",
-                                "category": "dress",
-                                "slot": "silhouette",
-                                "value": "a-line",
-                                "tags": ["summer", "feminine"],
-                                "base_score": 0.82,
-                                "price_bands": ["mid"],
-                                "occasion_tags": ["casual"],
-                                "season_tags": ["summer"],
-                                "risk_flags": [],
-                                "evidence_summary": "Known silhouette used to isolate inactive strategy validation.",
-                                "status": "active",
-                            }
-                        ],
-                    }
-                ),
-                encoding="utf-8",
+            self._write_elements_store(
+                elements_path,
+                [
+                    self._base_element(
+                        evidence_summary="Known silhouette used to isolate inactive strategy validation."
+                    )
+                ],
             )
             strategies_path = temp_root / "strategy_templates.json"
-            strategies_path.write_text(
-                json.dumps(
-                    {
-                        "schema_version": "mvp-v1",
-                        "strategy_templates": [
-                            {
-                                "strategy_id": "dress-us-inactive-broken",
-                                "category": "dress",
-                                "target_market": "US",
-                                "priority": 1,
-                                "date_window": {"start": "01-01", "end": "12-31"},
-                                "occasion_tags": [],
-                                "boost_tags": ["unknown-tag"],
-                                "suppress_tags": [],
-                                "slot_preferences": {"silhouette": ["unknown-shape"]},
-                                "score_boost": 0.03,
-                                "score_cap": 0.08,
-                                "prompt_hints": ["inactive"],
-                                "reason_template": "inactive draft",
-                                "status": "inactive",
-                            }
-                        ],
-                    }
-                ),
-                encoding="utf-8",
+            self._write_strategy_store(
+                strategies_path,
+                [
+                    self._base_strategy(
+                        strategy_id="dress-us-inactive-broken",
+                        boost_tags=["unknown-tag"],
+                        slot_preferences={"silhouette": ["unknown-shape"]},
+                        prompt_hints=["inactive"],
+                        reason_template="inactive draft",
+                        status="inactive",
+                    )
+                ],
             )
 
             strategies = load_strategy_templates(
