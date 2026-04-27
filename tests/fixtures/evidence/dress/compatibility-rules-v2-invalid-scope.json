@@ -1,0 +1,21 @@
+{
+  "schema_version": "compatibility-rules-v2",
+  "rules": [
+    {
+      "rule_id": "dress-pattern-floral-print__detail-smocked-bodice",
+      "left_slot": "pattern",
+      "left_value": "floral print",
+      "right_slot": "detail",
+      "right_value": "smocked bodice",
+      "severity": "weak",
+      "penalty": 0.08,
+      "reason": "fixture",
+      "scope": {
+        "category": "dress",
+        "season_tags": [1]
+      },
+      "confidence": 0.74,
+      "status": "active"
+    }
+  ]
+}

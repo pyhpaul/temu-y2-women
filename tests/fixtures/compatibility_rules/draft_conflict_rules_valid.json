@@ -1,0 +1,42 @@
+{
+  "schema_version": "draft-conflict-rules-v1",
+  "category": "dress",
+  "rules": [
+    {
+      "draft_rule_id": "draft-conflict-pattern-floral-print__detail-smocked-bodice",
+      "category": "dress",
+      "left_slot": "pattern",
+      "left_value": "floral print",
+      "right_slot": "detail",
+      "right_value": "smocked bodice",
+      "suggested_severity": "weak",
+      "suggested_penalty": 0.08,
+      "reason": "visual density rises when both are emphasized in the same dress direction",
+      "scope": {
+        "category": "dress",
+        "target_market": "US",
+        "season_tags": [
+          "summer"
+        ],
+        "occasion_tags": [
+          "vacation"
+        ],
+        "price_bands": [
+          "mid"
+        ]
+      },
+      "evidence_summary": "Low-confidence curated starter rule promoted from reviewed style feedback.",
+      "evidence": {
+        "review_reject_rate": 0.61,
+        "pair_presence_count": 9,
+        "source_feedback_ids": [
+          "fb-001",
+          "fb-004"
+        ]
+      },
+      "confidence": 0.74,
+      "decision_source": "reviewed_heuristic",
+      "status": "draft"
+    }
+  ]
+}

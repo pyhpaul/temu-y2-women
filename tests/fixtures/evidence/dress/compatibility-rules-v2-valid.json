@@ -9,7 +9,7 @@
       "right_value": "smocked bodice",
       "severity": "weak",
       "penalty": 0.08,
-      "reason": "floral print is paired with smocked bodice in the MVP rule set",
+      "reason": "visual density rises when both are emphasized in the same dress direction",
       "scope": {
         "category": "dress",
         "target_market": "US",
