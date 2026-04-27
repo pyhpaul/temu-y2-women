@@ -1,0 +1,28 @@
+{
+  "schema_version": "public-refresh-report-v1",
+  "run_id": "2026-04-28T00-00-00Z-whowhatwear-summer-2025-dress-trends",
+  "started_at": "2026-04-28T00:00:00Z",
+  "completed_at": "2026-04-28T00:00:00Z",
+  "source_summary": {
+    "total": 1,
+    "succeeded": 1,
+    "failed": 0
+  },
+  "canonical_signal_count": 5,
+  "signal_bundle_count": 5,
+  "fallback_price_band_count": 5,
+  "coverage": {
+    "matched_signals": 2,
+    "unmatched_signal_ids": [
+      "whowhatwear-summer-2025-dress-trends-all-things-polka-dots-003",
+      "whowhatwear-summer-2025-dress-trends-the-exaggerated-drop-waist-004",
+      "whowhatwear-summer-2025-dress-trends-sheer-printed-midis-005"
+    ]
+  },
+  "warnings": [
+    "no supported draft candidates extracted for signal whowhatwear-summer-2025-dress-trends-all-things-polka-dots-003",
+    "no supported draft candidates extracted for signal whowhatwear-summer-2025-dress-trends-the-exaggerated-drop-waist-004",
+    "no supported draft candidates extracted for signal whowhatwear-summer-2025-dress-trends-sheer-printed-midis-005"
+  ],
+  "errors": []
+}

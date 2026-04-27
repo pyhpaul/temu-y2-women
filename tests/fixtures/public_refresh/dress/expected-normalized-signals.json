@@ -1,0 +1,111 @@
+{
+  "schema_version": "signal-ingestion-v1",
+  "signals": [
+    {
+      "signal_id": "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.whowhatwear.com/fashion/summer/summer-2025-dress-trends",
+      "captured_at": "2025-06-18",
+      "target_market": "US",
+      "category": "dress",
+      "title": "The Vacation Mini",
+      "summary": "This trend brings pure serotonin. Think dazzling materials, smocked bodices, halter ties, and prints that look like they belong in a cocktail glass. These minis are all about fun-whether you're dancing barefoot on a beach or just pretending you are.",
+      "observed_price_band": "mid",
+      "observed_occasion_tags": [
+        "vacation"
+      ],
+      "observed_season_tags": [
+        "summer"
+      ],
+      "manual_tags": [
+        "summer",
+        "vacation"
+      ],
+      "status": "active",
+      "normalized_text": "the vacation mini this trend brings pure serotonin. think dazzling materials, smocked bodices, halter ties, and prints that look like they belong in a cocktail glass. these minis are all about fun-whether you're dancing barefoot on a beach or just pretending you are. summer vacation vacation summer"
+    },
+    {
+      "signal_id": "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.whowhatwear.com/fashion/summer/summer-2025-dress-trends",
+      "captured_at": "2025-06-18",
+      "target_market": "US",
+      "category": "dress",
+      "title": "Fairy Sleeves",
+      "summary": "Soft, fluttery, and a little bit whimsical, fairy sleeves are having a major moment. These ethereal mini and midi dresses come with sleeves that catch the breeze and feel like a gentle nod to all things romance.",
+      "observed_price_band": "mid",
+      "observed_occasion_tags": [],
+      "observed_season_tags": [
+        "summer"
+      ],
+      "manual_tags": [
+        "airy",
+        "romantic",
+        "summer"
+      ],
+      "status": "active",
+      "normalized_text": "fairy sleeves soft, fluttery, and a little bit whimsical, fairy sleeves are having a major moment. these ethereal mini and midi dresses come with sleeves that catch the breeze and feel like a gentle nod to all things romance. airy romantic summer summer"
+    },
+    {
+      "signal_id": "whowhatwear-summer-2025-dress-trends-all-things-polka-dots-003",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.whowhatwear.com/fashion/summer/summer-2025-dress-trends",
+      "captured_at": "2025-06-18",
+      "target_market": "US",
+      "category": "dress",
+      "title": "All Things Polka Dots",
+      "summary": "Yes, polka dots are trending again-and yes, they feel totally fresh. Whether you go micro-dot or oversize print, a dotted dress instantly adds charm to any outfit. The modern take?",
+      "observed_price_band": "mid",
+      "observed_occasion_tags": [],
+      "observed_season_tags": [
+        "summer"
+      ],
+      "manual_tags": [
+        "summer"
+      ],
+      "status": "active",
+      "normalized_text": "all things polka dots yes, polka dots are trending again-and yes, they feel totally fresh. whether you go micro-dot or oversize print, a dotted dress instantly adds charm to any outfit. the modern take? summer summer"
+    },
+    {
+      "signal_id": "whowhatwear-summer-2025-dress-trends-the-exaggerated-drop-waist-004",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.whowhatwear.com/fashion/summer/summer-2025-dress-trends",
+      "captured_at": "2025-06-18",
+      "target_market": "US",
+      "category": "dress",
+      "title": "The Exaggerated Drop Waist",
+      "summary": "This silhouette is making a serious comeback, and the update feels surprisingly cool. Drop-waist dresses with dramatic volume or structure are popping up everywhere, giving a nod to both '80s glamour and ballet-inspired elegance.",
+      "observed_price_band": "mid",
+      "observed_occasion_tags": [],
+      "observed_season_tags": [
+        "summer"
+      ],
+      "manual_tags": [
+        "summer"
+      ],
+      "status": "active",
+      "normalized_text": "the exaggerated drop waist this silhouette is making a serious comeback, and the update feels surprisingly cool. drop-waist dresses with dramatic volume or structure are popping up everywhere, giving a nod to both '80s glamour and ballet-inspired elegance. summer summer"
+    },
+    {
+      "signal_id": "whowhatwear-summer-2025-dress-trends-sheer-printed-midis-005",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.whowhatwear.com/fashion/summer/summer-2025-dress-trends",
+      "captured_at": "2025-06-18",
+      "target_market": "US",
+      "category": "dress",
+      "title": "Sheer Printed Midis",
+      "summary": "Sheer is no longer just for edgy moments-it's been reimagined into chic, soft printed dresses that strike the perfect balance between playful and polished.",
+      "observed_price_band": "mid",
+      "observed_occasion_tags": [],
+      "observed_season_tags": [
+        "summer"
+      ],
+      "manual_tags": [
+        "airy",
+        "summer"
+      ],
+      "status": "active",
+      "normalized_text": "sheer printed midis sheer is no longer just for edgy moments-it's been reimagined into chic, soft printed dresses that strike the perfect balance between playful and polished. airy summer summer"
+    }
+  ]
+}

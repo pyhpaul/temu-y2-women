@@ -1,0 +1,92 @@
+{
+  "schema_version": "signal-ingestion-v1",
+  "elements": [
+    {
+      "draft_id": "draft-detail-smocked-bodice",
+      "category": "dress",
+      "slot": "detail",
+      "value": "smocked bodice",
+      "tags": [
+        "feminine",
+        "vacation"
+      ],
+      "price_bands": [
+        "mid"
+      ],
+      "occasion_tags": [
+        "vacation"
+      ],
+      "season_tags": [
+        "summer"
+      ],
+      "risk_flags": [],
+      "suggested_base_score": 0.65,
+      "evidence_summary": "Derived from 1 signal for US dress demand.",
+      "source_signal_ids": [
+        "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001"
+      ],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001",
+            "matched_phrases": [
+              "smocked bodice",
+              "smocked bodices"
+            ],
+            "rule_slot": "detail",
+            "rule_value": "smocked bodice",
+            "rule_tags": [
+              "feminine",
+              "vacation"
+            ]
+          }
+        ]
+      },
+      "status": "draft"
+    },
+    {
+      "draft_id": "draft-sleeve-flutter-sleeve",
+      "category": "dress",
+      "slot": "sleeve",
+      "value": "flutter sleeve",
+      "tags": [
+        "airy",
+        "feminine",
+        "vacation"
+      ],
+      "price_bands": [
+        "mid"
+      ],
+      "occasion_tags": [],
+      "season_tags": [
+        "summer"
+      ],
+      "risk_flags": [],
+      "suggested_base_score": 0.65,
+      "evidence_summary": "Derived from 1 signal for US dress demand.",
+      "source_signal_ids": [
+        "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002"
+      ],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002",
+            "matched_phrases": [
+              "fairy sleeves"
+            ],
+            "rule_slot": "sleeve",
+            "rule_value": "flutter sleeve",
+            "rule_tags": [
+              "airy",
+              "feminine",
+              "vacation"
+            ]
+          }
+        ]
+      },
+      "status": "draft"
+    }
+  ]
+}
