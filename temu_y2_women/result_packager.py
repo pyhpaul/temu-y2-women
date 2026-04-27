@@ -13,6 +13,7 @@ def package_success_result(
     retrieved_elements: list[dict[str, Any]],
     composed_concept: ComposedConcept,
     prompt_bundle: dict[str, Any],
+    factory_spec: dict[str, Any],
     warnings: tuple[str, ...],
 ) -> dict[str, Any]:
     return {
@@ -28,6 +29,7 @@ def package_success_result(
         "retrieved_elements": retrieved_elements,
         "composed_concept": _concept_to_dict(composed_concept),
         "prompt_bundle": prompt_bundle,
+        "factory_spec": factory_spec,
         "warnings": list(warnings),
     }
 

@@ -31,6 +31,7 @@ class GenerateAndRenderWorkflowSuccessTest(unittest.TestCase):
             self.assertEqual(result["model"], "fake-image-v1")
             self.assertEqual(result["source_result_path"], str(output_dir / "concept_result.json"))
             self.assertEqual(concept_result, expected_concept_result)
+            self.assertEqual(concept_result["factory_spec"]["schema_version"], "factory-spec-v1")
             self.assertTrue((output_dir / "rendered_image.png").exists())
             self.assertTrue((output_dir / "image_render_report.json").exists())
             self.assertEqual(_read_json(output_dir / "image_render_report.json"), result)

@@ -140,6 +140,92 @@
       }
     ]
   },
+  "factory_spec": {
+    "schema_version": "factory-spec-v1",
+    "known": {
+      "category": "dress",
+      "target_market": "US",
+      "target_launch_date": "2026-06-15",
+      "price_band": "mid",
+      "occasion_tags": [
+        "vacation"
+      ],
+      "must_have_tags": [
+        "floral"
+      ],
+      "avoid_tags": [
+        "bodycon"
+      ],
+      "selected_strategy_ids": [
+        "dress-us-summer-vacation"
+      ],
+      "selected_elements": {
+        "silhouette": {
+          "element_id": "dress-silhouette-a-line-001",
+          "value": "a-line"
+        },
+        "fabric": {
+          "element_id": "dress-fabric-cotton-poplin-001",
+          "value": "cotton poplin"
+        },
+        "neckline": {
+          "element_id": "dress-neckline-square-001",
+          "value": "square neckline"
+        },
+        "sleeve": {
+          "element_id": "dress-sleeve-flutter-001",
+          "value": "flutter sleeve"
+        },
+        "pattern": {
+          "element_id": "dress-pattern-floral-001",
+          "value": "floral print"
+        },
+        "detail": {
+          "element_id": "dress-detail-smocked-bodice-001",
+          "value": "smocked bodice"
+        }
+      }
+    },
+    "inferred": {
+      "fit_intent": [
+        "non-bodycon fit requested by avoid_tags",
+        "a-line silhouette supports easy skirt volume and commercial mobility",
+        "smocked bodice should keep waist shaping flexible rather than restrictive"
+      ],
+      "fabric_review_focus": [
+        "confirm crisp texture, opacity, and print clarity for cotton poplin",
+        "check drape stays light and controlled rather than clingy"
+      ],
+      "detail_review_focus": [
+        "verify smocking stitch consistency, recovery, and clean attachment",
+        "confirm bodice tension stays even without distorting print placement"
+      ],
+      "visible_construction_priorities": [
+        "neckline edge finish",
+        "bodice construction consistency",
+        "sleeve opening clean finish",
+        "waist seam position",
+        "hem clean finish",
+        "print continuity across seams",
+        "detail placement symmetry"
+      ],
+      "commercial_review_context": [
+        "seasonal review context: launch date falls in the US summer vacation window and occasion tags align to vacation demand",
+        "occasion review context: align construction readability to vacation use",
+        "price-band review context: keep construction commercially realistic for mid pricing"
+      ]
+    },
+    "unresolved": [
+      "fiber_content",
+      "fabric_weight_gsm",
+      "lining",
+      "closure_details",
+      "measurements_pom",
+      "seam_allowance",
+      "tolerance",
+      "bom_grade_trim"
+    ]
+  },
   "warnings": [
     "avoid_tags removed: bodycon (1 candidates)"
   ]
