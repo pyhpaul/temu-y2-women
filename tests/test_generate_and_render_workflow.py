@@ -32,7 +32,24 @@ class GenerateAndRenderWorkflowSuccessTest(unittest.TestCase):
             self.assertEqual(result["source_result_path"], str(output_dir / "concept_result.json"))
             self.assertEqual(concept_result, expected_concept_result)
             self.assertEqual(concept_result["factory_spec"]["schema_version"], "factory-spec-v1")
-            self.assertTrue((output_dir / "rendered_image.png").exists())
+            self.assertEqual(
+                tuple(image["output_name"] for image in result["images"]),
+                (
+                    "hero_front.png",
+                    "hero_three_quarter.png",
+                    "hero_back.png",
+                    "construction_closeup.png",
+                    "fabric_print_closeup.png",
+                    "hem_and_drape_closeup.png",
+                ),
+            )
+            self.assertEqual(len(result["images"]), 6)
+            self.assertTrue((output_dir / "hero_front.png").exists())
+            self.assertTrue((output_dir / "hero_three_quarter.png").exists())
+            self.assertTrue((output_dir / "hero_back.png").exists())
+            self.assertTrue((output_dir / "construction_closeup.png").exists())
+            self.assertTrue((output_dir / "fabric_print_closeup.png").exists())
+            self.assertTrue((output_dir / "hem_and_drape_closeup.png").exists())
             self.assertTrue((output_dir / "image_render_report.json").exists())
             self.assertEqual(_read_json(output_dir / "image_render_report.json"), result)
             self.assertFalse((output_dir / "concept_result.json.tmp").exists())
@@ -119,7 +136,7 @@ class GenerateAndRenderWorkflowFailureTest(unittest.TestCase):
 
             self.assertEqual(result["error"]["code"], "IMAGE_PROVIDER_FAILED")
             self.assertTrue((output_dir / "concept_result.json").exists())
-            self.assertFalse((output_dir / "rendered_image.png").exists())
+            self.assertFalse((output_dir / "hero_front.png").exists())
             self.assertFalse((output_dir / "image_render_report.json").exists())
 
     def test_generate_and_render_cleans_temp_file_when_concept_result_write_fails(self) -> None:
@@ -164,7 +181,7 @@ class GenerateAndRenderWorkflowFailureTest(unittest.TestCase):
             self.assertIn("provider factory failed", result["error"]["details"]["reason"])
             self.assertTrue((output_dir / "concept_result.json").exists())
             self.assertFalse((output_dir / "concept_result.json.tmp").exists())
-            self.assertFalse((output_dir / "rendered_image.png").exists())
+            self.assertFalse((output_dir / "hero_front.png").exists())
             self.assertFalse((output_dir / "image_render_report.json").exists())
 
 

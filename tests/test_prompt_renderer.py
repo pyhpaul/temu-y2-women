@@ -14,7 +14,7 @@ from temu_y2_women.models import (
 
 
 class PromptRendererTest(unittest.TestCase):
-    def test_render_mode_a_uses_visual_template_and_detail_prompts(self) -> None:
+    def test_render_mode_a_uses_visual_template_and_render_jobs(self) -> None:
         from temu_y2_women.prompt_renderer import render_prompt_bundle
 
         bundle = render_prompt_bundle(
@@ -32,9 +32,10 @@ class PromptRendererTest(unittest.TestCase):
         self.assertNotIn("price band", bundle["prompt"])
         self.assertNotIn("shopper appeal", bundle["prompt"])
         self.assertNotIn("development notes", bundle["prompt"])
+        self.assert_render_jobs(bundle)
         self.assert_detail_prompts(bundle["detail_prompts"])
 
-    def test_render_mode_b_uses_development_reference_template_and_detail_prompts(self) -> None:
+    def test_render_mode_b_uses_development_reference_template_and_render_jobs(self) -> None:
         from temu_y2_women.prompt_renderer import render_prompt_bundle
 
         bundle = render_prompt_bundle(
@@ -54,6 +55,7 @@ class PromptRendererTest(unittest.TestCase):
             ["summer-ready", "vacation-oriented", "feminine silhouette"],
         )
         self.assertIn("development notes: summer-ready; vacation-oriented; feminine silhouette", bundle["prompt"])
+        self.assert_render_jobs(bundle)
         self.assert_detail_prompts(bundle["detail_prompts"])
 
     def assert_prompt_has_required_blocks(self, prompt: str) -> None:
@@ -75,6 +77,27 @@ class PromptRendererTest(unittest.TestCase):
         for item in detail_prompts:
             self.assertIn("prompt", item)
             self.assertTrue(item["prompt"].strip())
+
+    def assert_render_jobs(self, bundle: dict[str, object]) -> None:
+        render_jobs = bundle["render_jobs"]
+        self.assertIsInstance(render_jobs, list)
+        self.assertEqual(
+            [(item["prompt_id"], item["group"], item["output_name"]) for item in render_jobs],
+            [
+                ("hero_front", "hero", "hero_front.png"),
+                ("hero_three_quarter", "hero", "hero_three_quarter.png"),
+                ("hero_back", "hero", "hero_back.png"),
+                ("construction_closeup", "detail", "construction_closeup.png"),
+                ("fabric_print_closeup", "detail", "fabric_print_closeup.png"),
+                ("hem_and_drape_closeup", "detail", "hem_and_drape_closeup.png"),
+            ],
+        )
+        self.assertEqual(bundle["prompt"], render_jobs[0]["prompt"])
+        detail_prompts = {item["prompt_id"]: item["prompt"] for item in bundle["detail_prompts"]}
+        for item in render_jobs:
+            self.assertTrue(item["prompt"].strip())
+            if item["group"] == "detail":
+                self.assertEqual(detail_prompts[item["prompt_id"]], item["prompt"])
 
 
 def _request(mode: str) -> NormalizedRequest:

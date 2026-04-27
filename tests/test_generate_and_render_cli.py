@@ -39,7 +39,13 @@ class GenerateAndRenderCliTest(unittest.TestCase):
             concept_result = _read_json(output_dir / "concept_result.json")
             self.assertEqual(concept_result["factory_spec"]["schema_version"], "factory-spec-v1")
             self.assertTrue((output_dir / "concept_result.json").exists())
-            self.assertTrue((output_dir / "rendered_image.png").exists())
+            self.assertTrue((output_dir / "hero_front.png").exists())
+            self.assertTrue((output_dir / "hero_three_quarter.png").exists())
+            self.assertTrue((output_dir / "hero_back.png").exists())
+            self.assertTrue((output_dir / "construction_closeup.png").exists())
+            self.assertTrue((output_dir / "fabric_print_closeup.png").exists())
+            self.assertTrue((output_dir / "hem_and_drape_closeup.png").exists())
+            self.assertEqual(len(payload["images"]), 6)
 
     def test_cli_returns_provider_config_error_after_persisting_concept_result(self) -> None:
         from temu_y2_women.generate_and_render_cli import main
@@ -63,7 +69,7 @@ class GenerateAndRenderCliTest(unittest.TestCase):
             self.assertEqual(exit_code, 1)
             self.assertEqual(payload["error"]["code"], "INVALID_IMAGE_PROVIDER_CONFIG")
             self.assertTrue((output_dir / "concept_result.json").exists())
-            self.assertFalse((output_dir / "rendered_image.png").exists())
+            self.assertFalse((output_dir / "hero_front.png").exists())
             self.assertFalse((output_dir / "image_render_report.json").exists())
 
     def test_cli_module_entrypoint_runs_outside_repo_root_with_fake_provider(self) -> None:
