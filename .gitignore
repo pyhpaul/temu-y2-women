@@ -18,3 +18,4 @@ __pycache__/
 venv/
 
 .codex-project-assist.json
+.worktrees/
