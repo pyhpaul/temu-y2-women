@@ -6,6 +6,15 @@
       "draft_id": "draft-detail-waist-tie",
       "merge_action": "create",
       "matched_active_element_id": null,
+      "canonical_identity": {
+        "slot": "detail",
+        "value": "waist tie"
+      },
+      "merge_rationale": {
+        "rule": "canonical-slot-value",
+        "resolved_element_id": "dress-detail-waist-tie-001",
+        "matched_active_element_id": null
+      },
       "source_signal_ids": ["dress-signal-101", "dress-signal-102"],
       "decision": "pending",
       "proposed_element": {
@@ -29,6 +38,15 @@
       "hint_id": "draft-strategy-us-summer-waist-tie-vacation",
       "merge_action": "create",
       "matched_active_strategy_id": null,
+      "canonical_identity": {
+        "target_market": "US",
+        "resolved_strategy_id": "dress-us-summer-waist-tie-vacation"
+      },
+      "merge_rationale": {
+        "rule": "resolved-strategy-id",
+        "resolved_strategy_id": "dress-us-summer-waist-tie-vacation",
+        "matched_active_strategy_id": null
+      },
       "source_signal_ids": ["dress-signal-101", "dress-signal-102"],
       "decision": "pending",
       "proposed_strategy_template": {

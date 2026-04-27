@@ -70,6 +70,58 @@ class SignalIngestionTest(unittest.TestCase):
         self.assertEqual(elements_path.read_text(encoding="utf-8"), before_elements)
         self.assertEqual(strategies_path.read_text(encoding="utf-8"), before_strategies)
 
+    def test_ingest_dress_signals_records_provenance_in_staged_drafts(self) -> None:
+        from temu_y2_women.signal_ingestion import ingest_dress_signals
+
+        with TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            ingest_dress_signals(
+                input_path=_SIGNAL_FIXTURE_DIR / "valid-signal-bundle.json",
+                output_dir=output_dir,
+            )
+
+            draft_elements = _read_json(output_dir / "draft_elements.json")["elements"]
+            strategy_hints = _read_json(output_dir / "draft_strategy_hints.json")["strategy_hints"]
+
+        fabric = next(item for item in draft_elements if item["draft_id"] == "draft-fabric-cotton-poplin")
+        hint = strategy_hints[0]
+        self.assertIn("extraction_provenance", fabric)
+        self.assertIn("rule_matches", fabric["extraction_provenance"])
+        self.assertIn("extraction_provenance", hint)
+        self.assertIn("source_draft_ids", hint["extraction_provenance"])
+
+    def test_ingest_dress_signals_reports_coverage_and_unmatched_signals(self) -> None:
+        from temu_y2_women.signal_ingestion import ingest_dress_signals
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            input_path = temp_root / "signals.json"
+            bundle = _read_json(_SIGNAL_FIXTURE_DIR / "valid-signal-bundle.json")
+            bundle["signals"].append(
+                {
+                    "signal_id": "dress-signal-003",
+                    "source_type": "manual_import",
+                    "source_url": "https://example.com/source-003",
+                    "captured_at": "2026-04-22",
+                    "target_market": "US",
+                    "category": "dress",
+                    "title": "Relaxed resort midi dress",
+                    "summary": "Soft drape dress with sun-faded color story and easy pull-on shape.",
+                    "observed_price_band": "mid",
+                    "observed_occasion_tags": ["resort"],
+                    "observed_season_tags": ["summer"],
+                    "manual_tags": ["vacation", "lightweight"],
+                    "status": "active",
+                }
+            )
+            input_path.write_text(json.dumps(bundle), encoding="utf-8")
+            report = ingest_dress_signals(input_path=input_path, output_dir=temp_root / "staged")
+
+        self.assertIn("coverage", report)
+        self.assertEqual(report["coverage"]["unmatched_signal_ids"], ["dress-signal-003"])
+        self.assertIn("signal_outcomes", report)
+        self.assertEqual(report["signal_outcomes"][-1]["status"], "unmatched")
+
 
 def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))

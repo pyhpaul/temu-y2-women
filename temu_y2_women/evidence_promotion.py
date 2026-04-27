@@ -31,6 +31,7 @@ _DRAFT_ELEMENT_REQUIRED_FIELDS = {
     "suggested_base_score",
     "evidence_summary",
     "source_signal_ids",
+    "extraction_provenance",
     "status",
 }
 _DRAFT_STRATEGY_REQUIRED_FIELDS = {
@@ -44,6 +45,7 @@ _DRAFT_STRATEGY_REQUIRED_FIELDS = {
     "priority_signal",
     "source_signal_ids",
     "reason_summary",
+    "extraction_provenance",
     "status",
 }
 _REVIEW_ROOT_FIELDS = {"schema_version", "category", "elements", "strategy_hints"}
@@ -245,10 +247,13 @@ def _build_element_review_entry(
 ) -> dict[str, Any]:
     identity = _canonical_identity(str(draft_element["slot"]), str(draft_element["value"]))
     matched = active_by_identity.get(identity)
+    canonical_identity = {"slot": draft_element["slot"], "value": draft_element["value"]}
     return {
         "draft_id": draft_element["draft_id"],
         "merge_action": "update" if matched else "create",
         "matched_active_element_id": matched["element_id"] if matched else None,
+        "canonical_identity": canonical_identity,
+        "merge_rationale": _build_element_merge_rationale(draft_element, matched),
         "source_signal_ids": list(draft_element["source_signal_ids"]),
         "decision": "pending",
         "proposed_element": {
@@ -286,10 +291,16 @@ def _build_strategy_review_entry(
     active_by_id: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
     strategy_id, matched_id = _resolve_strategy_identity(str(draft_strategy_hint["hint_id"]), active_by_id)
+    canonical_identity = {
+        "target_market": draft_strategy_hint["target_market"],
+        "resolved_strategy_id": strategy_id,
+    }
     return {
         "hint_id": draft_strategy_hint["hint_id"],
         "merge_action": "update" if matched_id else "create",
         "matched_active_strategy_id": matched_id,
+        "canonical_identity": canonical_identity,
+        "merge_rationale": _build_strategy_merge_rationale(strategy_id, matched_id),
         "source_signal_ids": list(draft_strategy_hint["source_signal_ids"]),
         "decision": "pending",
         "proposed_strategy_template": {
@@ -409,7 +420,16 @@ def _validate_review_record_shape(
     matched_field: str,
     proposed_field: str,
 ) -> None:
-    required_fields = {id_field, "merge_action", matched_field, "source_signal_ids", "decision", proposed_field}
+    required_fields = {
+        id_field,
+        "merge_action",
+        matched_field,
+        "canonical_identity",
+        "merge_rationale",
+        "source_signal_ids",
+        "decision",
+        proposed_field,
+    }
     missing = sorted(required_fields.difference(reviewed_record.keys()))
     if missing:
         raise GenerationError(
@@ -417,6 +437,8 @@ def _validate_review_record_shape(
             message="promotion review record is missing required fields",
             details={"path": str(path), "index": index, "missing": missing},
         )
+    _require_object_value(path, index, reviewed_record, "canonical_identity", "INVALID_PROMOTION_REVIEW")
+    _require_object_value(path, index, reviewed_record, "merge_rationale", "INVALID_PROMOTION_REVIEW")
     if reviewed_record["decision"] not in {"accept", "reject"}:
         raise _promotion_error(path, "decision", "INVALID_PROMOTION_REVIEW", "promotion review decision must be 'accept' or 'reject'")
     proposed = reviewed_record.get(proposed_field)
@@ -434,7 +456,7 @@ def _validate_review_record_details(
     matched_field: str,
     proposed_field: str,
 ) -> None:
-    for field in ("merge_action", matched_field, "source_signal_ids"):
+    for field in ("merge_action", matched_field, "canonical_identity", "merge_rationale", "source_signal_ids"):
         if reviewed_record[field] != expected[field]:
             raise GenerationError(
                 code="INVALID_PROMOTION_REVIEW",
@@ -635,6 +657,7 @@ def _validate_draft_element_record(
     _require_record_fields(path, index, element, _DRAFT_ELEMENT_REQUIRED_FIELDS, "INVALID_PROMOTION_INPUT", "draft element")
     _require_string_value(path, index, element, "draft_id", "INVALID_PROMOTION_INPUT", seen_draft_ids)
     _require_string_value(path, index, element, "category", "INVALID_PROMOTION_INPUT")
+    _require_object_value(path, index, element, "extraction_provenance", "INVALID_PROMOTION_INPUT")
     _require_string_list_value(path, index, element, "price_bands", "INVALID_PROMOTION_INPUT")
     _require_string_list_value(path, index, element, "source_signal_ids", "INVALID_PROMOTION_INPUT")
     _validate_allowed_list(path, index, element, "tags", taxonomy["allowed_tags"])
@@ -659,6 +682,7 @@ def _validate_draft_strategy_record(
     _require_string_value(path, index, strategy_hint, "category", "INVALID_PROMOTION_INPUT")
     _require_string_value(path, index, strategy_hint, "target_market", "INVALID_PROMOTION_INPUT")
     _require_string_value(path, index, strategy_hint, "reason_summary", "INVALID_PROMOTION_INPUT")
+    _require_object_value(path, index, strategy_hint, "extraction_provenance", "INVALID_PROMOTION_INPUT")
     _require_string_list_value(path, index, strategy_hint, "source_signal_ids", "INVALID_PROMOTION_INPUT")
     _validate_allowed_list(path, index, strategy_hint, "season_tags", taxonomy["allowed_seasons"])
     _validate_allowed_list(path, index, strategy_hint, "occasion_tags", taxonomy["allowed_occasions"])
@@ -774,6 +798,18 @@ def _require_string_list_value(
     raise _promotion_error(path, field, code, f"field '{field}' must be a list of strings", index)
 
 
+def _require_object_value(
+    path: Path,
+    index: int,
+    record: dict[str, Any],
+    field: str,
+    code: str,
+) -> None:
+    if isinstance(record.get(field), dict):
+        return
+    raise _promotion_error(path, field, code, f"field '{field}' must be an object", index)
+
+
 def _validate_allowed_list(
     path: Path,
     index: int,
@@ -826,6 +862,25 @@ def _rewrap_error(error: GenerationError, code: str) -> GenerationError:
 
 def _canonical_identity(slot: str, value: str) -> tuple[str, str]:
     return slot.strip().casefold(), value.strip().casefold()
+
+
+def _build_element_merge_rationale(
+    draft_element: dict[str, Any],
+    matched: dict[str, Any] | None,
+) -> dict[str, Any]:
+    return {
+        "rule": "canonical-slot-value",
+        "resolved_element_id": matched["element_id"] if matched else _draft_element_id(draft_element),
+        "matched_active_element_id": matched["element_id"] if matched else None,
+    }
+
+
+def _build_strategy_merge_rationale(strategy_id: str, matched_id: str | None) -> dict[str, Any]:
+    return {
+        "rule": "resolved-strategy-id",
+        "resolved_strategy_id": strategy_id,
+        "matched_active_strategy_id": matched_id,
+    }
 
 
 def _slug(value: str) -> str:

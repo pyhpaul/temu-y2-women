@@ -6,6 +6,15 @@
       "draft_id": "draft-fabric-cotton-poplin-refresh",
       "merge_action": "update",
       "matched_active_element_id": "dress-fabric-cotton-poplin-001",
+      "canonical_identity": {
+        "slot": "fabric",
+        "value": "cotton poplin"
+      },
+      "merge_rationale": {
+        "rule": "canonical-slot-value",
+        "resolved_element_id": "dress-fabric-cotton-poplin-001",
+        "matched_active_element_id": "dress-fabric-cotton-poplin-001"
+      },
       "source_signal_ids": ["dress-signal-201", "dress-signal-202", "dress-signal-203"],
       "decision": "pending",
       "proposed_element": {
@@ -29,6 +38,15 @@
       "hint_id": "draft-strategy-us-summer-vacation-refresh",
       "merge_action": "update",
       "matched_active_strategy_id": "dress-us-summer-vacation",
+      "canonical_identity": {
+        "target_market": "US",
+        "resolved_strategy_id": "dress-us-summer-vacation"
+      },
+      "merge_rationale": {
+        "rule": "resolved-strategy-id",
+        "resolved_strategy_id": "dress-us-summer-vacation",
+        "matched_active_strategy_id": "dress-us-summer-vacation"
+      },
       "source_signal_ids": ["dress-signal-201", "dress-signal-202", "dress-signal-203"],
       "decision": "pending",
       "proposed_strategy_template": {

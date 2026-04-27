@@ -18,6 +18,17 @@
       "priority_signal": 2,
       "source_signal_ids": ["dress-signal-101", "dress-signal-102"],
       "reason_summary": "Aggregated from 2 signals for waist-defined summer dress demand.",
+      "extraction_provenance": {
+        "kind": "draft-element-aggregation",
+        "source_draft_ids": ["draft-detail-waist-tie"],
+        "slot_value_identities": [
+          {
+            "draft_id": "draft-detail-waist-tie",
+            "slot": "detail",
+            "value": "waist tie"
+          }
+        ]
+      },
       "status": "draft"
     }
   ]

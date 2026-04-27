@@ -14,6 +14,18 @@
       "suggested_base_score": 0.65,
       "evidence_summary": "Derived from 1 signal for US dress demand.",
       "source_signal_ids": ["dress-signal-002"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-002",
+            "matched_phrases": ["smocked bodice"],
+            "rule_slot": "detail",
+            "rule_value": "smocked bodice",
+            "rule_tags": ["feminine", "vacation"]
+          }
+        ]
+      },
       "status": "draft"
     },
     {
@@ -29,6 +41,25 @@
       "suggested_base_score": 0.7,
       "evidence_summary": "Derived from 2 signals for US dress demand.",
       "source_signal_ids": ["dress-signal-001", "dress-signal-002"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-001",
+            "matched_phrases": ["cotton poplin"],
+            "rule_slot": "fabric",
+            "rule_value": "cotton poplin",
+            "rule_tags": ["lightweight", "summer", "vacation"]
+          },
+          {
+            "signal_id": "dress-signal-002",
+            "matched_phrases": ["cotton poplin"],
+            "rule_slot": "fabric",
+            "rule_value": "cotton poplin",
+            "rule_tags": ["lightweight", "summer", "vacation"]
+          }
+        ]
+      },
       "status": "draft"
     },
     {
@@ -44,6 +75,25 @@
       "suggested_base_score": 0.7,
       "evidence_summary": "Derived from 2 signals for US dress demand.",
       "source_signal_ids": ["dress-signal-001", "dress-signal-002"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-001",
+            "matched_phrases": ["square neck", "square neckline"],
+            "rule_slot": "neckline",
+            "rule_value": "square neckline",
+            "rule_tags": ["feminine", "summer", "vacation"]
+          },
+          {
+            "signal_id": "dress-signal-002",
+            "matched_phrases": ["square neck", "square neckline"],
+            "rule_slot": "neckline",
+            "rule_value": "square neckline",
+            "rule_tags": ["feminine", "summer", "vacation"]
+          }
+        ]
+      },
       "status": "draft"
     },
     {
@@ -59,6 +109,18 @@
       "suggested_base_score": 0.65,
       "evidence_summary": "Derived from 1 signal for US dress demand.",
       "source_signal_ids": ["dress-signal-001"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-001",
+            "matched_phrases": ["floral", "floral print"],
+            "rule_slot": "pattern",
+            "rule_value": "floral print",
+            "rule_tags": ["floral", "summer", "vacation"]
+          }
+        ]
+      },
       "status": "draft"
     },
     {
@@ -74,6 +136,25 @@
       "suggested_base_score": 0.7,
       "evidence_summary": "Derived from 2 signals for US dress demand.",
       "source_signal_ids": ["dress-signal-001", "dress-signal-002"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-001",
+            "matched_phrases": ["a-line"],
+            "rule_slot": "silhouette",
+            "rule_value": "a-line",
+            "rule_tags": ["dress", "feminine", "summer", "vacation"]
+          },
+          {
+            "signal_id": "dress-signal-002",
+            "matched_phrases": ["a line"],
+            "rule_slot": "silhouette",
+            "rule_value": "a-line",
+            "rule_tags": ["dress", "feminine", "summer", "vacation"]
+          }
+        ]
+      },
       "status": "draft"
     },
     {
@@ -89,6 +170,25 @@
       "suggested_base_score": 0.7,
       "evidence_summary": "Derived from 2 signals for US dress demand.",
       "source_signal_ids": ["dress-signal-001", "dress-signal-002"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-001",
+            "matched_phrases": ["flutter sleeve", "flutter sleeves"],
+            "rule_slot": "sleeve",
+            "rule_value": "flutter sleeve",
+            "rule_tags": ["airy", "feminine", "vacation"]
+          },
+          {
+            "signal_id": "dress-signal-002",
+            "matched_phrases": ["flutter sleeve"],
+            "rule_slot": "sleeve",
+            "rule_value": "flutter sleeve",
+            "rule_tags": ["airy", "feminine", "vacation"]
+          }
+        ]
+      },
       "status": "draft"
     }
   ]

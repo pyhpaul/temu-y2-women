@@ -19,6 +19,49 @@
       "priority_signal": 2,
       "source_signal_ids": ["dress-signal-001", "dress-signal-002"],
       "reason_summary": "Aggregated from 2 signals for US summer dress demand.",
+      "extraction_provenance": {
+        "kind": "draft-element-aggregation",
+        "source_draft_ids": [
+          "draft-detail-smocked-bodice",
+          "draft-fabric-cotton-poplin",
+          "draft-neckline-square-neckline",
+          "draft-pattern-floral-print",
+          "draft-silhouette-a-line",
+          "draft-sleeve-flutter-sleeve"
+        ],
+        "slot_value_identities": [
+          {
+            "draft_id": "draft-detail-smocked-bodice",
+            "slot": "detail",
+            "value": "smocked bodice"
+          },
+          {
+            "draft_id": "draft-fabric-cotton-poplin",
+            "slot": "fabric",
+            "value": "cotton poplin"
+          },
+          {
+            "draft_id": "draft-neckline-square-neckline",
+            "slot": "neckline",
+            "value": "square neckline"
+          },
+          {
+            "draft_id": "draft-pattern-floral-print",
+            "slot": "pattern",
+            "value": "floral print"
+          },
+          {
+            "draft_id": "draft-silhouette-a-line",
+            "slot": "silhouette",
+            "value": "a-line"
+          },
+          {
+            "draft_id": "draft-sleeve-flutter-sleeve",
+            "slot": "sleeve",
+            "value": "flutter sleeve"
+          }
+        ]
+      },
       "status": "draft"
     }
   ]
