@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Callable
@@ -8,7 +9,7 @@ from urllib.request import Request, urlopen
 from temu_y2_women.canonical_signal_builder import build_canonical_signals, build_signal_bundle
 from temu_y2_women.errors import GenerationError
 from temu_y2_women.public_source_adapter import resolve_public_source_adapter
-from temu_y2_women.public_source_registry import load_public_source_registry
+from temu_y2_women.public_source_registry import load_public_source_registry, select_public_sources
 from temu_y2_women.signal_ingestion import ingest_dress_signals
 
 
@@ -21,21 +22,23 @@ def run_public_signal_refresh(
     output_root: Path,
     fetched_at: str,
     fetcher: Fetcher | None = None,
+    source_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     try:
         registry_snapshot, registry = _load_registry_inputs(registry_path)
+        selected_sources = select_public_sources(registry, source_ids)
         fetch = fetcher or _fetch_html
-        raw_snapshots, errors = _collect_raw_snapshots(registry, fetched_at, fetch)
-        canonical_payload, errors = _build_canonical_payload(raw_snapshots, registry, errors)
+        raw_snapshots, errors = _collect_raw_snapshots(selected_sources, fetched_at, fetch)
+        canonical_payload, errors = _build_canonical_payload(raw_snapshots, selected_sources, errors)
         if not canonical_payload["signals"]:
             return _refresh_error("sources", "no valid public sources produced canonical signals", errors)
-        run_id = _build_run_id(fetched_at, _snapshot_source_ids(raw_snapshots))
+        run_id = _build_run_id(fetched_at, selected_sources)
         run_dir = output_root / run_id
         bundle = build_signal_bundle(canonical_payload)
         ingestion_result = _run_signal_ingestion(run_dir, bundle)
         if "error" in ingestion_result:
             return ingestion_result
-        report = _build_refresh_report(run_id, registry, raw_snapshots, errors, canonical_payload, bundle, ingestion_result, fetched_at)
+        report = _build_refresh_report(run_id, selected_sources, raw_snapshots, errors, canonical_payload, bundle, ingestion_result, fetched_at)
         _write_refresh_outputs(run_dir, registry_snapshot, raw_snapshots, canonical_payload, report)
         return report
     except GenerationError as error:
@@ -59,8 +62,8 @@ def _fetch_html(url: str) -> str:
         return response.read().decode("utf-8", errors="replace")
 
 
-def _build_run_id(fetched_at: str, source_ids: list[str]) -> str:
-    suffix = "-".join(source_ids)
+def _build_run_id(fetched_at: str, selected_sources: list[dict[str, Any]]) -> str:
+    suffix = _selected_source_suffix(selected_sources)
     return f"{fetched_at.replace(':', '-')}-{suffix}"
 
 
@@ -109,11 +112,11 @@ def _parse_source_snapshot(
 
 def _build_canonical_payload(
     raw_snapshots: list[dict[str, Any]],
-    registry: list[dict[str, Any]],
+    selected_sources: list[dict[str, Any]],
     errors: list[dict[str, Any]],
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     signals: list[dict[str, Any]] = []
-    source_defaults = {source["source_id"]: source["default_price_band"] for source in registry}
+    source_defaults = {source["source_id"]: source["default_price_band"] for source in selected_sources}
     for snapshot in raw_snapshots:
         source_id = str(snapshot["source_id"])
         try:
@@ -144,12 +147,15 @@ def _build_refresh_report(
 ) -> dict[str, Any]:
     warnings = _build_refresh_warnings(raw_snapshots, ingestion_result)
     successful_sources = _successful_source_ids(raw_snapshots, errors)
+    selected_source_ids = [str(source["source_id"]) for source in registry]
     return {
         "schema_version": "public-refresh-report-v1",
         "run_id": run_id,
         "started_at": fetched_at,
         "completed_at": fetched_at,
+        "selected_source_ids": selected_source_ids,
         "source_summary": _source_summary(registry, successful_sources),
+        "source_details": _build_source_details(registry, raw_snapshots, errors, canonical_payload, ingestion_result),
         "canonical_signal_count": len(canonical_payload["signals"]),
         "signal_bundle_count": len(bundle["signals"]),
         "fallback_price_band_count": _fallback_price_band_count(canonical_payload),
@@ -186,8 +192,71 @@ def _successful_source_ids(raw_snapshots: list[dict[str, Any]], errors: list[dic
     return {str(snapshot["source_id"]) for snapshot in raw_snapshots if str(snapshot["source_id"]) not in failed_ids}
 
 
-def _snapshot_source_ids(raw_snapshots: list[dict[str, Any]]) -> list[str]:
-    return [str(snapshot["source_id"]) for snapshot in raw_snapshots]
+def _selected_source_suffix(selected_sources: list[dict[str, Any]]) -> str:
+    source_ids = [str(source["source_id"]) for source in selected_sources]
+    joined = "|".join(source_ids).encode("utf-8")
+    return f"{len(source_ids)}sources-{hashlib.sha1(joined).hexdigest()[:6]}"
+
+
+def _build_source_details(
+    selected_sources: list[dict[str, Any]],
+    raw_snapshots: list[dict[str, Any]],
+    errors: list[dict[str, Any]],
+    canonical_payload: dict[str, Any],
+    ingestion_result: dict[str, Any],
+) -> list[dict[str, Any]]:
+    snapshot_lookup = {str(snapshot["source_id"]): snapshot for snapshot in raw_snapshots}
+    errors_lookup = _group_source_errors(errors)
+    signal_lookup = _signal_ids_by_source(canonical_payload)
+    outcomes = _signal_outcomes_by_id(ingestion_result)
+    return [
+        _build_source_detail(source, snapshot_lookup, errors_lookup, signal_lookup, outcomes)
+        for source in selected_sources
+    ]
+
+
+def _build_source_detail(
+    source: dict[str, Any],
+    snapshot_lookup: dict[str, dict[str, Any]],
+    errors_lookup: dict[str, list[dict[str, Any]]],
+    signal_lookup: dict[str, list[dict[str, Any]]],
+    outcomes: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    source_id = str(source["source_id"])
+    signals = signal_lookup.get(source_id, [])
+    source_outcomes = [outcomes[signal["canonical_signal_id"]] for signal in signals if signal["canonical_signal_id"] in outcomes]
+    return {
+        "source_id": source_id,
+        "adapter_id": source["adapter_id"],
+        "priority": source["priority"],
+        "weight": source["weight"],
+        "status": "failed" if errors_lookup.get(source_id) else "succeeded",
+        "signal_count": len(signals),
+        "matched_signal_count": sum(1 for item in source_outcomes if item["status"] == "matched"),
+        "unmatched_signal_count": sum(1 for item in source_outcomes if item["status"] == "unmatched"),
+        "fallback_price_band_count": sum(1 for signal in signals if signal["price_band_resolution"] == "source_default"),
+        "warnings": list(snapshot_lookup.get(source_id, {}).get("warnings", [])),
+        "errors": list(errors_lookup.get(source_id, [])),
+    }
+
+
+def _group_source_errors(errors: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for item in errors:
+        grouped.setdefault(str(item["source_id"]), []).append(item)
+    return grouped
+
+
+def _signal_ids_by_source(canonical_payload: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for signal in canonical_payload["signals"]:
+        grouped.setdefault(str(signal["source_id"]), []).append(signal)
+    return grouped
+
+
+def _signal_outcomes_by_id(ingestion_result: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    outcomes = ingestion_result.get("signal_outcomes", [])
+    return {str(item["signal_id"]): item for item in outcomes}
 
 
 def _write_refresh_outputs(

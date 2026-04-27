@@ -1,13 +1,31 @@
 {
   "schema_version": "public-refresh-report-v1",
-  "run_id": "2026-04-28T00-00-00Z-whowhatwear-summer-2025-dress-trends",
+  "run_id": "2026-04-28T00-00-00Z-1sources-3f710d",
   "started_at": "2026-04-28T00:00:00Z",
   "completed_at": "2026-04-28T00:00:00Z",
+  "selected_source_ids": [
+    "whowhatwear-summer-2025-dress-trends"
+  ],
   "source_summary": {
     "total": 1,
     "succeeded": 1,
     "failed": 0
   },
+  "source_details": [
+    {
+      "source_id": "whowhatwear-summer-2025-dress-trends",
+      "adapter_id": "whowhatwear_editorial_v1",
+      "priority": 100,
+      "weight": 1.0,
+      "status": "succeeded",
+      "signal_count": 5,
+      "matched_signal_count": 2,
+      "unmatched_signal_count": 3,
+      "fallback_price_band_count": 5,
+      "warnings": [],
+      "errors": []
+    }
+  ],
   "canonical_signal_count": 5,
   "signal_bundle_count": 5,
   "fallback_price_band_count": 5,

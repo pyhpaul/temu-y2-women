@@ -17,6 +17,12 @@ class PublicSourceAdapterTest(unittest.TestCase):
 
         self.assertIs(resolve_public_source_adapter("whowhatwear_editorial_v1"), parse_whowhatwear_editorial_html)
 
+    def test_resolve_public_source_adapter_returns_marieclaire_parser(self) -> None:
+        from temu_y2_women.public_source_adapter import resolve_public_source_adapter
+        from temu_y2_women.public_source_adapters.marieclaire_editorial import parse_marieclaire_editorial_html
+
+        self.assertIs(resolve_public_source_adapter("marieclaire_editorial_v1"), parse_marieclaire_editorial_html)
+
     def test_resolve_public_source_adapter_rejects_unknown_adapter_id(self) -> None:
         from temu_y2_women.public_source_adapter import resolve_public_source_adapter
 
@@ -44,6 +50,44 @@ class PublicSourceAdapterTest(unittest.TestCase):
         expected = json.loads(
             (_FIXTURE_DIR / "expected-whowhatwear-raw-source-snapshot.json").read_text(encoding="utf-8")
         )
+        self.assertEqual(result, expected)
+
+    def test_parse_second_whowhatwear_editorial_html_returns_expected_snapshot(self) -> None:
+        from temu_y2_women.public_source_adapters.whowhatwear_editorial import parse_whowhatwear_editorial_html
+
+        html = (_FIXTURE_DIR / "whowhatwear-summer-dress-trends-2025.html").read_text(encoding="utf-8")
+        source = {
+            "source_id": "whowhatwear-summer-dress-trends-2025",
+            "source_type": "public_editorial_web",
+            "source_url": "https://www.whowhatwear.com/fashion/dresses/summer-dress-trends-2025",
+            "target_market": "US",
+            "category": "dress",
+        }
+
+        result = parse_whowhatwear_editorial_html(source=source, html=html, fetched_at="2026-04-28T00:00:00Z")
+
+        expected = json.loads(
+            (_FIXTURE_DIR / "expected-whowhatwear-summer-dress-trends-2025-raw-source-snapshot.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(result, expected)
+
+    def test_parse_marieclaire_editorial_html_returns_expected_snapshot(self) -> None:
+        from temu_y2_women.public_source_adapters.marieclaire_editorial import parse_marieclaire_editorial_html
+
+        html = (_FIXTURE_DIR / "marieclaire-summer-2025-dress-trends.html").read_text(encoding="utf-8")
+        source = {
+            "source_id": "marieclaire-summer-2025-dress-trends",
+            "source_type": "public_editorial_web",
+            "source_url": "https://www.marieclaire.com/fashion/summer-fashion/summer-2025-dress-trends/",
+            "target_market": "US",
+            "category": "dress",
+        }
+
+        result = parse_marieclaire_editorial_html(source=source, html=html, fetched_at="2026-04-28T00:00:00Z")
+
+        expected = json.loads((_FIXTURE_DIR / "expected-marieclaire-raw-source-snapshot.json").read_text(encoding="utf-8"))
         self.assertEqual(result, expected)
 
     def test_parse_whowhatwear_editorial_html_rejects_missing_sections(self) -> None:

@@ -23,6 +23,26 @@ def load_public_source_registry(path: Path) -> list[dict[str, Any]]:
     return _validate_sources(path, sources)
 
 
+def select_public_sources(
+    registry: list[dict[str, Any]],
+    source_ids: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    if not source_ids:
+        return list(registry)
+    selected: list[dict[str, Any]] = []
+    enabled_lookup = {str(source["source_id"]): source for source in registry}
+    for source_id in _ordered_source_ids(source_ids):
+        source = enabled_lookup.get(source_id)
+        if source is None:
+            raise GenerationError(
+                code="INVALID_PUBLIC_SOURCE_SELECTION",
+                message="source selection contains unknown source_id",
+                details={"source_id": source_id},
+            )
+        selected.append(source)
+    return selected
+
+
 def _load_json_object(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if isinstance(payload, dict):
@@ -64,6 +84,8 @@ def _validate_source_record(path: Path, index: int, source: Any, seen_ids: set[s
     _require_allowed(path, index, source, "fetch_mode", _SUPPORTED_FETCH_MODES)
     _require_allowed(path, index, source, "default_price_band", _SUPPORTED_PRICE_BANDS)
     _require_string(path, index, source, "adapter_id")
+    _require_positive_int(path, index, source, "priority")
+    _require_positive_number(path, index, source, "weight")
     if not isinstance(source["enabled"], bool):
         raise _registry_error(path, "enabled", "enabled must be a boolean", index)
     return dict(source)
@@ -79,6 +101,8 @@ def _required_fields() -> set[str]:
         "fetch_mode",
         "adapter_id",
         "default_price_band",
+        "priority",
+        "weight",
         "enabled",
     }
 
@@ -103,6 +127,18 @@ def _require_allowed(
     raise _registry_error(path, field, f"field '{field}' contains unsupported value", index, value)
 
 
+def _require_positive_int(path: Path, index: int, source: dict[str, Any], field: str) -> None:
+    value = source.get(field)
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise _registry_error(path, field, f"field '{field}' must be a positive integer", index, value)
+
+
+def _require_positive_number(path: Path, index: int, source: dict[str, Any], field: str) -> None:
+    value = source.get(field)
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+        raise _registry_error(path, field, f"field '{field}' must be a positive number", index, value)
+
+
 def _require_url(path: Path, index: int, source: dict[str, Any]) -> None:
     source_url = _require_string(path, index, source, "source_url")
     if source_url.startswith("https://"):
@@ -123,3 +159,11 @@ def _registry_error(
     if value is not None:
         details["value"] = value
     return GenerationError(code="INVALID_PUBLIC_SOURCE_REGISTRY", message=message, details=details)
+
+
+def _ordered_source_ids(source_ids: list[str]) -> list[str]:
+    ordered: list[str] = []
+    for source_id in source_ids:
+        if source_id not in ordered:
+            ordered.append(source_id)
+    return ordered

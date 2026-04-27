@@ -16,12 +16,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     run_parser.add_argument("--registry", default="data/refresh/dress/source_registry.json")
     run_parser.add_argument("--output-root", default="data/refresh/dress")
     run_parser.add_argument("--fetched-at", required=True)
+    run_parser.add_argument("--source-id", action="append", dest="source_ids")
 
     args = parser.parse_args(argv)
     result = run_public_signal_refresh(
         registry_path=Path(args.registry),
         output_root=Path(args.output_root),
         fetched_at=str(args.fetched_at),
+        source_ids=args.source_ids,
     )
     print(json.dumps(result, ensure_ascii=False))
     return 0 if "error" not in result else 1

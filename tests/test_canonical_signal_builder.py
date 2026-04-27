@@ -196,6 +196,28 @@ class CanonicalSignalBuilderTest(unittest.TestCase):
         self.assertEqual(signal["observed_occasion_tags"], ["vacation"])
         self.assertEqual(signal["manual_tags"], ["summer", "vacation"])
 
+    def test_uses_section_metadata_for_provenance_when_present(self) -> None:
+        from temu_y2_women.canonical_signal_builder import build_canonical_signals
+
+        snapshot = _load_snapshot()
+        snapshot["sections"][0]["matched_keywords"] = ["custom keyword"]
+        snapshot["sections"][0]["confidence"] = 0.91
+        snapshot["sections"][0]["adapter_version"] = "custom_editorial_v1"
+        snapshot["sections"][0]["warnings"] = ["custom warning"]
+        snapshot["sections"][0]["excerpt_anchor"] = "halter ties"
+
+        result = build_canonical_signals(snapshot=snapshot, default_price_band="mid")
+        signal = result["signals"][0]
+
+        self.assertEqual(
+            signal["evidence_excerpt"],
+            "halter ties, and prints that look like they belong in a cocktail glass",
+        )
+        self.assertEqual(signal["extraction_provenance"]["matched_keywords"], ["custom keyword"])
+        self.assertEqual(signal["extraction_provenance"]["adapter_version"], "custom_editorial_v1")
+        self.assertEqual(signal["extraction_provenance"]["warnings"], ["custom warning"])
+        self.assertEqual(signal["extraction_provenance"]["confidence"], 0.91)
+
 
 def _load_snapshot() -> dict[str, object]:
     return json.loads((_FIXTURE_DIR / "expected-whowhatwear-raw-source-snapshot.json").read_text(encoding="utf-8"))

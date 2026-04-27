@@ -1,0 +1,87 @@
+{
+  "schema_version": "public-source-snapshot-v1",
+  "source_id": "marieclaire-summer-2025-dress-trends",
+  "source_url": "https://www.marieclaire.com/fashion/summer-fashion/summer-2025-dress-trends/",
+  "source_type": "public_editorial_web",
+  "target_market": "US",
+  "category": "dress",
+  "captured_at": "2025-05-05",
+  "fetched_at": "2026-04-28T00:00:00Z",
+  "page_title": "6 Summer 2025 Dress Trends To Know Before Everyone Else",
+  "sections": [
+    {
+      "section_id": "smocked-dresses",
+      "heading": "Smocked Dresses",
+      "text": "Smocked dresses with smocked bodices and cotton poplin textures make the easiest summer uniform.",
+      "tags": [
+        "summer"
+      ],
+      "adapter_version": "marieclaire_editorial_v1",
+      "confidence": 0.79,
+      "excerpt_anchor": "smocked dresses",
+      "matched_keywords": [
+        "smocked bodices",
+        "cotton poplin"
+      ]
+    },
+    {
+      "section_id": "polka-dot-dresses",
+      "heading": "Polka Dot Dresses",
+      "text": "Polka dot dresses are back with a cleaner palette and a more grown-up shape this season.",
+      "tags": [
+        "summer"
+      ],
+      "adapter_version": "marieclaire_editorial_v1",
+      "confidence": 0.68,
+      "excerpt_anchor": "polka dot dresses",
+      "matched_keywords": [
+        "polka dots"
+      ]
+    },
+    {
+      "section_id": "boho-dresses",
+      "heading": "Boho Dresses",
+      "text": "Boho dresses with flutter sleeves and floral details feel airy without losing structure.",
+      "tags": [
+        "summer"
+      ],
+      "adapter_version": "marieclaire_editorial_v1",
+      "confidence": 0.73,
+      "excerpt_anchor": "flutter sleeves",
+      "matched_keywords": [
+        "flutter sleeves",
+        "floral"
+      ]
+    },
+    {
+      "section_id": "gingham-dresses",
+      "heading": "Gingham Dresses",
+      "text": "Gingham dresses are being cut in an a-line shape and often finished in crisp cotton poplin.",
+      "tags": [
+        "summer"
+      ],
+      "adapter_version": "marieclaire_editorial_v1",
+      "confidence": 0.71,
+      "excerpt_anchor": "a-line",
+      "matched_keywords": [
+        "a-line",
+        "cotton poplin"
+      ]
+    },
+    {
+      "section_id": "babydoll-dresses",
+      "heading": "Babydoll Dresses",
+      "text": "Babydoll dresses are leaning cleaner this year, often anchored by a square neckline and flat sandals.",
+      "tags": [
+        "summer"
+      ],
+      "adapter_version": "marieclaire_editorial_v1",
+      "confidence": 0.67,
+      "excerpt_anchor": "square neckline",
+      "matched_keywords": [
+        "square neckline"
+      ]
+    }
+  ],
+  "warnings": []
+}

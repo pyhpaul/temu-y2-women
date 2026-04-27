@@ -1,0 +1,86 @@
+{
+  "schema_version": "public-source-snapshot-v1",
+  "source_id": "whowhatwear-summer-dress-trends-2025",
+  "source_url": "https://www.whowhatwear.com/fashion/dresses/summer-dress-trends-2025",
+  "source_type": "public_editorial_web",
+  "target_market": "US",
+  "category": "dress",
+  "captured_at": "2025-05-13",
+  "fetched_at": "2026-04-28T00:00:00Z",
+  "page_title": "I Want to Look Chic Without Trying Too Hard-8 Summer Dress Trends I'm Relying On",
+  "sections": [
+    {
+      "section_id": "shirred-bodices",
+      "heading": "Shirred Bodices",
+      "text": "Shirred bodices and square necklines are an easy way to make summer dresses feel romantic but still wearable.",
+      "tags": [
+        "summer"
+      ],
+      "adapter_version": "whowhatwear_editorial_v1",
+      "confidence": 0.77,
+      "excerpt_anchor": "Shirred bodices",
+      "matched_keywords": [
+        "smocked bodices",
+        "square neckline"
+      ]
+    },
+    {
+      "section_id": "drop-waist-dresses",
+      "heading": "Drop-Waist Dresses",
+      "text": "Drop-waist dresses keep showing up with volume through the skirt and a cleaner, more directional shape.",
+      "tags": [
+        "summer"
+      ],
+      "adapter_version": "whowhatwear_editorial_v1",
+      "confidence": 0.72,
+      "excerpt_anchor": "drop-waist dresses",
+      "matched_keywords": [
+        "drop-waist dresses"
+      ]
+    },
+    {
+      "section_id": "romantic-sleeves",
+      "heading": "Romantic Sleeves",
+      "text": "Romantic sleeves, fairy sleeves, and flutter sleeves soften the whole silhouette without trying too hard.",
+      "tags": [
+        "summer"
+      ],
+      "adapter_version": "whowhatwear_editorial_v1",
+      "confidence": 0.76,
+      "excerpt_anchor": "fairy sleeves",
+      "matched_keywords": [
+        "fairy sleeves",
+        "flutter sleeves"
+      ]
+    },
+    {
+      "section_id": "elegant-bandeaus",
+      "heading": "Elegant Bandeaus",
+      "text": "Elegant bandeau dresses are being styled with floral prints and easy sandals instead of feeling too polished.",
+      "tags": [
+        "summer"
+      ],
+      "adapter_version": "whowhatwear_editorial_v1",
+      "confidence": 0.7,
+      "excerpt_anchor": "floral prints",
+      "matched_keywords": [
+        "floral"
+      ]
+    },
+    {
+      "section_id": "boudoir-inspired-dressing",
+      "heading": "Boudoir-Inspired Dressing",
+      "text": "Boudoir-inspired dressing leans on lace slips and sheer layers for a dressed-up summer evening mood.",
+      "tags": [
+        "summer"
+      ],
+      "adapter_version": "whowhatwear_editorial_v1",
+      "confidence": 0.66,
+      "excerpt_anchor": "lace slips",
+      "matched_keywords": [
+        "lace slips"
+      ]
+    }
+  ],
+  "warnings": []
+}
