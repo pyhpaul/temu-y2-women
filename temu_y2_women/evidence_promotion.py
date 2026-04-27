@@ -77,25 +77,49 @@ def validate_reviewed_dress_promotion(
     taxonomy_path: Path = _DEFAULT_TAXONOMY_PATH,
 ) -> dict[str, Any]:
     try:
-        context = _load_promotion_context(
-            draft_elements_path,
-            draft_strategy_hints_path,
-            active_elements_path,
-            active_strategies_path,
-            taxonomy_path,
+        reviewed, _, _, _ = _prepare_validated_promotion(
+            reviewed_path=reviewed_path,
+            draft_elements_path=draft_elements_path,
+            draft_strategy_hints_path=draft_strategy_hints_path,
+            active_elements_path=active_elements_path,
+            active_strategies_path=active_strategies_path,
+            taxonomy_path=taxonomy_path,
         )
-        reviewed = _load_review_bundle(reviewed_path)
-        expected = _build_review_template(context)
-        _validate_review_bundle(reviewed_path, reviewed, expected)
-        post_elements = _build_post_promotion_elements(context["active_elements"], reviewed["elements"])
-        _validate_promotion_elements(reviewed_path, context["taxonomy"], post_elements)
-        post_values = build_active_values_by_slot(post_elements)
-        post_strategies = _build_post_promotion_strategies(
-            context["active_strategies"],
-            reviewed["strategy_hints"],
-        )
-        _validate_reviewed_strategies(reviewed_path, context["taxonomy"], post_strategies, post_values)
         return reviewed
+    except GenerationError as error:
+        return error.to_dict()
+
+
+def apply_reviewed_dress_promotion(
+    reviewed_path: Path,
+    draft_elements_path: Path,
+    draft_strategy_hints_path: Path,
+    active_elements_path: Path,
+    active_strategies_path: Path,
+    report_path: Path,
+    taxonomy_path: Path = _DEFAULT_TAXONOMY_PATH,
+) -> dict[str, Any]:
+    try:
+        reviewed, _, post_elements, post_strategies = _prepare_validated_promotion(
+            reviewed_path=reviewed_path,
+            draft_elements_path=draft_elements_path,
+            draft_strategy_hints_path=draft_strategy_hints_path,
+            active_elements_path=active_elements_path,
+            active_strategies_path=active_strategies_path,
+            taxonomy_path=taxonomy_path,
+        )
+        report = _build_promotion_report(
+            reviewed=reviewed,
+            draft_elements_path=draft_elements_path,
+            draft_strategy_hints_path=draft_strategy_hints_path,
+            reviewed_path=reviewed_path,
+        )
+        _write_output_files(
+            (active_elements_path, {"schema_version": "mvp-v1", "elements": post_elements}),
+            (active_strategies_path, {"schema_version": "mvp-v1", "strategy_templates": post_strategies}),
+            (report_path, report),
+        )
+        return report
     except GenerationError as error:
         return error.to_dict()
 
@@ -123,6 +147,32 @@ def _load_promotion_context(
         "active_elements": active_elements,
         "active_strategies": active_strategies,
     }
+
+
+def _prepare_validated_promotion(
+    reviewed_path: Path,
+    draft_elements_path: Path,
+    draft_strategy_hints_path: Path,
+    active_elements_path: Path,
+    active_strategies_path: Path,
+    taxonomy_path: Path,
+) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
+    context = _load_promotion_context(
+        draft_elements_path,
+        draft_strategy_hints_path,
+        active_elements_path,
+        active_strategies_path,
+        taxonomy_path,
+    )
+    reviewed = _load_review_bundle(reviewed_path)
+    expected = _build_review_template(context)
+    _validate_review_bundle(reviewed_path, reviewed, expected)
+    post_elements = _build_post_promotion_elements(context["active_elements"], reviewed["elements"])
+    _validate_promotion_elements(reviewed_path, context["taxonomy"], post_elements)
+    post_values = build_active_values_by_slot(post_elements)
+    post_strategies = _build_post_promotion_strategies(context["active_strategies"], reviewed["strategy_hints"])
+    _validate_reviewed_strategies(reviewed_path, context["taxonomy"], post_strategies, post_values)
+    return reviewed, context, post_elements, post_strategies
 
 
 def _load_draft_elements(path: Path, taxonomy: dict[str, Any]) -> list[dict[str, Any]]:
@@ -362,8 +412,11 @@ def _validate_review_record_shape(
         )
     if reviewed_record["decision"] not in {"accept", "reject"}:
         raise _promotion_error(path, "decision", "INVALID_PROMOTION_REVIEW", "promotion review decision must be 'accept' or 'reject'")
-    if not isinstance(reviewed_record.get(proposed_field), dict):
+    proposed = reviewed_record.get(proposed_field)
+    if reviewed_record["decision"] == "accept" and not isinstance(proposed, dict):
         raise _promotion_error(path, proposed_field, "INVALID_PROMOTION_REVIEW", "promotion review curated record must be an object")
+    if reviewed_record["decision"] == "reject" and proposed is not None and not isinstance(proposed, dict):
+        raise _promotion_error(path, proposed_field, "INVALID_PROMOTION_REVIEW", "promotion review rejected payload must be null or an object")
 
 
 def _validate_review_record_details(
@@ -381,7 +434,8 @@ def _validate_review_record_details(
                 message=f"promotion review field '{field}' must match the staged template",
                 details={"path": str(path), "index": index, "field": field},
             )
-    _validate_curated_identity(path, index, reviewed_record, expected, proposed_field)
+    if reviewed_record["decision"] == "accept":
+        _validate_curated_identity(path, index, reviewed_record, expected, proposed_field)
 
 
 def _validate_curated_identity(
@@ -405,6 +459,27 @@ def _validate_curated_identity(
                 message=f"promotion review field '{field}' must preserve staged identity",
                 details={"path": str(path), "index": index, "field": field},
             )
+    _validate_update_stable_id(path, index, reviewed_record, expected_proposed, proposed_field)
+
+
+def _validate_update_stable_id(
+    path: Path,
+    index: int,
+    reviewed_record: dict[str, Any],
+    expected_proposed: dict[str, Any],
+    proposed_field: str,
+) -> None:
+    if reviewed_record["merge_action"] != "update":
+        return
+    proposed = reviewed_record[proposed_field]
+    field = "element_id" if proposed_field == "proposed_element" else "strategy_id"
+    if proposed.get(field) == expected_proposed.get(field):
+        return
+    raise GenerationError(
+        code="INVALID_PROMOTION_REVIEW",
+        message=f"promotion review field '{field}' must preserve update identity",
+        details={"path": str(path), "index": index, "field": field},
+    )
 
 
 def _build_post_promotion_elements(
@@ -449,6 +524,69 @@ def _build_post_promotion_strategies(
             continue
         snapshot.append(proposed)
     return snapshot
+
+
+def _build_promotion_report(
+    reviewed: dict[str, Any],
+    draft_elements_path: Path,
+    draft_strategy_hints_path: Path,
+    reviewed_path: Path,
+) -> dict[str, Any]:
+    return {
+        "schema_version": "promotion-report-v1",
+        "category": "dress",
+        "source_artifacts": {
+            "draft_elements": draft_elements_path.name,
+            "draft_strategy_hints": draft_strategy_hints_path.name,
+            "reviewed_decisions": reviewed_path.name,
+        },
+        "summary": {
+            "elements": _build_report_summary(reviewed["elements"]),
+            "strategy_hints": _build_report_summary(reviewed["strategy_hints"]),
+        },
+        "elements": _build_element_report_items(reviewed["elements"]),
+        "strategy_hints": _build_strategy_report_items(reviewed["strategy_hints"]),
+        "warnings": [],
+    }
+
+
+def _build_report_summary(records: list[dict[str, Any]]) -> dict[str, int]:
+    accepted = sum(1 for record in records if record["decision"] == "accept")
+    rejected = sum(1 for record in records if record["decision"] == "reject")
+    created = sum(1 for record in records if record["decision"] == "accept" and record["merge_action"] == "create")
+    updated = sum(1 for record in records if record["decision"] == "accept" and record["merge_action"] == "update")
+    return {
+        "accepted": accepted,
+        "rejected": rejected,
+        "created": created,
+        "updated": updated,
+    }
+
+
+def _build_element_report_items(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "draft_id": record["draft_id"],
+            "decision": record["decision"],
+            "merge_action": record["merge_action"],
+            "element_id": _report_record_id(record.get("proposed_element"), "element_id"),
+            "source_signal_ids": list(record["source_signal_ids"]),
+        }
+        for record in records
+    ]
+
+
+def _build_strategy_report_items(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "hint_id": record["hint_id"],
+            "decision": record["decision"],
+            "merge_action": record["merge_action"],
+            "strategy_id": _report_record_id(record.get("proposed_strategy_template"), "strategy_id"),
+            "source_signal_ids": list(record["source_signal_ids"]),
+        }
+        for record in records
+    ]
 
 
 def _validate_promotion_elements(
@@ -685,3 +823,77 @@ def _canonical_identity(slot: str, value: str) -> tuple[str, str]:
 
 def _slug(value: str) -> str:
     return "-".join(segment for segment in value.strip().casefold().replace("/", " ").split() if segment)
+
+
+def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _write_output_files(*outputs: tuple[Path, dict[str, Any]]) -> None:
+    rendered = [(path, json.dumps(payload, ensure_ascii=False, indent=2)) for path, payload in outputs]
+    temp_paths = _stage_output_files(rendered)
+    backups = _read_output_backups(outputs)
+    replaced: list[Path] = []
+    try:
+        for target, temp_path in temp_paths:
+            temp_path.replace(target)
+            replaced.append(target)
+    except OSError as error:
+        _restore_output_backups(replaced, backups)
+        raise _write_error(error) from error
+    finally:
+        _cleanup_temp_files(temp_paths)
+
+
+def _stage_output_files(rendered: list[tuple[Path, str]]) -> list[tuple[Path, Path]]:
+    temp_paths: list[tuple[Path, Path]] = []
+    try:
+        for target, content in rendered:
+            temp_path = _temp_output_path(target)
+            temp_path.write_text(content, encoding="utf-8")
+            temp_paths.append((target, temp_path))
+    except OSError as error:
+        _cleanup_temp_files(temp_paths)
+        raise _write_error(error) from error
+    return temp_paths
+
+
+def _read_output_backups(outputs: tuple[tuple[Path, dict[str, Any]], ...]) -> dict[Path, str | None]:
+    backups: dict[Path, str | None] = {}
+    for path, _ in outputs:
+        backups[path] = path.read_text(encoding="utf-8") if path.exists() else None
+    return backups
+
+
+def _restore_output_backups(targets: list[Path], backups: dict[Path, str | None]) -> None:
+    for target in targets:
+        original = backups.get(target)
+        if original is None:
+            if target.exists():
+                target.unlink()
+            continue
+        target.write_text(original, encoding="utf-8")
+
+
+def _cleanup_temp_files(temp_paths: list[tuple[Path, Path]]) -> None:
+    for _, temp_path in temp_paths:
+        if temp_path.exists():
+            temp_path.unlink()
+
+
+def _temp_output_path(target: Path) -> Path:
+    return target.with_name(f"{target.name}.tmp")
+
+
+def _write_error(error: OSError) -> GenerationError:
+    return GenerationError(
+        code="PROMOTION_WRITE_FAILED",
+        message="failed to write promotion outputs",
+        details={"path": str(getattr(error, "filename", ""))},
+    )
+
+
+def _report_record_id(record: Any, field: str) -> Any:
+    if isinstance(record, dict):
+        return record.get(field)
+    return None

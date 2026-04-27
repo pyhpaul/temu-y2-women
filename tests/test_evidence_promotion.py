@@ -184,6 +184,192 @@ class EvidencePromotionValidationTest(unittest.TestCase):
             self.assertEqual(result["error"]["code"], "INVALID_PROMOTION_REVIEW")
             self.assertEqual(result["error"]["details"]["field"], "draft_id")
 
+    def test_validate_reviewed_dress_promotion_rejects_update_id_tampering(self) -> None:
+        from temu_y2_women.evidence_promotion import validate_reviewed_dress_promotion
+
+        with TemporaryDirectory() as temp_dir:
+            scenario_dir = _PROMOTION_FIXTURE_DIR / "update"
+            invalid_element = _read_json(scenario_dir / "reviewed_decisions.json")
+            invalid_element["elements"][0]["proposed_element"]["element_id"] = "renamed-element-id"
+            invalid_element_path = Path(temp_dir) / "invalid-element-id.json"
+            _write_json(invalid_element_path, invalid_element)
+
+            invalid_strategy = _read_json(scenario_dir / "reviewed_decisions.json")
+            invalid_strategy["strategy_hints"][0]["proposed_strategy_template"]["strategy_id"] = "renamed-strategy-id"
+            invalid_strategy_path = Path(temp_dir) / "invalid-strategy-id.json"
+            _write_json(invalid_strategy_path, invalid_strategy)
+
+            for reviewed_path, field in (
+                (invalid_element_path, "element_id"),
+                (invalid_strategy_path, "strategy_id"),
+            ):
+                with self.subTest(field=field):
+                    result = validate_reviewed_dress_promotion(
+                        reviewed_path=reviewed_path,
+                        draft_elements_path=scenario_dir / "draft_elements.json",
+                        draft_strategy_hints_path=scenario_dir / "draft_strategy_hints.json",
+                        active_elements_path=_PROMOTION_FIXTURE_DIR / "baseline" / "elements.json",
+                        active_strategies_path=_PROMOTION_FIXTURE_DIR / "baseline" / "strategy_templates.json",
+                    )
+
+                    self.assertEqual(result["error"]["code"], "INVALID_PROMOTION_REVIEW")
+                    self.assertEqual(result["error"]["details"]["field"], field)
+
+    def test_validate_reviewed_dress_promotion_rejects_invalid_reject_payload_types(self) -> None:
+        from temu_y2_women.evidence_promotion import validate_reviewed_dress_promotion
+
+        with TemporaryDirectory() as temp_dir:
+            scenario_dir = _PROMOTION_FIXTURE_DIR / "create"
+            invalid_element = _read_json(scenario_dir / "reviewed_decisions.json")
+            invalid_element["elements"][0]["decision"] = "reject"
+            invalid_element["elements"][0]["proposed_element"] = 123
+            invalid_element["strategy_hints"][0]["decision"] = "reject"
+            invalid_element["strategy_hints"][0]["proposed_strategy_template"] = None
+            invalid_element_path = Path(temp_dir) / "invalid-reject-element.json"
+            _write_json(invalid_element_path, invalid_element)
+
+            invalid_strategy = _read_json(scenario_dir / "reviewed_decisions.json")
+            invalid_strategy["elements"][0]["decision"] = "reject"
+            invalid_strategy["elements"][0]["proposed_element"] = None
+            invalid_strategy["strategy_hints"][0]["decision"] = "reject"
+            invalid_strategy["strategy_hints"][0]["proposed_strategy_template"] = ["x"]
+            invalid_strategy_path = Path(temp_dir) / "invalid-reject-strategy.json"
+            _write_json(invalid_strategy_path, invalid_strategy)
+
+            for reviewed_path, field in (
+                (invalid_element_path, "proposed_element"),
+                (invalid_strategy_path, "proposed_strategy_template"),
+            ):
+                with self.subTest(field=field):
+                    result = validate_reviewed_dress_promotion(
+                        reviewed_path=reviewed_path,
+                        draft_elements_path=scenario_dir / "draft_elements.json",
+                        draft_strategy_hints_path=scenario_dir / "draft_strategy_hints.json",
+                        active_elements_path=_PROMOTION_FIXTURE_DIR / "baseline" / "elements.json",
+                        active_strategies_path=_PROMOTION_FIXTURE_DIR / "baseline" / "strategy_templates.json",
+                    )
+
+                    self.assertEqual(result["error"]["code"], "INVALID_PROMOTION_REVIEW")
+                    self.assertEqual(result["error"]["details"]["field"], field)
+
+
+class EvidencePromotionApplyTest(unittest.TestCase):
+    def test_apply_reviewed_dress_promotion_writes_expected_outputs(self) -> None:
+        from temu_y2_women.evidence_promotion import apply_reviewed_dress_promotion
+
+        for scenario in ("create", "update"):
+            with self.subTest(scenario=scenario):
+                with TemporaryDirectory() as temp_dir:
+                    scenario_dir = _PROMOTION_FIXTURE_DIR / scenario
+                    temp_root = Path(temp_dir)
+                    elements_path, strategies_path = _seed_active_evidence(temp_root)
+                    report_path = temp_root / "promotion_report.json"
+
+                    result = apply_reviewed_dress_promotion(
+                        reviewed_path=scenario_dir / "reviewed_decisions.json",
+                        draft_elements_path=scenario_dir / "draft_elements.json",
+                        draft_strategy_hints_path=scenario_dir / "draft_strategy_hints.json",
+                        active_elements_path=elements_path,
+                        active_strategies_path=strategies_path,
+                        report_path=report_path,
+                    )
+
+                    self.assertEqual(result, _read_json(scenario_dir / "expected_promotion_report.json"))
+                    self.assertEqual(_read_json(elements_path), _read_json(scenario_dir / "expected_elements_after_apply.json"))
+                    self.assertEqual(
+                        _read_json(strategies_path),
+                        _read_json(scenario_dir / "expected_strategy_templates_after_apply.json"),
+                    )
+                    self.assertEqual(_read_json(report_path), _read_json(scenario_dir / "expected_promotion_report.json"))
+
+    def test_apply_reviewed_dress_promotion_fails_before_mutation(self) -> None:
+        from temu_y2_women.evidence_promotion import apply_reviewed_dress_promotion
+
+        with TemporaryDirectory() as temp_dir:
+            scenario_dir = _PROMOTION_FIXTURE_DIR / "create"
+            temp_root = Path(temp_dir)
+            elements_path, strategies_path = _seed_active_evidence(temp_root)
+            report_path = temp_root / "promotion_report.json"
+            before_elements = elements_path.read_text(encoding="utf-8")
+            before_strategies = strategies_path.read_text(encoding="utf-8")
+
+            invalid_review = _read_json(scenario_dir / "reviewed_decisions.json")
+            invalid_review["strategy_hints"][0]["proposed_strategy_template"]["slot_preferences"]["detail"] = ["missing"]
+            invalid_review_path = temp_root / "invalid_review.json"
+            _write_json(invalid_review_path, invalid_review)
+
+            result = apply_reviewed_dress_promotion(
+                reviewed_path=invalid_review_path,
+                draft_elements_path=scenario_dir / "draft_elements.json",
+                draft_strategy_hints_path=scenario_dir / "draft_strategy_hints.json",
+                active_elements_path=elements_path,
+                active_strategies_path=strategies_path,
+                report_path=report_path,
+            )
+
+            self.assertEqual(result["error"]["code"], "INVALID_PROMOTION_REVIEW")
+            self.assertEqual(elements_path.read_text(encoding="utf-8"), before_elements)
+            self.assertEqual(strategies_path.read_text(encoding="utf-8"), before_strategies)
+            self.assertFalse(report_path.exists())
+
+    def test_apply_reviewed_dress_promotion_skips_rejected_records(self) -> None:
+        from temu_y2_women.evidence_promotion import apply_reviewed_dress_promotion
+
+        with TemporaryDirectory() as temp_dir:
+            scenario_dir = _PROMOTION_FIXTURE_DIR / "create"
+            temp_root = Path(temp_dir)
+            elements_path, strategies_path = _seed_active_evidence(temp_root)
+            report_path = temp_root / "promotion_report.json"
+            reviewed = _read_json(scenario_dir / "reviewed_decisions.json")
+            reviewed["elements"][0]["decision"] = "reject"
+            reviewed["elements"][0]["proposed_element"] = None
+            reviewed["strategy_hints"][0]["decision"] = "reject"
+            reviewed["strategy_hints"][0]["proposed_strategy_template"] = None
+            reviewed_path = temp_root / "rejected_review.json"
+            _write_json(reviewed_path, reviewed)
+
+            result = apply_reviewed_dress_promotion(
+                reviewed_path=reviewed_path,
+                draft_elements_path=scenario_dir / "draft_elements.json",
+                draft_strategy_hints_path=scenario_dir / "draft_strategy_hints.json",
+                active_elements_path=elements_path,
+                active_strategies_path=strategies_path,
+                report_path=report_path,
+            )
+
+            self.assertEqual(result["summary"]["elements"], {"accepted": 0, "rejected": 1, "created": 0, "updated": 0})
+            self.assertEqual(result["summary"]["strategy_hints"], {"accepted": 0, "rejected": 1, "created": 0, "updated": 0})
+            self.assertEqual(_read_json(elements_path), _read_json(_PROMOTION_FIXTURE_DIR / "baseline" / "elements.json"))
+            self.assertEqual(
+                _read_json(strategies_path),
+                _read_json(_PROMOTION_FIXTURE_DIR / "baseline" / "strategy_templates.json"),
+            )
+
+    def test_apply_reviewed_dress_promotion_rejects_write_stage_partial_mutation(self) -> None:
+        from temu_y2_women.evidence_promotion import apply_reviewed_dress_promotion
+
+        with TemporaryDirectory() as temp_dir:
+            scenario_dir = _PROMOTION_FIXTURE_DIR / "create"
+            temp_root = Path(temp_dir)
+            elements_path, strategies_path = _seed_active_evidence(temp_root)
+            before_elements = elements_path.read_text(encoding="utf-8")
+            before_strategies = strategies_path.read_text(encoding="utf-8")
+            report_path = temp_root / "missing-dir" / "promotion_report.json"
+
+            result = apply_reviewed_dress_promotion(
+                reviewed_path=scenario_dir / "reviewed_decisions.json",
+                draft_elements_path=scenario_dir / "draft_elements.json",
+                draft_strategy_hints_path=scenario_dir / "draft_strategy_hints.json",
+                active_elements_path=elements_path,
+                active_strategies_path=strategies_path,
+                report_path=report_path,
+            )
+
+            self.assertEqual(result["error"]["code"], "PROMOTION_WRITE_FAILED")
+            self.assertEqual(elements_path.read_text(encoding="utf-8"), before_elements)
+            self.assertEqual(strategies_path.read_text(encoding="utf-8"), before_strategies)
+            self.assertFalse(report_path.exists())
+
 
 def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -211,3 +397,17 @@ def _combined_reviewed_payload() -> dict[str, object]:
         "elements": [*create_reviewed["elements"], *update_reviewed["elements"]],
         "strategy_hints": [*create_reviewed["strategy_hints"], *update_reviewed["strategy_hints"]],
     }
+
+
+def _seed_active_evidence(temp_root: Path) -> tuple[Path, Path]:
+    elements_path = temp_root / "elements.json"
+    strategies_path = temp_root / "strategy_templates.json"
+    elements_path.write_text(
+        (_PROMOTION_FIXTURE_DIR / "baseline" / "elements.json").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    strategies_path.write_text(
+        (_PROMOTION_FIXTURE_DIR / "baseline" / "strategy_templates.json").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    return elements_path, strategies_path

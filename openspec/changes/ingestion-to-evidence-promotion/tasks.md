@@ -12,9 +12,9 @@
 
 ## 3. Active evidence merge and reporting
 
-- [ ] 3.1 Implement element promotion with deterministic create/update merge semantics against active evidence
-- [ ] 3.2 Implement strategy-template promotion against the post-promotion active evidence snapshot
-- [ ] 3.3 Implement promotion reporting and all-or-nothing file replacement behavior
+- [x] 3.1 Implement element promotion with deterministic create/update merge semantics against active evidence
+- [x] 3.2 Implement strategy-template promotion against the post-promotion active evidence snapshot
+- [x] 3.3 Implement promotion reporting and all-or-nothing file replacement behavior
 
 ## 4. CLI and regression coverage
 
