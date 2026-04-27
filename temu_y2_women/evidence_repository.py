@@ -43,7 +43,14 @@ _STRATEGY_REQUIRED_FIELDS = {
 
 
 def load_evidence_taxonomy(path: Path = _DEFAULT_TAXONOMY_PATH) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="evidence taxonomy must contain valid JSON",
+            details={"path": str(path), "line": error.lineno, "column": error.colno},
+        ) from error
     if not isinstance(payload, dict):
         raise GenerationError(
             code="INVALID_EVIDENCE_STORE",
@@ -365,7 +372,14 @@ def _load_record_array(
 
 
 def _load_json_object(path: Path, root_message: str) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="evidence store file must contain valid JSON",
+            details={"path": str(path), "line": error.lineno, "column": error.colno},
+        ) from error
     if not isinstance(payload, dict):
         raise GenerationError(
             code="INVALID_EVIDENCE_STORE",

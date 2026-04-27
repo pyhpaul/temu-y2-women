@@ -18,6 +18,6 @@
 
 ## 4. CLI and regression coverage
 
-- [ ] 4.1 Add a dedicated promotion CLI flow for prepare and apply operations
-- [ ] 4.2 Add regression tests for review-template generation, successful promotion, rejected drafts, and fail-before-mutation errors
-- [ ] 4.3 Run repository validation for promotion fixtures, targeted tests, and any guardrails needed before merge
+- [x] 4.1 Add a dedicated promotion CLI flow for prepare and apply operations
+- [x] 4.2 Add regression tests for review-template generation, successful promotion, rejected drafts, and fail-before-mutation errors
+- [x] 4.3 Run repository validation for promotion fixtures, targeted tests, and any guardrails needed before merge

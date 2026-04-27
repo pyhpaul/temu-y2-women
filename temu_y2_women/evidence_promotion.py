@@ -14,9 +14,10 @@ from temu_y2_women.evidence_repository import (
     validate_strategy_template_records,
 )
 
-_DEFAULT_ELEMENTS_PATH = Path("data/mvp/dress/elements.json")
-_DEFAULT_STRATEGIES_PATH = Path("data/mvp/dress/strategy_templates.json")
-_DEFAULT_TAXONOMY_PATH = Path("data/mvp/dress/evidence_taxonomy.json")
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_DEFAULT_ELEMENTS_PATH = _PROJECT_ROOT / "data/mvp/dress/elements.json"
+_DEFAULT_STRATEGIES_PATH = _PROJECT_ROOT / "data/mvp/dress/strategy_templates.json"
+_DEFAULT_TAXONOMY_PATH = _PROJECT_ROOT / "data/mvp/dress/evidence_taxonomy.json"
 _DRAFT_ELEMENT_REQUIRED_FIELDS = {
     "draft_id",
     "category",
@@ -66,6 +67,8 @@ def prepare_dress_promotion_review(
         return _build_review_template(context)
     except GenerationError as error:
         return error.to_dict()
+    except OSError as error:
+        return _io_error(error).to_dict()
 
 
 def validate_reviewed_dress_promotion(
@@ -88,6 +91,8 @@ def validate_reviewed_dress_promotion(
         return reviewed
     except GenerationError as error:
         return error.to_dict()
+    except OSError as error:
+        return _io_error(error).to_dict()
 
 
 def apply_reviewed_dress_promotion(
@@ -122,6 +127,8 @@ def apply_reviewed_dress_promotion(
         return report
     except GenerationError as error:
         return error.to_dict()
+    except OSError as error:
+        return _io_error(error).to_dict()
 
 
 def _load_promotion_context(
@@ -889,6 +896,14 @@ def _write_error(error: OSError) -> GenerationError:
     return GenerationError(
         code="PROMOTION_WRITE_FAILED",
         message="failed to write promotion outputs",
+        details={"path": str(getattr(error, "filename", ""))},
+    )
+
+
+def _io_error(error: OSError) -> GenerationError:
+    return GenerationError(
+        code="PROMOTION_IO_FAILED",
+        message="failed to read promotion inputs",
         details={"path": str(getattr(error, "filename", ""))},
     )
 

@@ -58,6 +58,21 @@ class EvidencePromotionPrepareTest(unittest.TestCase):
                     self.assertEqual(result["error"]["code"], "INVALID_PROMOTION_INPUT")
                     self.assertEqual(result["error"]["details"]["field"], field)
 
+    def test_prepare_dress_promotion_review_rejects_malformed_active_evidence_json(self) -> None:
+        from temu_y2_women.evidence_promotion import prepare_dress_promotion_review
+
+        with TemporaryDirectory() as temp_dir:
+            broken_elements_path = Path(temp_dir) / "broken-elements.json"
+            broken_elements_path.write_text("{bad", encoding="utf-8")
+            result = prepare_dress_promotion_review(
+                draft_elements_path=_PROMOTION_FIXTURE_DIR / "create" / "draft_elements.json",
+                draft_strategy_hints_path=_PROMOTION_FIXTURE_DIR / "create" / "draft_strategy_hints.json",
+                active_elements_path=broken_elements_path,
+                active_strategies_path=_PROMOTION_FIXTURE_DIR / "baseline" / "strategy_templates.json",
+            )
+
+        self.assertEqual(result["error"]["code"], "INVALID_EVIDENCE_STORE")
+
 
 class EvidencePromotionValidationTest(unittest.TestCase):
     def test_validate_reviewed_dress_promotion_accepts_valid_reviewed_fixtures(self) -> None:
