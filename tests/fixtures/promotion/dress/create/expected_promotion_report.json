@@ -1,0 +1,42 @@
+{
+  "schema_version": "promotion-report-v1",
+  "category": "dress",
+  "source_artifacts": {
+    "draft_elements": "draft_elements.json",
+    "draft_strategy_hints": "draft_strategy_hints.json",
+    "reviewed_decisions": "reviewed_decisions.json"
+  },
+  "summary": {
+    "elements": {
+      "accepted": 1,
+      "rejected": 0,
+      "created": 1,
+      "updated": 0
+    },
+    "strategy_hints": {
+      "accepted": 1,
+      "rejected": 0,
+      "created": 1,
+      "updated": 0
+    }
+  },
+  "elements": [
+    {
+      "draft_id": "draft-detail-waist-tie",
+      "decision": "accept",
+      "merge_action": "create",
+      "element_id": "dress-detail-waist-tie-001",
+      "source_signal_ids": ["dress-signal-101", "dress-signal-102"]
+    }
+  ],
+  "strategy_hints": [
+    {
+      "hint_id": "draft-strategy-us-summer-waist-tie-vacation",
+      "decision": "accept",
+      "merge_action": "create",
+      "strategy_id": "dress-us-summer-waist-tie-vacation",
+      "source_signal_ids": ["dress-signal-101", "dress-signal-102"]
+    }
+  ],
+  "warnings": []
+}

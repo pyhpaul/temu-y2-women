@@ -1,0 +1,65 @@
+{
+  "schema_version": "promotion-review-v1",
+  "category": "dress",
+  "elements": [
+    {
+      "draft_id": "draft-fabric-cotton-poplin-refresh",
+      "merge_action": "update",
+      "matched_active_element_id": "dress-fabric-cotton-poplin-001",
+      "source_signal_ids": ["dress-signal-201", "dress-signal-202", "dress-signal-203"],
+      "decision": "accept",
+      "proposed_element": {
+        "element_id": "dress-fabric-cotton-poplin-001",
+        "category": "dress",
+        "slot": "fabric",
+        "value": "cotton poplin",
+        "tags": ["breathable", "lightweight", "summer", "vacation"],
+        "base_score": 0.9,
+        "price_bands": ["mid"],
+        "occasion_tags": ["casual", "resort", "vacation"],
+        "season_tags": ["spring", "summer"],
+        "risk_flags": [],
+        "evidence_summary": "Cotton poplin keeps summer dresses crisp, breathable, and easy to pack for vacation.",
+        "status": "active"
+      }
+    }
+  ],
+  "strategy_hints": [
+    {
+      "hint_id": "draft-strategy-us-summer-vacation-refresh",
+      "merge_action": "update",
+      "matched_active_strategy_id": "dress-us-summer-vacation",
+      "source_signal_ids": ["dress-signal-201", "dress-signal-202", "dress-signal-203"],
+      "decision": "accept",
+      "proposed_strategy_template": {
+        "strategy_id": "dress-us-summer-vacation",
+        "category": "dress",
+        "target_market": "US",
+        "priority": 11,
+        "date_window": {
+          "start": "05-15",
+          "end": "08-31"
+        },
+        "occasion_tags": ["resort", "vacation"],
+        "boost_tags": ["airy", "breathable", "floral", "lightweight", "summer", "vacation"],
+        "suppress_tags": ["bodycon", "heavy", "holiday"],
+        "slot_preferences": {
+          "detail": ["smocked bodice"],
+          "fabric": ["cotton poplin"],
+          "neckline": ["square neckline"],
+          "pattern": ["floral print"],
+          "silhouette": ["a-line"],
+          "sleeve": ["flutter sleeve"]
+        },
+        "score_boost": 0.14,
+        "score_cap": 0.22,
+        "prompt_hints": [
+          "fresh summer styling",
+          "crisp breathable vacation fabrication"
+        ],
+        "reason_template": "summer vacation strategy refreshed with stronger breathable cotton-poplin evidence",
+        "status": "active"
+      }
+    }
+  ]
+}

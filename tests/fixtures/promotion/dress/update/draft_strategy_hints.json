@@ -1,0 +1,25 @@
+{
+  "schema_version": "signal-ingestion-v1",
+  "strategy_hints": [
+    {
+      "hint_id": "draft-strategy-us-summer-vacation-refresh",
+      "category": "dress",
+      "target_market": "US",
+      "season_tags": ["summer"],
+      "occasion_tags": ["resort", "vacation"],
+      "boost_tags": ["airy", "breathable", "feminine", "lightweight", "summer", "vacation"],
+      "slot_preferences": {
+        "detail": ["smocked bodice"],
+        "fabric": ["cotton poplin"],
+        "neckline": ["square neckline"],
+        "pattern": ["floral print"],
+        "silhouette": ["a-line"],
+        "sleeve": ["flutter sleeve"]
+      },
+      "priority_signal": 3,
+      "source_signal_ids": ["dress-signal-201", "dress-signal-202", "dress-signal-203"],
+      "reason_summary": "Aggregated from 3 signals for refreshed summer vacation dress demand.",
+      "status": "draft"
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "schema_version": "mvp-v1",
+  "elements": [
+    {
+      "element_id": "dress-silhouette-a-line-001",
+      "category": "dress",
+      "slot": "silhouette",
+      "value": "a-line",
+      "tags": ["dress", "feminine", "summer"],
+      "base_score": 0.79,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual", "vacation"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Reliable A-line anchor for easy day dresses with flexible summer merchandising.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-fabric-cotton-poplin-001",
+      "category": "dress",
+      "slot": "fabric",
+      "value": "cotton poplin",
+      "tags": ["breathable", "lightweight", "summer"],
+      "base_score": 0.8,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual", "resort"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Keeps dress fabrication crisp and breathable for warm-weather assortment planning.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-neckline-square-001",
+      "category": "dress",
+      "slot": "neckline",
+      "value": "square neckline",
+      "tags": ["feminine", "romantic", "summer"],
+      "base_score": 0.7,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual", "resort"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Square necklines keep feminine dress direction clear without over-specializing the assortment.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-sleeve-flutter-001",
+      "category": "dress",
+      "slot": "sleeve",
+      "value": "flutter sleeve",
+      "tags": ["airy", "feminine", "summer"],
+      "base_score": 0.68,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual", "vacation"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Flutter sleeves add movement and lightness for broadly wearable seasonal dress styling.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-pattern-floral-001",
+      "category": "dress",
+      "slot": "pattern",
+      "value": "floral print",
+      "tags": ["floral", "feminine", "summer"],
+      "base_score": 0.74,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual", "vacation"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Floral print remains a dependable seasonal pattern signal for feminine dress storytelling.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-detail-smocked-bodice-001",
+      "category": "dress",
+      "slot": "detail",
+      "value": "smocked bodice",
+      "tags": ["comfort", "feminine", "summer"],
+      "base_score": 0.66,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual", "vacation"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Smocked bodices contribute comfort-led shaping while staying easy to reuse in dress prompts.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-detail-waist-tie-001",
+      "category": "dress",
+      "slot": "detail",
+      "value": "waist tie",
+      "tags": ["comfort", "feminine", "summer", "vacation"],
+      "base_score": 0.64,
+      "price_bands": ["mid"],
+      "occasion_tags": ["resort", "vacation"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "evidence_summary": "Waist ties give lightweight summer dresses a clear shape cue without losing vacation ease.",
+      "status": "active"
+    }
+  ]
+}

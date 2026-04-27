@@ -1,0 +1,64 @@
+{
+  "schema_version": "promotion-review-v1",
+  "category": "dress",
+  "elements": [
+    {
+      "draft_id": "draft-detail-waist-tie",
+      "merge_action": "create",
+      "matched_active_element_id": null,
+      "source_signal_ids": ["dress-signal-101", "dress-signal-102"],
+      "decision": "accept",
+      "proposed_element": {
+        "element_id": "dress-detail-waist-tie-001",
+        "category": "dress",
+        "slot": "detail",
+        "value": "waist tie",
+        "tags": ["comfort", "feminine", "summer", "vacation"],
+        "base_score": 0.64,
+        "price_bands": ["mid"],
+        "occasion_tags": ["resort", "vacation"],
+        "season_tags": ["summer"],
+        "risk_flags": [],
+        "evidence_summary": "Waist ties give lightweight summer dresses a clear shape cue without losing vacation ease.",
+        "status": "active"
+      }
+    }
+  ],
+  "strategy_hints": [
+    {
+      "hint_id": "draft-strategy-us-summer-waist-tie-vacation",
+      "merge_action": "create",
+      "matched_active_strategy_id": null,
+      "source_signal_ids": ["dress-signal-101", "dress-signal-102"],
+      "decision": "accept",
+      "proposed_strategy_template": {
+        "strategy_id": "dress-us-summer-waist-tie-vacation",
+        "category": "dress",
+        "target_market": "US",
+        "priority": 9,
+        "date_window": {
+          "start": "05-15",
+          "end": "08-31"
+        },
+        "occasion_tags": ["resort", "vacation"],
+        "boost_tags": ["comfort", "feminine", "summer", "vacation"],
+        "suppress_tags": ["bodycon", "heavy", "holiday"],
+        "slot_preferences": {
+          "detail": ["waist tie"],
+          "fabric": ["cotton poplin"],
+          "neckline": ["square neckline"],
+          "silhouette": ["a-line"],
+          "sleeve": ["flutter sleeve"]
+        },
+        "score_boost": 0.1,
+        "score_cap": 0.16,
+        "prompt_hints": [
+          "waist-defined summer styling",
+          "easy resort-to-vacation shape cue"
+        ],
+        "reason_template": "summer vacation strategy anchored by curated waist-tie evidence",
+        "status": "active"
+      }
+    }
+  ]
+}
