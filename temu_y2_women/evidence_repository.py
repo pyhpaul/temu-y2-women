@@ -104,26 +104,7 @@ def load_elements(
         array_field="elements",
         array_message="elements evidence store must contain an 'elements' array",
     )
-    seen_active_element_ids: set[str] = set()
-    seen_active_slot_values: set[tuple[str, str]] = set()
-    for index, element in enumerate(elements):
-        _validate_record_shape(
-            path=path,
-            index=index,
-            record=element,
-            required_fields=_ELEMENT_REQUIRED_FIELDS,
-            record_type="element",
-        )
-        if element.get("status") != "active":
-            continue
-        _validate_element_record(path=path, taxonomy=taxonomy, index=index, element=element)
-        _validate_active_element_uniqueness(
-            path=path,
-            index=index,
-            element=element,
-            seen_active_element_ids=seen_active_element_ids,
-            seen_active_slot_values=seen_active_slot_values,
-        )
+    _validate_element_records(path=path, taxonomy=taxonomy, elements=elements)
     return list(elements)
 
 
@@ -133,33 +114,52 @@ def load_strategy_templates(
     elements_path: Path = _DEFAULT_ELEMENTS_PATH,
 ) -> list[dict[str, Any]]:
     taxonomy = load_evidence_taxonomy(taxonomy_path)
-    active_values_by_slot = _build_active_values_by_slot(
-        load_elements(elements_path, taxonomy_path=taxonomy_path)
-    )
+    active_values_by_slot = build_active_values_by_slot(load_elements(elements_path, taxonomy_path=taxonomy_path))
     strategies = _load_record_array(
         path=path,
         root_message="strategy evidence store root must be an object",
         array_field="strategy_templates",
         array_message="strategy evidence store must contain a 'strategy_templates' array",
     )
-    for index, strategy in enumerate(strategies):
-        _validate_record_shape(
-            path=path,
-            index=index,
-            record=strategy,
-            required_fields=_STRATEGY_REQUIRED_FIELDS,
-            record_type="strategy",
-        )
-        if strategy.get("status") != "active":
-            continue
-        _validate_strategy_record(
-            path=path,
-            index=index,
-            strategy=strategy,
-            taxonomy=taxonomy,
-            active_values_by_slot=active_values_by_slot,
-        )
+    _validate_strategy_template_records(
+        path=path,
+        taxonomy=taxonomy,
+        active_values_by_slot=active_values_by_slot,
+        strategies=strategies,
+    )
     return list(strategies)
+
+
+def validate_element_records(
+    elements: list[dict[str, Any]],
+    taxonomy: dict[str, Any],
+    path: Path | None = None,
+) -> list[dict[str, Any]]:
+    _validate_element_records(
+        path=path or Path("<memory>"),
+        taxonomy=taxonomy,
+        elements=elements,
+    )
+    return list(elements)
+
+
+def validate_strategy_template_records(
+    strategies: list[dict[str, Any]],
+    taxonomy: dict[str, Any],
+    active_values_by_slot: dict[str, set[str]],
+    path: Path | None = None,
+) -> list[dict[str, Any]]:
+    _validate_strategy_template_records(
+        path=path or Path("<memory>"),
+        taxonomy=taxonomy,
+        active_values_by_slot=active_values_by_slot,
+        strategies=strategies,
+    )
+    return list(strategies)
+
+
+def build_active_values_by_slot(elements: list[dict[str, Any]]) -> dict[str, set[str]]:
+    return _build_active_values_by_slot(elements)
 
 
 def retrieve_candidates(
@@ -268,6 +268,13 @@ def _validate_element_record(
         allowed_values=set(taxonomy["allowed_slots"]),
         record_type="element",
     )
+    _validate_string_list_field(
+        path=path,
+        index=index,
+        field="price_bands",
+        value=element.get("price_bands"),
+        record_type="element",
+    )
     _validate_element_taxonomy_lists(path=path, taxonomy=taxonomy, index=index, element=element)
     _validate_element_score(path=path, taxonomy=taxonomy, index=index, element=element)
     _validate_element_summary(path=path, taxonomy=taxonomy, index=index, element=element)
@@ -280,6 +287,8 @@ def _validate_strategy_record(
     taxonomy: dict[str, Any],
     active_values_by_slot: dict[str, set[str]],
 ) -> None:
+    _validate_strategy_numeric_fields(path=path, index=index, strategy=strategy)
+    _validate_strategy_reason_template(path=path, index=index, strategy=strategy)
     _validate_strategy_date_window(path=path, index=index, strategy=strategy)
     _validate_strategy_list_fields(path=path, taxonomy=taxonomy, index=index, strategy=strategy)
     _validate_strategy_slot_preferences(
@@ -289,6 +298,53 @@ def _validate_strategy_record(
         strategy=strategy,
         active_values_by_slot=active_values_by_slot,
     )
+
+
+def _validate_element_records(
+    path: Path,
+    taxonomy: dict[str, Any],
+    elements: list[dict[str, Any]],
+) -> None:
+    seen_active_element_ids: set[str] = set()
+    seen_active_slot_values: set[tuple[str, str]] = set()
+    for index, element in enumerate(elements):
+        _validate_record_shape(path, index, element, _ELEMENT_REQUIRED_FIELDS, "element")
+        if element.get("status") != "active":
+            continue
+        _validate_element_record(path=path, taxonomy=taxonomy, index=index, element=element)
+        _validate_active_element_uniqueness(
+            path=path,
+            index=index,
+            element=element,
+            seen_active_element_ids=seen_active_element_ids,
+            seen_active_slot_values=seen_active_slot_values,
+        )
+
+
+def _validate_strategy_template_records(
+    path: Path,
+    taxonomy: dict[str, Any],
+    active_values_by_slot: dict[str, set[str]],
+    strategies: list[dict[str, Any]],
+) -> None:
+    seen_active_strategy_ids: set[str] = set()
+    for index, strategy in enumerate(strategies):
+        _validate_record_shape(path, index, strategy, _STRATEGY_REQUIRED_FIELDS, "strategy")
+        if strategy.get("status") != "active":
+            continue
+        _validate_active_strategy_uniqueness(
+            path=path,
+            index=index,
+            strategy=strategy,
+            seen_active_strategy_ids=seen_active_strategy_ids,
+        )
+        _validate_strategy_record(
+            path=path,
+            index=index,
+            strategy=strategy,
+            taxonomy=taxonomy,
+            active_values_by_slot=active_values_by_slot,
+        )
 
 
 def _load_record_array(
@@ -367,6 +423,22 @@ def _validate_active_element_uniqueness(
             details={"path": str(path), "index": index, "slot": str(element["slot"]), "value": str(element["value"])},
         )
     seen_active_slot_values.add(slot_value)
+
+
+def _validate_active_strategy_uniqueness(
+    path: Path,
+    index: int,
+    strategy: dict[str, Any],
+    seen_active_strategy_ids: set[str],
+) -> None:
+    strategy_id = str(strategy["strategy_id"])
+    if strategy_id in seen_active_strategy_ids:
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="active strategy duplicates an existing strategy_id record",
+            details={"path": str(path), "index": index, "field": "strategy_id", "strategy_id": strategy_id},
+        )
+    seen_active_strategy_ids.add(strategy_id)
 
 
 def _collect_strategy_suppress_tags(selected_strategies: tuple[SelectedStrategy, ...]) -> set[str]:
@@ -550,6 +622,40 @@ def _validate_strategy_date_window(
             message="strategy date_window must include string start/end values",
             details={"path": str(path), "index": index, "field": "date_window"},
         )
+
+
+def _validate_strategy_numeric_fields(
+    path: Path,
+    index: int,
+    strategy: dict[str, Any],
+) -> None:
+    if not isinstance(strategy.get("priority"), int):
+        raise GenerationError(
+            code="INVALID_EVIDENCE_STORE",
+            message="strategy priority must be an integer",
+            details={"path": str(path), "index": index, "field": "priority"},
+        )
+    for field in ("score_boost", "score_cap"):
+        if not isinstance(strategy.get(field), (int, float)):
+            raise GenerationError(
+                code="INVALID_EVIDENCE_STORE",
+                message=f"strategy {field} must be numeric",
+                details={"path": str(path), "index": index, "field": field},
+            )
+
+
+def _validate_strategy_reason_template(
+    path: Path,
+    index: int,
+    strategy: dict[str, Any],
+) -> None:
+    if isinstance(strategy.get("reason_template"), str):
+        return
+    raise GenerationError(
+        code="INVALID_EVIDENCE_STORE",
+        message="strategy reason_template must be a string",
+        details={"path": str(path), "index": index, "field": "reason_template"},
+    )
 
 
 def _validate_strategy_list_fields(

@@ -6,9 +6,9 @@
 
 ## 2. Review-template generation and decision validation
 
-- [ ] 2.1 Implement staged draft loading and validation for promotion inputs
-- [ ] 2.2 Implement deterministic review-template generation with create-versus-update hints
-- [ ] 2.3 Implement fail-closed validation for reviewed promotion decisions and curated overrides
+- [x] 2.1 Implement staged draft loading and validation for promotion inputs
+- [x] 2.2 Implement deterministic review-template generation with create-versus-update hints
+- [x] 2.3 Implement fail-closed validation for reviewed promotion decisions and curated overrides
 
 ## 3. Active evidence merge and reporting
 
