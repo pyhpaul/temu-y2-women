@@ -1,8 +1,8 @@
 ## 1. Render input and provider foundation
 
-- [ ] 1.1 Add focused validation helpers for successful `dress` concept result payloads and prompt-bundle extraction
-- [ ] 1.2 Add an image-provider adapter contract plus a fake provider path for offline tests
-- [ ] 1.3 Add regression coverage for valid render inputs and fail-closed invalid-input handling
+- [x] 1.1 Add focused validation helpers for successful `dress` concept result payloads and prompt-bundle extraction
+- [x] 1.2 Add an image-provider adapter contract plus a fake provider path for offline tests
+- [x] 1.3 Add regression coverage for valid render inputs and fail-closed invalid-input handling
 
 ## 2. Image render workflow
 
