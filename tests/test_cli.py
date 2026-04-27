@@ -26,6 +26,7 @@ class CliTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         payload = json.loads(stdout.getvalue())
         self.assertEqual(payload["prompt_bundle"]["mode"], "A")
+        self.assertEqual(payload["factory_spec"]["schema_version"], "factory-spec-v1")
 
     def test_cli_prints_failure_json(self) -> None:
         from temu_y2_women.cli import main

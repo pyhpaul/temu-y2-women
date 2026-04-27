@@ -36,6 +36,8 @@ class GenerateAndRenderCliTest(unittest.TestCase):
             payload = json.loads(stdout.getvalue())
             self.assertEqual(exit_code, 0)
             self.assertEqual(payload["provider"], "fake")
+            concept_result = _read_json(output_dir / "concept_result.json")
+            self.assertEqual(concept_result["factory_spec"]["schema_version"], "factory-spec-v1")
             self.assertTrue((output_dir / "concept_result.json").exists())
             self.assertTrue((output_dir / "rendered_image.png").exists())
 
@@ -92,4 +94,9 @@ class GenerateAndRenderCliTest(unittest.TestCase):
             self.assertEqual(completed.returncode, 0)
             payload = json.loads(completed.stdout)
             self.assertEqual(payload["provider"], "fake")
-            self.assertTrue((output_dir / "concept_result.json").exists())
+            concept_result = _read_json(output_dir / "concept_result.json")
+            self.assertEqual(concept_result["factory_spec"]["schema_version"], "factory-spec-v1")
+
+
+def _read_json(path: Path) -> dict[str, object]:
+    return json.loads(path.read_text(encoding="utf-8"))

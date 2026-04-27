@@ -1,0 +1,41 @@
+## ADDED Requirements
+
+### Requirement: Deterministic factory-spec draft output
+The system SHALL generate a structured `factory_spec` draft artifact for every successful `dress` concept generation result.
+
+#### Scenario: Successful generation includes a factory-spec draft
+- **WHEN** a `dress` concept generation flow succeeds
+- **THEN** the result includes a `factory_spec` object
+- **AND** the object records a schema version plus deterministic production-review content for the generated concept
+
+### Requirement: Factory-spec draft classifies certainty levels
+The system SHALL classify production-facing output into explicit `known`, `inferred`, and `unresolved` sections.
+
+#### Scenario: Selected concept facts are preserved as known fields
+- **WHEN** the final concept selects concrete elements such as `fabric`, `neckline`, `sleeve`, or `detail`
+- **THEN** the `factory_spec.known` section preserves those selected facts without rewriting them as guessed production metadata
+
+#### Scenario: Rule-derived review guidance is emitted as inferred fields
+- **WHEN** the system has deterministic production-review guidance that can be derived from the selected concept and request context
+- **THEN** it records that guidance under `factory_spec.inferred`
+- **AND** it does not mix those rule-derived statements into `known`
+
+#### Scenario: Unsupported production data is listed as unresolved
+- **WHEN** the repository does not model required production metadata such as fiber content, GSM, lining, closure details, measurements, tolerances, or BOM-grade trim data
+- **THEN** the `factory_spec.unresolved` section lists those fields explicitly instead of inventing values
+
+### Requirement: Factory-spec draft must stay non-fabricated
+The system SHALL avoid generating unsupported numeric or supplier-ready production values in the draft factory spec.
+
+#### Scenario: Missing numeric production values remain unresolved
+- **WHEN** the active evidence store does not contain numeric production data for the selected concept
+- **THEN** the draft output omits fabricated numeric values
+- **AND** it records the missing production fields as unresolved
+
+### Requirement: Deterministic production-review guidance from existing evidence
+The system SHALL derive draft production guidance only from repository-local evidence, selected elements, and deterministic rules.
+
+#### Scenario: Fabric and detail selections influence inferred review guidance
+- **WHEN** the selected concept includes production-relevant selections such as `cotton poplin` fabric or `smocked bodice` detail
+- **THEN** the `factory_spec.inferred` section includes deterministic review guidance about visible texture, drape, construction focus, or other supported review priorities
+- **AND** that guidance remains traceable to the selected concept rather than external generated metadata

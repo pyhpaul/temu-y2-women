@@ -9,35 +9,30 @@ def render_prompt_bundle(
     selected_strategies: tuple[SelectedStrategy, ...],
     warnings: tuple[str, ...],
 ) -> dict[str, object]:
-    development_notes = list(
-        concept.style_summary or warnings or ("dress MVP development guidance",)
-    )
-    prompt = _build_prompt(
-        request=request,
-        concept=concept,
-        selected_strategies=selected_strategies,
-        development_notes=development_notes,
-    )
+    development_notes = list(concept.style_summary or warnings or ("dress MVP development guidance",))
+    prompt = _build_prompt(request, concept, selected_strategies, development_notes)
+    bundle: dict[str, object] = {
+        "mode": request.mode,
+        "prompt": prompt,
+        "template_version": "visual-prompt-v1",
+        "render_notes": _render_notes(request.mode),
+        "detail_prompts": _detail_prompts(concept),
+    }
+    if request.mode == "B":
+        bundle["development_notes"] = development_notes
+    return bundle
 
-    if request.mode == "A":
-        return {
-            "mode": "A",
-            "prompt": prompt,
-            "render_notes": [
-                "focus on product appeal",
-                "keep summer seasonal styling",
-            ],
-        }
 
-    return {
-            "mode": "B",
-            "prompt": prompt,
-            "render_notes": [
-                "emphasize garment construction clarity",
-                "make silhouette and neckline explicit",
-            ],
-            "development_notes": development_notes,
-        }
+def _render_notes(mode: str) -> list[str]:
+    if mode == "A":
+        return [
+            "prioritize product-first presentation",
+            "keep garment construction realistic",
+        ]
+    return [
+        "prioritize construction review clarity",
+        "make seam placement and fabric behavior explicit",
+    ]
 
 
 def _build_prompt(
@@ -46,69 +41,148 @@ def _build_prompt(
     selected_strategies: tuple[SelectedStrategy, ...],
     development_notes: list[str],
 ) -> str:
-    subject_line = (
-        f"women's {request.target_market} market {concept.category}, "
-        f"launch-aligned concept for {request.target_launch_date.isoformat()}"
-    )
-    structure_line = "; ".join(
-        f"{slot}: {element.value}"
-        for slot, element in concept.selected_elements.items()
-    )
-    style_line = "; ".join(_style_items(request, concept, selected_strategies))
-    display_line = _display_line(request, development_notes)
-    constraints_line = "; ".join(_constraint_items(request, concept))
-
     return "\n".join(
         (
-            f"[商品主体] {subject_line}",
-            f"[核心结构] {structure_line}",
-            f"[风格与时效] {style_line}",
-            f"[展示方式] {display_line}",
-            f"[约束与避免项] {constraints_line}",
+            f"[商品主体] {_subject_line(request, concept)}",
+            f"[核心结构] {_structure_line(request, concept)}",
+            f"[生产与细节展示要求] {_detail_requirements_line(request, selected_strategies, development_notes)}",
+            f"[镜头与构图] {_shot_line(request)}",
+            f"[面料与工艺表现] {_material_line(concept)}",
+            f"[场景与光线] {_scene_line(request)}",
+            f"[约束与避免项] {_constraint_line(request)}",
         )
     )
 
 
-def _style_items(
-    request: NormalizedRequest,
-    concept: ComposedConcept,
-    selected_strategies: tuple[SelectedStrategy, ...],
-) -> list[str]:
-    style_items: list[str] = []
-    if request.price_band:
-        style_items.append(f"price band: {request.price_band}")
-    if request.occasion_tags:
-        style_items.append(f"occasion focus: {', '.join(request.occasion_tags)}")
-    for selected in selected_strategies:
-        for hint in selected.strategy.prompt_hints:
-            if hint not in style_items:
-                style_items.append(hint)
-    for summary in concept.style_summary:
-        if summary not in style_items:
-            style_items.append(summary)
-    return style_items or ["stable seasonal direction"]
-
-
-def _display_line(request: NormalizedRequest, development_notes: list[str]) -> str:
+def _subject_line(request: NormalizedRequest, concept: ComposedConcept) -> str:
     if request.mode == "A":
         return (
-            "hero ecommerce concept image; emphasize shopper appeal, outfit desirability, "
-            "and clean product storytelling"
+            f"women's {_occasion_phrase(request)} {concept.category} for the {request.target_market} market, "
+            "on-model ecommerce hero image, product-first presentation"
         )
     return (
-        "development reference image; emphasize silhouette, neckline, sleeve, fabric, and finish clarity; "
-        f"development notes: {'; '.join(development_notes)}"
+        f"women's {concept.category} development reference image for the {request.target_market} market, "
+        "production-review presentation"
     )
 
 
-def _constraint_items(
+def _occasion_phrase(request: NormalizedRequest) -> str:
+    if request.occasion_tags:
+        return " ".join(request.occasion_tags)
+    return "seasonal"
+
+
+def _structure_line(request: NormalizedRequest, concept: ComposedConcept) -> str:
+    items = [_element_phrase(slot, element.value) for slot, element in concept.selected_elements.items()]
+    if "bodycon" in request.avoid_tags:
+        items.append("non-bodycon fit")
+    return "; ".join(items)
+
+
+def _element_phrase(slot: str, value: str) -> str:
+    if slot == "silhouette":
+        return f"{value} silhouette"
+    if slot == "fabric":
+        return f"{value} fabric"
+    return value
+
+
+def _detail_requirements_line(
     request: NormalizedRequest,
-    concept: ComposedConcept,
-) -> list[str]:
-    constraint_items = list(concept.constraint_notes)
-    if request.avoid_tags:
-        constraint_items.append(f"avoid: {', '.join(request.avoid_tags)}")
-    else:
-        constraint_items.append("avoid: none")
-    constraint_items.append("avoid off-brief styling drift")
-    return constraint_items
+    selected_strategies: tuple[SelectedStrategy, ...],
+    development_notes: list[str],
+) -> str:
+    items = [
+        "clearly show neckline depth, bodice construction, sleeve opening, waist seam position, skirt volume, hem finish, floral print scale, and fabric texture",
+        "keep the garment visually realistic and feasible for factory production",
+    ]
+    if request.mode == "B":
+        items.append(f"development notes: {'; '.join(development_notes)}")
+    elif selected_strategies:
+        items.append(f"seasonal direction: {selected_strategies[0].reason}")
+    return "; ".join(items)
+
+
+def _shot_line(request: NormalizedRequest) -> str:
+    if request.mode == "A":
+        return "full-body; vertical 4:5; eye-level camera; centered composition; full dress visible from shoulder to hem; clean negative space"
+    return "full-body; vertical 4:5; eye-level camera; front or slight 3/4 view; full dress visible from shoulder to hem; neutral review framing"
+
+
+def _material_line(concept: ComposedConcept) -> str:
+    fabric = concept.selected_elements.get("fabric", None)
+    pattern = concept.selected_elements.get("pattern", None)
+    detail = concept.selected_elements.get("detail", None)
+    fabric_text = fabric.value if fabric else "dress fabric"
+    pattern_text = pattern.value if pattern else "surface print"
+    detail_text = detail.value if detail else "construction detail"
+    return (
+        f"crisp {fabric_text} texture; visible {detail_text}; visible seam lines; clean hem finish; "
+        f"true-to-color {pattern_text}; natural drape; commercially realistic construction"
+    )
+
+
+def _scene_line(request: NormalizedRequest) -> str:
+    if "vacation" in request.occasion_tags:
+        return "clean sunlit resort-inspired studio; soft directional daylight; warm ivory and sand background; minimal props"
+    if request.mode == "B":
+        return "clean neutral studio; soft commercial lighting; background kept quiet for production review"
+    return "clean studio; soft commercial lighting; quiet background that supports the garment without competing"
+
+
+def _constraint_line(request: NormalizedRequest) -> str:
+    items = ["no text", "no watermark", "no cluttered background", "no unrealistic garment construction"]
+    if "bodycon" in request.avoid_tags:
+        items.insert(0, "no bodycon fit")
+    for tag in request.avoid_tags:
+        if tag != "bodycon":
+            items.append(f"avoid {tag} styling")
+    items.extend(("no jacket", "no cardigan", "no bag covering the bodice", "no exaggerated editorial pose"))
+    return "; ".join(items)
+
+
+def _detail_prompts(concept: ComposedConcept) -> list[dict[str, str]]:
+    return [
+        {
+            "prompt_id": "construction_closeup",
+            "prompt": _construction_prompt(concept),
+        },
+        {
+            "prompt_id": "fabric_print_closeup",
+            "prompt": _fabric_prompt(concept),
+        },
+        {
+            "prompt_id": "hem_and_drape_closeup",
+            "prompt": _hem_prompt(concept),
+        },
+    ]
+
+
+def _construction_prompt(concept: ComposedConcept) -> str:
+    neckline = concept.selected_elements["neckline"].value
+    sleeve = concept.selected_elements["sleeve"].value
+    detail = concept.selected_elements.get("detail", concept.selected_elements["fabric"]).value
+    pattern = concept.selected_elements["pattern"].value
+    return (
+        f"close-up ecommerce detail image of the {neckline}, {detail}, and {sleeve} on the dress; "
+        f"clearly show seam lines, neckline edge finish, print placement, and true-to-color {pattern}; "
+        "neutral studio background; no hands, no accessories, no text"
+    )
+
+
+def _fabric_prompt(concept: ComposedConcept) -> str:
+    fabric = concept.selected_elements["fabric"].value
+    pattern = concept.selected_elements["pattern"].value
+    return (
+        f"macro fabric detail image of {fabric} with {pattern}; clearly show print scale, weave texture, "
+        "color accuracy, and commercially realistic construction; soft studio lighting; no blur, no props, no text"
+    )
+
+
+def _hem_prompt(concept: ComposedConcept) -> str:
+    silhouette = concept.selected_elements["silhouette"].value
+    pattern = concept.selected_elements["pattern"].value
+    return (
+        f"close-up lower-skirt detail image of the {silhouette} dress; clearly show hem finish, skirt volume, "
+        f"seam transitions, drape, and {pattern} continuity; neutral background; no cropped hem edge, no props, no text"
+    )

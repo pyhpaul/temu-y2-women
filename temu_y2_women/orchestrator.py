@@ -11,6 +11,7 @@ from temu_y2_women.evidence_repository import (
     retrieve_candidates,
 )
 from temu_y2_women.errors import GenerationError
+from temu_y2_women.factory_spec_builder import build_factory_spec
 from temu_y2_women.prompt_renderer import render_prompt_bundle
 from temu_y2_women.request_normalizer import normalize_request
 from temu_y2_women.result_packager import package_success_result
@@ -42,12 +43,18 @@ def generate_dress_concept(
             selected_strategies=strategy_result.selected,
             warnings=strategy_result.warnings + retrieval_warnings,
         )
+        factory_spec = build_factory_spec(
+            request=request,
+            concept=concept,
+            selected_strategies=strategy_result.selected,
+        )
         return package_success_result(
             request=request,
             selected_strategies=strategy_result.selected,
             retrieved_elements=flatten_candidates(grouped_candidates),
             composed_concept=concept,
             prompt_bundle=prompt_bundle,
+            factory_spec=factory_spec,
             warnings=strategy_result.warnings + retrieval_warnings,
         )
     except GenerationError as error:
