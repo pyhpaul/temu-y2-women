@@ -12,6 +12,17 @@ _RESULT_FIXTURE_PATH = Path("tests/fixtures/feedback/dress/result_success.json")
 
 
 class ImageRenderInputTest(unittest.TestCase):
+    def test_result_fixture_carries_richer_factory_spec_draft_fields(self) -> None:
+        payload = _read_json(_RESULT_FIXTURE_PATH)
+        inferred = payload["factory_spec"]["inferred"]
+
+        self.assertIn("sample_review_watchpoints", inferred)
+        self.assertIn("qa_review_notes", inferred)
+        self.assertIn("fit_review_cues", inferred)
+        self.assertIn("commercial_review_cues", inferred)
+        self.assertIn("visible_construction_checks", inferred)
+        self.assertIn("open_questions", inferred)
+
     def test_load_dress_image_render_input_accepts_successful_result(self) -> None:
         from temu_y2_women.image_generation_output import load_dress_image_render_input
 

@@ -29,6 +29,18 @@ class OrchestratorTest(unittest.TestCase):
             "print continuity across seams",
             result["factory_spec"]["inferred"]["visible_construction_priorities"],
         )
+        self.assertIn(
+            "sample review: confirm cotton poplin keeps crisp opacity and breathable structure in the finished dress",
+            result["factory_spec"]["inferred"]["sample_review_watchpoints"],
+        )
+        self.assertIn(
+            "qa review: check smocking rows for even tension, secure attachment, and balanced visual spacing",
+            result["factory_spec"]["inferred"]["qa_review_notes"],
+        )
+        self.assertIn(
+            "fit cue: protect non-bodycon ease through bust, waist, and skirt sweep",
+            result["factory_spec"]["inferred"]["fit_review_cues"],
+        )
         self.assertEqual(result["composed_concept"]["selected_elements"]["silhouette"]["value"], "a-line")
         self.assertIn("must_have_tags satisfied: floral", result["composed_concept"]["constraint_notes"])
         self.assertIn("avoid_tags removed: bodycon", " ".join(result["warnings"]))
