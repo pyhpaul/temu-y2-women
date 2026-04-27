@@ -13,6 +13,12 @@ The system SHALL provide a dedicated CLI that reads a `dress` request JSON, pers
 - **THEN** the one-shot workflow returns that structured error
 - **AND** it writes no local output artifacts
 
+#### Scenario: Concept-result write failure stops before provider setup
+- **WHEN** concept generation succeeds but writing `concept_result.json` fails
+- **THEN** the one-shot workflow returns a structured concept-result-output error
+- **AND** it does not enter provider configuration, provider dispatch, or render output publication
+- **AND** it leaves no local output artifacts
+
 #### Scenario: Invalid request input is rejected before generation
 - **WHEN** the one-shot workflow cannot read the request file, the JSON is invalid, or the request root is not an object
 - **THEN** it returns a structured invalid-input error
@@ -23,3 +29,8 @@ The system SHALL provide a dedicated CLI that reads a `dress` request JSON, pers
 - **THEN** the workflow returns a structured render-stage error
 - **AND** it keeps the successful `concept_result.json`
 - **AND** it leaves no partial final render bundle behind
+
+#### Scenario: One-shot CLI reuses the existing render CLI provider option contract
+- **WHEN** an operator runs the one-shot CLI with provider configuration options supported by the existing saved-result render CLI
+- **THEN** the one-shot CLI accepts the same provider configuration surface for image provider selection and configuration
+- **AND** it preserves the existing provider parameter semantics without introducing conflicting meanings for those options
