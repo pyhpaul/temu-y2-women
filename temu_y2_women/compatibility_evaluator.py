@@ -10,9 +10,10 @@ from temu_y2_women.errors import GenerationError
 from temu_y2_women.evidence_repository import load_elements
 from temu_y2_women.models import CandidateElement
 
-_DEFAULT_RULES_PATH = Path("data/mvp/dress/compatibility_rules.json")
-_DEFAULT_ELEMENTS_PATH = Path("data/mvp/dress/elements.json")
-_DEFAULT_TAXONOMY_PATH = Path("data/mvp/dress/evidence_taxonomy.json")
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_DEFAULT_RULES_PATH = _PROJECT_ROOT / "data" / "mvp" / "dress" / "compatibility_rules.json"
+_DEFAULT_ELEMENTS_PATH = _PROJECT_ROOT / "data" / "mvp" / "dress" / "elements.json"
+_DEFAULT_TAXONOMY_PATH = _PROJECT_ROOT / "data" / "mvp" / "dress" / "evidence_taxonomy.json"
 _RULES_FIELD = "rules"
 _ALLOWED_PAIR = ("pattern", "detail")
 _VALID_SEVERITIES = {"weak", "strong"}
