@@ -213,6 +213,47 @@
         "seasonal review context: launch date falls in the US summer vacation window and occasion tags align to vacation demand",
         "occasion review context: align construction readability to vacation use",
         "price-band review context: keep construction commercially realistic for mid pricing"
+      ],
+      "sample_review_watchpoints": [
+        "sample review: confirm cotton poplin keeps crisp opacity and breathable structure in the finished dress",
+        "sample review: verify square neckline, smocked bodice, and flutter sleeve read clearly in the first sample",
+        "sample review: check floral print continuity and placement across bodice, waist seam, and skirt panels",
+        "sample review: confirm a-line shape stays easy and non-bodycon through waist-to-hem movement"
+      ],
+      "qa_review_notes": [
+        "qa review: check square neckline edge finish for symmetry and clean top-line shape",
+        "qa review: check smocking rows for even tension, secure attachment, and balanced visual spacing",
+        "qa review: check flutter sleeve openings and hem finish for clean turnback and stable shape",
+        "qa review: check floral print alignment and continuity across visible seams"
+      ],
+      "fit_review_cues": [
+        "fit cue: protect non-bodycon ease through bust, waist, and skirt sweep",
+        "fit cue: keep a-line volume easy and mobile instead of collapsing into a narrow shape",
+        "fit cue: make sure smocked bodice shaping stays flexible rather than restrictive"
+      ],
+      "commercial_review_cues": [
+        "commercial cue: seasonal review should stay anchored to launch date falls in the US summer vacation window and occasion tags align to vacation demand",
+        "commercial cue: keep vacation use obvious from first-glance silhouette, fabric, and print direction",
+        "commercial cue: keep visible construction commercially realistic for mid pricing"
+      ],
+      "visible_construction_checks": [
+        "visible check: confirm square neckline edge finish stays clean and even",
+        "visible check: confirm smocked bodice construction stays consistent across the front bodice",
+        "visible check: confirm flutter sleeve openings keep soft volume with clean finishing",
+        "visible check: confirm waist seam placement supports balanced a-line proportion",
+        "visible check: confirm hem finish hangs cleanly without torque",
+        "visible check: confirm floral print continuity across visible seams",
+        "visible check: confirm smocked detail placement stays visually symmetrical"
+      ],
+      "open_questions": [
+        "open question: confirm fiber_content from approved fabric submission",
+        "open question: confirm fabric_weight_gsm from supplier or mill data",
+        "open question: confirm lining need based on opacity and wear test outcome",
+        "open question: confirm closure_details after sample review of entry and fit",
+        "open question: define measurements_pom before tech-pack handoff",
+        "open question: define seam_allowance with patternmaking owner",
+        "open question: define tolerance by measurement point before production release",
+        "open question: confirm bom_grade_trim requirements for elastic, labels, and finishing trims"
       ]
     },
     "unresolved": [
