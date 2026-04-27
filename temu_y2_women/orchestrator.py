@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from temu_y2_women.composition_engine import compose_concept
+from temu_y2_women.evidence_paths import EvidencePaths
 from temu_y2_women.evidence_repository import (
     flatten_candidates,
     load_elements,
@@ -16,12 +17,23 @@ from temu_y2_women.result_packager import package_success_result
 from temu_y2_women.strategy_selector import select_strategies
 
 
-def generate_dress_concept(payload: dict[str, Any]) -> dict[str, Any]:
+def generate_dress_concept(
+    payload: dict[str, Any],
+    evidence_paths: EvidencePaths | None = None,
+) -> dict[str, Any]:
     try:
+        resolved_paths = evidence_paths or EvidencePaths.defaults()
         request = normalize_request(payload)
-        strategies = load_strategy_templates()
+        strategies = load_strategy_templates(
+            path=resolved_paths.strategies_path,
+            taxonomy_path=resolved_paths.taxonomy_path,
+            elements_path=resolved_paths.elements_path,
+        )
         strategy_result = select_strategies(request, strategies)
-        elements = load_elements()
+        elements = load_elements(
+            path=resolved_paths.elements_path,
+            taxonomy_path=resolved_paths.taxonomy_path,
+        )
         grouped_candidates, retrieval_warnings = retrieve_candidates(request, elements, strategy_result.selected)
         concept = compose_concept(request, grouped_candidates)
         prompt_bundle = render_prompt_bundle(
