@@ -6,7 +6,52 @@
     "draft_strategy_hint_count": 1,
     "warning_count": 0
   },
+  "coverage": {
+    "matched_signal_count": 2,
+    "unmatched_signal_count": 0,
+    "matched_signal_ids": ["dress-signal-001", "dress-signal-002"],
+    "unmatched_signal_ids": [],
+    "match_rate": 1.0
+  },
   "accepted_signal_ids": ["dress-signal-001", "dress-signal-002"],
   "skipped_signal_ids": [],
+  "signal_outcomes": [
+    {
+      "signal_id": "dress-signal-001",
+      "status": "matched",
+      "emitted_draft_ids": [
+        "draft-fabric-cotton-poplin",
+        "draft-neckline-square-neckline",
+        "draft-pattern-floral-print",
+        "draft-silhouette-a-line",
+        "draft-sleeve-flutter-sleeve"
+      ],
+      "matched_rule_keys": [
+        "fabric:cotton poplin",
+        "neckline:square neckline",
+        "pattern:floral print",
+        "silhouette:a-line",
+        "sleeve:flutter sleeve"
+      ]
+    },
+    {
+      "signal_id": "dress-signal-002",
+      "status": "matched",
+      "emitted_draft_ids": [
+        "draft-detail-smocked-bodice",
+        "draft-fabric-cotton-poplin",
+        "draft-neckline-square-neckline",
+        "draft-silhouette-a-line",
+        "draft-sleeve-flutter-sleeve"
+      ],
+      "matched_rule_keys": [
+        "detail:smocked bodice",
+        "fabric:cotton poplin",
+        "neckline:square neckline",
+        "silhouette:a-line",
+        "sleeve:flutter sleeve"
+      ]
+    }
+  ],
   "warnings": []
 }

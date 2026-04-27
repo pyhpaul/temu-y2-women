@@ -14,6 +14,32 @@
       "suggested_base_score": 0.88,
       "evidence_summary": "Derived from 3 signals for crisp breathable summer dress demand.",
       "source_signal_ids": ["dress-signal-201", "dress-signal-202", "dress-signal-203"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-201",
+            "matched_phrases": ["cotton poplin"],
+            "rule_slot": "fabric",
+            "rule_value": "cotton poplin",
+            "rule_tags": ["breathable", "lightweight", "summer", "vacation"]
+          },
+          {
+            "signal_id": "dress-signal-202",
+            "matched_phrases": ["cotton poplin"],
+            "rule_slot": "fabric",
+            "rule_value": "cotton poplin",
+            "rule_tags": ["breathable", "lightweight", "summer", "vacation"]
+          },
+          {
+            "signal_id": "dress-signal-203",
+            "matched_phrases": ["cotton poplin"],
+            "rule_slot": "fabric",
+            "rule_value": "cotton poplin",
+            "rule_tags": ["breathable", "lightweight", "summer", "vacation"]
+          }
+        ]
+      },
       "status": "draft"
     }
   ]

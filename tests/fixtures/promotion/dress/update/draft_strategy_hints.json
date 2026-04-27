@@ -19,6 +19,17 @@
       "priority_signal": 3,
       "source_signal_ids": ["dress-signal-201", "dress-signal-202", "dress-signal-203"],
       "reason_summary": "Aggregated from 3 signals for refreshed summer vacation dress demand.",
+      "extraction_provenance": {
+        "kind": "draft-element-aggregation",
+        "source_draft_ids": ["draft-fabric-cotton-poplin-refresh"],
+        "slot_value_identities": [
+          {
+            "draft_id": "draft-fabric-cotton-poplin-refresh",
+            "slot": "fabric",
+            "value": "cotton poplin"
+          }
+        ]
+      },
       "status": "draft"
     }
   ]

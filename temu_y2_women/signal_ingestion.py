@@ -37,9 +37,15 @@ def ingest_dress_signals(
         rules = _load_phrase_rules(rules_path, taxonomy)
         signals = _load_signal_bundle(input_path, taxonomy)
         normalized_signals = [_normalize_signal(signal) for signal in signals]
-        draft_elements, warnings = _extract_draft_elements(normalized_signals, rules)
+        draft_elements, signal_outcomes, warnings = _extract_draft_elements(normalized_signals, rules)
         draft_strategy_hints = _build_draft_strategy_hints(draft_elements)
-        report = _build_ingestion_report(normalized_signals, draft_elements, draft_strategy_hints, warnings)
+        report = _build_ingestion_report(
+            normalized_signals,
+            draft_elements,
+            draft_strategy_hints,
+            signal_outcomes,
+            warnings,
+        )
         _write_staged_artifacts(output_dir, normalized_signals, draft_elements, draft_strategy_hints, report)
         return report
     except GenerationError as error:
@@ -220,21 +226,28 @@ def _validate_phrase_rule(path: Path, rule: Any, taxonomy: dict[str, Any]) -> di
 def _extract_draft_elements(
     normalized_signals: list[dict[str, Any]],
     rules: list[dict[str, Any]],
-) -> tuple[list[dict[str, Any]], list[str]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str]]:
     raw_candidates: list[dict[str, Any]] = []
+    signal_outcomes: list[dict[str, Any]] = []
     warnings: list[str] = []
     for signal in normalized_signals:
         matches = _matching_rules(signal, rules)
+        signal_outcomes.append(_build_signal_outcome(signal, matches))
         if not matches:
             warnings.append(f"no supported draft candidates extracted for signal {signal['signal_id']}")
             continue
         raw_candidates.extend(_build_raw_candidate(signal, rule) for rule in matches)
-    return _aggregate_draft_elements(raw_candidates), warnings
+    return _aggregate_draft_elements(raw_candidates), signal_outcomes, warnings
 
 
 def _matching_rules(signal: dict[str, Any], rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
     normalized_text = str(signal["normalized_text"])
-    return [rule for rule in rules if any(phrase in normalized_text for phrase in rule["phrases"])]
+    matches: list[dict[str, Any]] = []
+    for rule in rules:
+        matched_phrases = sorted({phrase for phrase in rule["phrases"] if phrase in normalized_text})
+        if matched_phrases:
+            matches.append({**rule, "matched_phrases": matched_phrases})
+    return matches
 
 
 def _build_raw_candidate(signal: dict[str, Any], rule: dict[str, Any]) -> dict[str, Any]:
@@ -246,6 +259,15 @@ def _build_raw_candidate(signal: dict[str, Any], rule: dict[str, Any]) -> dict[s
         "occasion_tags": list(signal["observed_occasion_tags"]),
         "season_tags": list(signal["observed_season_tags"]),
         "source_signal_ids": [signal["signal_id"]],
+        "rule_matches": [
+            {
+                "signal_id": signal["signal_id"],
+                "matched_phrases": list(rule["matched_phrases"]),
+                "rule_slot": rule["slot"],
+                "rule_value": rule["value"],
+                "rule_tags": list(rule["tags"]),
+            }
+        ],
     }
 
 
@@ -266,6 +288,7 @@ def _empty_element_group(candidate: dict[str, Any]) -> dict[str, Any]:
         "occasion_tags": set(candidate["occasion_tags"]),
         "season_tags": set(candidate["season_tags"]),
         "source_signal_ids": set(candidate["source_signal_ids"]),
+        "rule_matches": [],
     }
 
 
@@ -275,12 +298,13 @@ def _merge_candidate_group(group: dict[str, Any], candidate: dict[str, Any]) -> 
     group["occasion_tags"].update(candidate["occasion_tags"])
     group["season_tags"].update(candidate["season_tags"])
     group["source_signal_ids"].update(candidate["source_signal_ids"])
+    group["rule_matches"].extend(candidate["rule_matches"])
 
 
 def _build_draft_element(slot: str, value: str, group: dict[str, Any]) -> dict[str, Any]:
     signal_count = len(group["source_signal_ids"])
     return {
-        "draft_id": f"draft-{slot}-{_slugify(value)}",
+        "draft_id": _draft_id(slot, value),
         "category": "dress",
         "slot": slot,
         "value": value,
@@ -292,12 +316,24 @@ def _build_draft_element(slot: str, value: str, group: dict[str, Any]) -> dict[s
         "suggested_base_score": round(0.6 + (0.05 * signal_count), 2),
         "evidence_summary": f"Derived from {signal_count} signal{'s' if signal_count != 1 else ''} for US dress demand.",
         "source_signal_ids": sorted(group["source_signal_ids"]),
+        "extraction_provenance": {
+            "kind": "signal-rule-match",
+            "rule_matches": sorted(group["rule_matches"], key=_rule_match_key),
+        },
         "status": "draft",
     }
 
 
 def _slugify(value: str) -> str:
     return value.replace(" ", "-")
+
+
+def _draft_id(slot: str, value: str) -> str:
+    return f"draft-{slot}-{_slugify(value)}"
+
+
+def _rule_match_key(match: dict[str, Any]) -> tuple[str, str]:
+    return str(match["signal_id"]), "|".join(str(item) for item in match["matched_phrases"])
 
 
 def _build_draft_strategy_hints(draft_elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -320,6 +356,7 @@ def _build_draft_strategy_hints(draft_elements: list[dict[str, Any]]) -> list[di
             "priority_signal": len(source_signal_ids),
             "source_signal_ids": source_signal_ids,
             "reason_summary": f"Aggregated from {len(source_signal_ids)} signals for US {primary_season} dress demand.",
+            "extraction_provenance": _build_strategy_provenance(draft_elements),
             "status": "draft",
         }
     ]
@@ -336,6 +373,7 @@ def _build_ingestion_report(
     normalized_signals: list[dict[str, Any]],
     draft_elements: list[dict[str, Any]],
     draft_strategy_hints: list[dict[str, Any]],
+    signal_outcomes: list[dict[str, Any]],
     warnings: list[str],
 ) -> dict[str, Any]:
     return {
@@ -346,9 +384,49 @@ def _build_ingestion_report(
             "draft_strategy_hint_count": len(draft_strategy_hints),
             "warning_count": len(warnings),
         },
+        "coverage": _build_coverage(signal_outcomes),
         "accepted_signal_ids": [signal["signal_id"] for signal in normalized_signals],
         "skipped_signal_ids": [],
+        "signal_outcomes": signal_outcomes,
         "warnings": warnings,
+    }
+
+
+def _build_strategy_provenance(draft_elements: list[dict[str, Any]]) -> dict[str, Any]:
+    source_draft_ids = sorted(str(element["draft_id"]) for element in draft_elements)
+    slot_value_identities = [
+        {"draft_id": element["draft_id"], "slot": element["slot"], "value": element["value"]}
+        for element in sorted(draft_elements, key=lambda item: str(item["draft_id"]))
+    ]
+    return {
+        "kind": "draft-element-aggregation",
+        "source_draft_ids": source_draft_ids,
+        "slot_value_identities": slot_value_identities,
+    }
+
+
+def _build_signal_outcome(signal: dict[str, Any], matches: list[dict[str, Any]]) -> dict[str, Any]:
+    outcome = {
+        "signal_id": signal["signal_id"],
+        "status": "matched" if matches else "unmatched",
+        "emitted_draft_ids": sorted(_draft_id(match["slot"], match["value"]) for match in matches),
+        "matched_rule_keys": sorted(f"{match['slot']}:{match['value']}" for match in matches),
+    }
+    if matches:
+        return outcome
+    return {**outcome, "reason": "no supported phrase rules matched normalized signal text"}
+
+
+def _build_coverage(signal_outcomes: list[dict[str, Any]]) -> dict[str, Any]:
+    matched = [item["signal_id"] for item in signal_outcomes if item["status"] == "matched"]
+    unmatched = [item["signal_id"] for item in signal_outcomes if item["status"] == "unmatched"]
+    total = len(signal_outcomes) or 1
+    return {
+        "matched_signal_count": len(matched),
+        "unmatched_signal_count": len(unmatched),
+        "matched_signal_ids": matched,
+        "unmatched_signal_ids": unmatched,
+        "match_rate": round(len(matched) / total, 2),
     }
 
 

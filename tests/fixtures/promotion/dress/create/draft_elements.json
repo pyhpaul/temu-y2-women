@@ -14,6 +14,25 @@
       "suggested_base_score": 0.61,
       "evidence_summary": "Derived from 2 signals for waist-defined summer dress demand.",
       "source_signal_ids": ["dress-signal-101", "dress-signal-102"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-101",
+            "matched_phrases": ["waist tie"],
+            "rule_slot": "detail",
+            "rule_value": "waist tie",
+            "rule_tags": ["feminine", "summer", "vacation"]
+          },
+          {
+            "signal_id": "dress-signal-102",
+            "matched_phrases": ["waist tie"],
+            "rule_slot": "detail",
+            "rule_value": "waist tie",
+            "rule_tags": ["feminine", "summer", "vacation"]
+          }
+        ]
+      },
       "status": "draft"
     }
   ]
