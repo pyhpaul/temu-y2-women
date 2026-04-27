@@ -10,6 +10,34 @@
       "fetch_mode": "html",
       "adapter_id": "whowhatwear_editorial_v1",
       "default_price_band": "mid",
+      "priority": 100,
+      "weight": 1.0,
+      "enabled": true
+    },
+    {
+      "source_id": "whowhatwear-summer-dress-trends-2025",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.whowhatwear.com/fashion/dresses/summer-dress-trends-2025",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "whowhatwear_editorial_v1",
+      "default_price_band": "mid",
+      "priority": 90,
+      "weight": 0.95,
+      "enabled": true
+    },
+    {
+      "source_id": "marieclaire-summer-2025-dress-trends",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.marieclaire.com/fashion/summer-fashion/summer-2025-dress-trends/",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "marieclaire_editorial_v1",
+      "default_price_band": "mid",
+      "priority": 80,
+      "weight": 0.85,
       "enabled": true
     }
   ]

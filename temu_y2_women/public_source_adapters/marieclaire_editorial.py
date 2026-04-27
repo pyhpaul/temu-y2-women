@@ -12,7 +12,6 @@ def _rule(
     section_id: str,
     heading: str,
     tags: list[str],
-    adapter_version: str,
     confidence: float,
     excerpt_anchor: str,
     matched_keywords: list[str],
@@ -21,34 +20,24 @@ def _rule(
         "section_id": section_id,
         "heading": heading,
         "tags": tags,
-        "adapter_version": adapter_version,
+        "adapter_version": "marieclaire_editorial_v1",
         "confidence": confidence,
         "excerpt_anchor": excerpt_anchor,
         "matched_keywords": matched_keywords,
     }
 
 
-_SOURCE_RULES = {
-    "whowhatwear-summer-2025-dress-trends": (
-        {"section_id": "the-vacation-mini", "heading": "The Vacation Mini", "tags": ["summer", "vacation"]},
-        {"section_id": "fairy-sleeves", "heading": "Fairy Sleeves", "tags": ["summer"]},
-        {"section_id": "all-things-polka-dots", "heading": "All Things Polka Dots", "tags": ["summer"]},
-        {"section_id": "the-exaggerated-drop-waist", "heading": "The Exaggerated Drop Waist", "tags": ["summer"]},
-        {"section_id": "sheer-printed-midis", "heading": "Sheer Printed Midis", "tags": ["summer"]},
-    ),
-    "whowhatwear-summer-dress-trends-2025": (
-        _rule("shirred-bodices", "Shirred Bodices", ["summer"], "whowhatwear_editorial_v1", 0.77, "Shirred bodices", ["smocked bodices", "square neckline"]),
-        _rule("drop-waist-dresses", "Drop-Waist Dresses", ["summer"], "whowhatwear_editorial_v1", 0.72, "drop-waist dresses", ["drop-waist dresses"]),
-        _rule("romantic-sleeves", "Romantic Sleeves", ["summer"], "whowhatwear_editorial_v1", 0.76, "fairy sleeves", ["fairy sleeves", "flutter sleeves"]),
-        _rule("elegant-bandeaus", "Elegant Bandeaus", ["summer"], "whowhatwear_editorial_v1", 0.7, "floral prints", ["floral"]),
-        _rule("boudoir-inspired-dressing", "Boudoir-Inspired Dressing", ["summer"], "whowhatwear_editorial_v1", 0.66, "lace slips", ["lace slips"]),
-    ),
-}
+_SECTION_RULES = (
+    _rule("smocked-dresses", "Smocked Dresses", ["summer"], 0.79, "smocked dresses", ["smocked bodices", "cotton poplin"]),
+    _rule("polka-dot-dresses", "Polka Dot Dresses", ["summer"], 0.68, "polka dot dresses", ["polka dots"]),
+    _rule("boho-dresses", "Boho Dresses", ["summer"], 0.73, "flutter sleeves", ["flutter sleeves", "floral"]),
+    _rule("gingham-dresses", "Gingham Dresses", ["summer"], 0.71, "a-line", ["a-line", "cotton poplin"]),
+    _rule("babydoll-dresses", "Babydoll Dresses", ["summer"], 0.67, "square neckline", ["square neckline"]),
+)
 
 
-def parse_whowhatwear_editorial_html(source: dict[str, Any], html: str, fetched_at: str) -> dict[str, Any]:
-    rules = _source_rules(str(source["source_id"]))
-    parser = _WhoWhatWearHtmlParser(_section_ids(rules))
+def parse_marieclaire_editorial_html(source: dict[str, Any], html: str, fetched_at: str) -> dict[str, Any]:
+    parser = _MarieClaireHtmlParser(_section_ids())
     parser.feed(html)
     parser.close()
     return {
@@ -61,49 +50,30 @@ def parse_whowhatwear_editorial_html(source: dict[str, Any], html: str, fetched_
         "captured_at": parser.captured_at(),
         "fetched_at": fetched_at,
         "page_title": parser.page_title(),
-        "sections": [_build_section_record(parser, rule) for rule in rules],
+        "sections": [_build_section_record(parser, rule) for rule in _SECTION_RULES],
         "warnings": [],
     }
 
 
-def _source_rules(source_id: str) -> tuple[dict[str, Any], ...]:
-    try:
-        return _SOURCE_RULES[source_id]
-    except KeyError as error:
-        raise _adapter_error("unsupported Who What Wear source", field="source_id", source_id=source_id) from error
+def _section_ids() -> set[str]:
+    return {str(rule["section_id"]) for rule in _SECTION_RULES}
 
 
-def _section_ids(rules: tuple[dict[str, Any], ...]) -> set[str]:
-    return {str(rule["section_id"]) for rule in rules}
-
-
-def _build_section_record(parser: "_WhoWhatWearHtmlParser", rule: dict[str, Any]) -> dict[str, Any]:
-    section = {
+def _build_section_record(parser: "_MarieClaireHtmlParser", rule: dict[str, Any]) -> dict[str, Any]:
+    return {
         "section_id": rule["section_id"],
         "heading": rule["heading"],
         "text": parser.section_text(str(rule["section_id"])),
         "tags": list(rule["tags"]),
+        "adapter_version": rule["adapter_version"],
+        "confidence": rule["confidence"],
+        "excerpt_anchor": rule["excerpt_anchor"],
+        "matched_keywords": list(rule["matched_keywords"]),
     }
-    return {**section, **_metadata_fields(rule)}
-
-
-def _metadata_fields(rule: dict[str, Any]) -> dict[str, Any]:
-    keys = ("adapter_version", "confidence", "excerpt_anchor", "matched_keywords")
-    return {key: rule[key] for key in keys if key in rule}
 
 
 def _clean_html_text(value: str) -> str:
     text = unescape(value)
-    replacements = {
-        "\u2018": "'",
-        "\u2019": "'",
-        "\u201c": '"',
-        "\u201d": '"',
-        "\u2013": "-",
-        "\u2014": "-",
-    }
-    for source, target in replacements.items():
-        text = text.replace(source, target)
     return re.sub(r"\s+", " ", text).strip()
 
 
@@ -111,7 +81,7 @@ def _adapter_error(message: str, **details: Any) -> GenerationError:
     return GenerationError(code="INVALID_PUBLIC_SOURCE_HTML", message=message, details=details)
 
 
-class _WhoWhatWearHtmlParser(HTMLParser):
+class _MarieClaireHtmlParser(HTMLParser):
     def __init__(self, section_ids: set[str]) -> None:
         super().__init__(convert_charrefs=True)
         self._section_ids = section_ids
@@ -128,25 +98,21 @@ class _WhoWhatWearHtmlParser(HTMLParser):
         attr_map = {key: value or "" for key, value in attrs}
         if tag == "title":
             self._in_title = True
-            return
-        if tag == "h1":
+        elif tag == "h1":
             self._in_h1 = True
-            return
-        if tag == "meta":
+        elif tag == "meta":
             self._capture_published_date(attr_map)
-            return
-        if tag in {"h2", "h3"}:
+        elif tag == "h2":
             self._active_section = _section_id_from_html_id(attr_map.get("id", ""), self._section_ids)
-            return
-        if tag == "p":
-            self._start_section_paragraph(attr_map)
+        elif tag == "p":
+            self._start_section_paragraph()
 
     def handle_endtag(self, tag: str) -> None:
         if tag == "title":
             self._in_title = False
         elif tag == "h1":
             self._in_h1 = False
-        elif tag == "p" and self._current_paragraph_section:
+        elif tag == "p":
             self._active_section = None
             self._current_paragraph_section = None
 
@@ -183,17 +149,15 @@ class _WhoWhatWearHtmlParser(HTMLParser):
         if re.match(r"\d{4}-\d{2}-\d{2}", content):
             self._captured_at = content[:10]
 
-    def _start_section_paragraph(self, attrs: dict[str, str]) -> None:
-        if not self._active_section or not attrs.get("id"):
-            return
-        if self._active_section in self._section_text_parts:
+    def _start_section_paragraph(self) -> None:
+        if not self._active_section or self._active_section in self._section_text_parts:
             return
         self._current_paragraph_section = self._active_section
 
 
 def _section_id_from_html_id(value: str, section_ids: set[str]) -> str | None:
-    if not value.startswith("section-"):
-        return None
+    if value in section_ids:
+        return value
     for section_id in section_ids:
         if value.endswith(section_id):
             return section_id

@@ -117,17 +117,29 @@ def _build_canonical_signal(
         "observed_price_band": default_price_band,
         "price_band_resolution": "source_default",
         "status": "active",
-        "extraction_provenance": _build_provenance(section["section_id"], matched_keywords),
+        "extraction_provenance": _build_provenance(section, matched_keywords),
     }
 
 
 def _derive_evidence(section: dict[str, Any]) -> tuple[str, list[str]]:
+    metadata = _section_evidence_metadata(section)
+    if metadata is not None:
+        return metadata
     rule = _best_evidence_rule(section)
     if rule is None:
         return _default_excerpt(str(section["text"])), []
     matched_keywords = _matched_keywords(rule, _section_corpus(section))
     excerpt = _excerpt_from_text(str(section["text"]), str(rule["excerpt_anchor"]))
     return excerpt, matched_keywords
+
+
+def _section_evidence_metadata(section: dict[str, Any]) -> tuple[str, list[str]] | None:
+    matched_keywords = _optional_string_list(section, "matched_keywords")
+    excerpt_anchor = _optional_string(section, "excerpt_anchor")
+    if matched_keywords is None and excerpt_anchor is None:
+        return None
+    excerpt = _excerpt_from_text(str(section["text"]), excerpt_anchor) if excerpt_anchor else _default_excerpt(str(section["text"]))
+    return excerpt, matched_keywords or []
 
 
 def _best_evidence_rule(section: dict[str, Any]) -> dict[str, Any] | None:
@@ -193,17 +205,22 @@ def _manual_tags_from_keywords(matched_keywords: list[str]) -> list[str]:
     return values
 
 
-def _section_confidence(section_id: str) -> float:
-    return _SECTION_CONFIDENCE.get(section_id, 0.65)
+def _section_confidence(section: dict[str, Any]) -> float:
+    value = section.get("confidence")
+    if isinstance(value, bool):
+        raise _builder_error("section.confidence", "section.confidence must be numeric")
+    if isinstance(value, (int, float)):
+        return float(value)
+    return _SECTION_CONFIDENCE.get(str(section["section_id"]), 0.65)
 
 
-def _build_provenance(section_id: str, matched_keywords: list[str]) -> dict[str, Any]:
+def _build_provenance(section: dict[str, Any], matched_keywords: list[str]) -> dict[str, Any]:
     return {
-        "source_section": section_id,
+        "source_section": section["section_id"],
         "matched_keywords": matched_keywords,
-        "adapter_version": "whowhatwear_editorial_v1",
-        "warnings": ["price band defaulted from source registry"],
-        "confidence": _section_confidence(section_id),
+        "adapter_version": _optional_string(section, "adapter_version") or "whowhatwear_editorial_v1",
+        "warnings": _optional_string_list(section, "warnings") or ["price band defaulted from source registry"],
+        "confidence": _section_confidence(section),
     }
 
 
@@ -271,7 +288,19 @@ def _validate_section(section: Any, index: int) -> dict[str, Any]:
     _require_string_field(section, "heading", "section.heading")
     _require_string_field(section, "text", "section.text")
     _require_string_list(section, "tags", "section.tags")
+    _validate_optional_section_metadata(section)
     return dict(section)
+
+
+def _validate_optional_section_metadata(section: dict[str, Any]) -> None:
+    _require_optional_string_list(section, "matched_keywords", "section.matched_keywords")
+    _require_optional_string_field(section, "excerpt_anchor", "section.excerpt_anchor")
+    _require_optional_string_field(section, "adapter_version", "section.adapter_version")
+    _require_optional_string_list(section, "warnings", "section.warnings")
+    value = section.get("confidence")
+    if value is None or isinstance(value, (int, float)) and not isinstance(value, bool):
+        return
+    raise _builder_error("section.confidence", "section.confidence must be numeric")
 
 
 def _validate_canonical_signal(signal: Any, index: int) -> dict[str, Any]:
@@ -341,8 +370,34 @@ def _require_string_list(record: dict[str, Any], field: str, error_field: str) -
     raise _builder_error(error_field, f"{error_field} must be a list of strings")
 
 
+def _require_optional_string_field(record: dict[str, Any], field: str, error_field: str) -> None:
+    value = record.get(field)
+    if value is None or isinstance(value, str):
+        return
+    raise _builder_error(error_field, f"{error_field} must be a string")
+
+
+def _require_optional_string_list(record: dict[str, Any], field: str, error_field: str) -> None:
+    value = record.get(field)
+    if value is None or isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return
+    raise _builder_error(error_field, f"{error_field} must be a list of strings")
+
+
 def _normalize_text(value: str) -> str:
     return " ".join(value.strip().casefold().split())
+
+
+def _optional_string(section: dict[str, Any], field: str) -> str | None:
+    value = section.get(field)
+    return value if isinstance(value, str) and value.strip() else None
+
+
+def _optional_string_list(section: dict[str, Any], field: str) -> list[str] | None:
+    value = section.get(field)
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return [item for item in value if item.strip()]
+    return None
 
 
 def _dedupe(values: list[str]) -> list[str]:
