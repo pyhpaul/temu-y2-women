@@ -22,7 +22,7 @@
     {
       "slot": "sleeve",
       "value": "flutter sleeve",
-      "phrases": ["flutter sleeve", "flutter sleeves"],
+      "phrases": ["flutter sleeve", "flutter sleeves", "fairy sleeves"],
       "tags": ["airy", "feminine", "vacation"]
     },
     {
@@ -34,7 +34,7 @@
     {
       "slot": "detail",
       "value": "smocked bodice",
-      "phrases": ["smocked bodice"],
+      "phrases": ["smocked bodice", "smocked bodices"],
       "tags": ["feminine", "vacation"]
     }
   ]
