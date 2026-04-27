@@ -17,7 +17,9 @@ class OrchestratorTest(unittest.TestCase):
         self.assertEqual(result["request_normalized"]["mode"], "A")
         self.assertEqual(result["selected_strategies"][0]["strategy_id"], "dress-us-summer-vacation")
         self.assertEqual(result["prompt_bundle"]["mode"], "A")
-        self.assertIn("product appeal", " ".join(result["prompt_bundle"]["render_notes"]))
+        self.assertEqual(result["prompt_bundle"]["template_version"], "visual-prompt-v1")
+        self.assertIn("product-first presentation", result["prompt_bundle"]["prompt"])
+        self.assertEqual(len(result["prompt_bundle"]["detail_prompts"]), 3)
         self.assertEqual(result["composed_concept"]["selected_elements"]["silhouette"]["value"], "a-line")
         self.assertIn("must_have_tags satisfied: floral", result["composed_concept"]["constraint_notes"])
         self.assertIn("avoid_tags removed: bodycon", " ".join(result["warnings"]))
@@ -46,8 +48,9 @@ class OrchestratorTest(unittest.TestCase):
 
         self.assertEqual(result["request_normalized"]["mode"], "B")
         self.assertEqual(result["prompt_bundle"]["mode"], "B")
-        self.assertIn("garment construction clarity", " ".join(result["prompt_bundle"]["render_notes"]))
+        self.assertIn("construction review clarity", " ".join(result["prompt_bundle"]["render_notes"]))
         self.assertTrue(result["prompt_bundle"]["development_notes"])
+        self.assertEqual(len(result["prompt_bundle"]["detail_prompts"]), 3)
 
     def test_no_candidates_failure_flow(self) -> None:
         from temu_y2_women.orchestrator import generate_dress_concept

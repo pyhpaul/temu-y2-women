@@ -19,10 +19,10 @@ class ImageRenderInputTest(unittest.TestCase):
 
         self.assertEqual(render_input.category, "dress")
         self.assertEqual(render_input.mode, "A")
-        self.assertIn("hero ecommerce concept image", render_input.prompt)
+        self.assertIn("product-first presentation", render_input.prompt)
         self.assertEqual(
             render_input.render_notes,
-            ("focus on product appeal", "keep summer seasonal styling"),
+            ("prioritize product-first presentation", "keep garment construction realistic"),
         )
 
     def test_load_dress_image_render_input_rejects_error_payload(self) -> None:

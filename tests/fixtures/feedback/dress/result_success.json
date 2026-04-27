@@ -119,10 +119,25 @@
   },
   "prompt_bundle": {
     "mode": "A",
-    "prompt": "[商品主体] women's US market dress, launch-aligned concept for 2026-06-15\n[核心结构] silhouette: a-line; fabric: cotton poplin; neckline: square neckline; sleeve: flutter sleeve; pattern: floral print; detail: smocked bodice\n[风格与时效] price band: mid; occasion focus: vacation; fresh summer styling; vacation-ready femininity; lightweight breathable dress construction; summer; vacation; feminine; lightweight\n[展示方式] hero ecommerce concept image; emphasize shopper appeal, outfit desirability, and clean product storytelling\n[约束与避免项] must_have_tags satisfied: floral; style compatibility penalty applied: floral print + smocked bodice (0.08); avoid: bodycon; avoid off-brief styling drift",
+    "prompt": "[商品主体] women's vacation dress for the US market, on-model ecommerce hero image, product-first presentation\n[核心结构] a-line silhouette; cotton poplin fabric; square neckline; flutter sleeve; floral print; smocked bodice; non-bodycon fit\n[生产与细节展示要求] clearly show neckline depth, bodice construction, sleeve opening, waist seam position, skirt volume, hem finish, floral print scale, and fabric texture; keep the garment visually realistic and feasible for factory production; seasonal direction: launch date falls in the US summer vacation window and occasion tags align to vacation demand\n[镜头与构图] full-body; vertical 4:5; eye-level camera; centered composition; full dress visible from shoulder to hem; clean negative space\n[面料与工艺表现] crisp cotton poplin texture; visible smocked bodice; visible seam lines; clean hem finish; true-to-color floral print; natural drape; commercially realistic construction\n[场景与光线] clean sunlit resort-inspired studio; soft directional daylight; warm ivory and sand background; minimal props\n[约束与避免项] no bodycon fit; no text; no watermark; no cluttered background; no unrealistic garment construction; no jacket; no cardigan; no bag covering the bodice; no exaggerated editorial pose",
+    "template_version": "visual-prompt-v1",
     "render_notes": [
-      "focus on product appeal",
-      "keep summer seasonal styling"
+      "prioritize product-first presentation",
+      "keep garment construction realistic"
+    ],
+    "detail_prompts": [
+      {
+        "prompt_id": "construction_closeup",
+        "prompt": "close-up ecommerce detail image of the square neckline, smocked bodice, and flutter sleeve on the dress; clearly show seam lines, neckline edge finish, print placement, and true-to-color floral print; neutral studio background; no hands, no accessories, no text"
+      },
+      {
+        "prompt_id": "fabric_print_closeup",
+        "prompt": "macro fabric detail image of cotton poplin with floral print; clearly show print scale, weave texture, color accuracy, and commercially realistic construction; soft studio lighting; no blur, no props, no text"
+      },
+      {
+        "prompt_id": "hem_and_drape_closeup",
+        "prompt": "close-up lower-skirt detail image of the a-line dress; clearly show hem finish, skirt volume, seam transitions, drape, and floral print continuity; neutral background; no cropped hem edge, no props, no text"
+      }
     ]
   },
   "warnings": [

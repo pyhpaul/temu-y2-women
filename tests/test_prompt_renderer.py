@@ -14,7 +14,7 @@ from temu_y2_women.models import (
 
 
 class PromptRendererTest(unittest.TestCase):
-    def test_render_mode_a_uses_five_block_structure_and_product_appeal(self) -> None:
+    def test_render_mode_a_uses_visual_template_and_detail_prompts(self) -> None:
         from temu_y2_women.prompt_renderer import render_prompt_bundle
 
         bundle = render_prompt_bundle(
@@ -25,13 +25,16 @@ class PromptRendererTest(unittest.TestCase):
         )
 
         self.assertEqual(bundle["mode"], "A")
+        self.assertEqual(bundle["template_version"], "visual-prompt-v1")
         self.assert_prompt_has_required_blocks(bundle["prompt"])
-        self.assertIn("product appeal", " ".join(bundle["render_notes"]))
-        self.assertIn("hero ecommerce concept image", bundle["prompt"])
-        self.assertIn("shopper appeal", bundle["prompt"])
+        self.assertIn("product-first presentation", bundle["prompt"])
+        self.assertIn("on-model ecommerce hero image", bundle["prompt"])
+        self.assertNotIn("price band", bundle["prompt"])
+        self.assertNotIn("shopper appeal", bundle["prompt"])
         self.assertNotIn("development notes", bundle["prompt"])
+        self.assert_detail_prompts(bundle["detail_prompts"])
 
-    def test_render_mode_b_uses_five_block_structure_and_development_notes(self) -> None:
+    def test_render_mode_b_uses_development_reference_template_and_detail_prompts(self) -> None:
         from temu_y2_women.prompt_renderer import render_prompt_bundle
 
         bundle = render_prompt_bundle(
@@ -42,21 +45,36 @@ class PromptRendererTest(unittest.TestCase):
         )
 
         self.assertEqual(bundle["mode"], "B")
+        self.assertEqual(bundle["template_version"], "visual-prompt-v1")
         self.assert_prompt_has_required_blocks(bundle["prompt"])
         self.assertIn("development reference image", bundle["prompt"])
-        self.assertIn("garment construction clarity", " ".join(bundle["render_notes"]))
+        self.assertIn("construction review clarity", " ".join(bundle["render_notes"]))
         self.assertEqual(
             bundle["development_notes"],
             ["summer-ready", "vacation-oriented", "feminine silhouette"],
         )
         self.assertIn("development notes: summer-ready; vacation-oriented; feminine silhouette", bundle["prompt"])
+        self.assert_detail_prompts(bundle["detail_prompts"])
 
     def assert_prompt_has_required_blocks(self, prompt: str) -> None:
         self.assertIn("[商品主体]", prompt)
         self.assertIn("[核心结构]", prompt)
-        self.assertIn("[风格与时效]", prompt)
-        self.assertIn("[展示方式]", prompt)
+        self.assertIn("[生产与细节展示要求]", prompt)
+        self.assertIn("[镜头与构图]", prompt)
+        self.assertIn("[面料与工艺表现]", prompt)
+        self.assertIn("[场景与光线]", prompt)
         self.assertIn("[约束与避免项]", prompt)
+
+    def assert_detail_prompts(self, detail_prompts: object) -> None:
+        self.assertIsInstance(detail_prompts, list)
+        prompt_ids = {item["prompt_id"] for item in detail_prompts}
+        self.assertEqual(
+            prompt_ids,
+            {"construction_closeup", "fabric_print_closeup", "hem_and_drape_closeup"},
+        )
+        for item in detail_prompts:
+            self.assertIn("prompt", item)
+            self.assertTrue(item["prompt"].strip())
 
 
 def _request(mode: str) -> NormalizedRequest:
