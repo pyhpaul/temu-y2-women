@@ -33,8 +33,6 @@ def generate_and_render_dress_concept(
         )
     except GenerationError as error:
         return error.to_dict()
-    except OSError as error:
-        return _concept_result_output_error(output_dir, error).to_dict()
 
 
 def _load_request_payload(path: Path) -> dict[str, Any]:
@@ -50,15 +48,15 @@ def _load_request_payload(path: Path) -> dict[str, Any]:
 
 
 def _write_concept_result(output_dir: Path, concept_result: dict[str, Any]) -> Path:
-    output_dir.mkdir(parents=True, exist_ok=True)
     result_path = output_dir / _CONCEPT_RESULT_FILENAME
     temp_path = result_path.with_suffix(f"{result_path.suffix}.tmp")
-    temp_path.write_text(json.dumps(concept_result, ensure_ascii=False, indent=2), encoding="utf-8")
     try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        temp_path.write_text(json.dumps(concept_result, ensure_ascii=False, indent=2), encoding="utf-8")
         temp_path.replace(result_path)
-    except OSError:
+    except OSError as error:
         _cleanup_file(temp_path)
-        raise
+        raise _concept_result_output_error(result_path, error) from error
     return result_path
 
 
@@ -75,9 +73,10 @@ def _invalid_input_error(path: Path, field: str, message: str) -> GenerationErro
     )
 
 
-def _concept_result_output_error(output_dir: Path, error: OSError) -> GenerationError:
+def _concept_result_output_error(result_path: Path, error: OSError) -> GenerationError:
+    failure_path = getattr(error, "filename", None) or str(result_path)
     return GenerationError(
         code="CONCEPT_RESULT_OUTPUT_FAILED",
         message="failed to write concept result output",
-        details={"path": str(output_dir / _CONCEPT_RESULT_FILENAME), "reason": str(error)},
+        details={"path": failure_path, "reason": str(error)},
     )

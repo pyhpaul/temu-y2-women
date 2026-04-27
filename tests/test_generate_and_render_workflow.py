@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest import mock
 
 
 _REQUEST_FIXTURE_PATH = Path("tests/fixtures/requests/dress-generation-mvp/success-summer-vacation-mode-a.json")
@@ -33,6 +34,7 @@ class GenerateAndRenderWorkflowSuccessTest(unittest.TestCase):
             self.assertTrue((output_dir / "rendered_image.png").exists())
             self.assertTrue((output_dir / "image_render_report.json").exists())
             self.assertEqual(_read_json(output_dir / "image_render_report.json"), result)
+            self.assertFalse((output_dir / "concept_result.json.tmp").exists())
 
 
 class GenerateAndRenderWorkflowFailureTest(unittest.TestCase):
@@ -82,6 +84,7 @@ class GenerateAndRenderWorkflowFailureTest(unittest.TestCase):
             )
 
             self.assertEqual(result["error"]["code"], "CONCEPT_RESULT_OUTPUT_FAILED")
+            self.assertEqual(result["error"]["details"]["path"], str(occupied_path))
             self.assertTrue(occupied_path.is_file())
             self.assertEqual(occupied_path.read_text(encoding="utf-8"), "not-a-directory")
 
@@ -101,10 +104,55 @@ class GenerateAndRenderWorkflowFailureTest(unittest.TestCase):
             self.assertFalse((output_dir / "rendered_image.png").exists())
             self.assertFalse((output_dir / "image_render_report.json").exists())
 
+    def test_generate_and_render_cleans_temp_file_when_concept_result_write_fails(self) -> None:
+        from temu_y2_women.generate_and_render_workflow import generate_and_render_dress_concept
+        from temu_y2_women.image_generation_output import FakeImageProvider
+
+        original_write_text = Path.write_text
+
+        def exploding_write_text(path: Path, data: str, *args: object, **kwargs: object) -> int:
+            if path.name == "concept_result.json.tmp":
+                original_write_text(path, "partial", *args, **kwargs)
+                raise OSError(5, "disk full", str(path))
+            return original_write_text(path, data, *args, **kwargs)
+
+        with TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "render-output"
+            with mock.patch.object(Path, "write_text", autospec=True, side_effect=exploding_write_text):
+                result = generate_and_render_dress_concept(
+                    request_path=_REQUEST_FIXTURE_PATH,
+                    output_dir=output_dir,
+                    provider_factory=lambda: FakeImageProvider(),
+                )
+
+            self.assertEqual(result["error"]["code"], "CONCEPT_RESULT_OUTPUT_FAILED")
+            self.assertEqual(result["error"]["details"]["path"], str(output_dir / "concept_result.json.tmp"))
+            self.assertFalse((output_dir / "concept_result.json.tmp").exists())
+            self.assertFalse((output_dir / "concept_result.json").exists())
+
+    def test_generate_and_render_does_not_map_provider_factory_os_error_to_concept_result_failure(self) -> None:
+        from temu_y2_women.generate_and_render_workflow import generate_and_render_dress_concept
+
+        with TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "render-output"
+            with self.assertRaises(OSError):
+                generate_and_render_dress_concept(
+                    request_path=_REQUEST_FIXTURE_PATH,
+                    output_dir=output_dir,
+                    provider_factory=_raising_os_error_provider_factory,
+                )
+
+            self.assertTrue((output_dir / "concept_result.json").exists())
+            self.assertFalse((output_dir / "concept_result.json.tmp").exists())
+
 
 class _ExplodingProvider:
     def render(self, render_input: object) -> object:
         raise RuntimeError("provider boom")
+
+
+def _raising_os_error_provider_factory() -> object:
+    raise OSError(13, "provider factory failed", "provider-factory")
 
 
 def _read_json(path: Path) -> dict[str, object]:
