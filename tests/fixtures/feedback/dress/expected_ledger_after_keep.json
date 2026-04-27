@@ -1,0 +1,23 @@
+{
+  "schema_version": "feedback-ledger-v1",
+  "records": [
+    {
+      "feedback_id": "feedback-001",
+      "category": "dress",
+      "decision": "keep",
+      "element_ids": [
+        "dress-detail-smocked-bodice-001",
+        "dress-fabric-cotton-poplin-001",
+        "dress-neckline-square-001",
+        "dress-pattern-floral-001",
+        "dress-silhouette-a-line-001",
+        "dress-sleeve-flutter-001"
+      ],
+      "score_delta": 0.02,
+      "request_fingerprint": "90492a0399568d75ffd770563cff3fdaa6aae9db05a7e84d25dceed5b4996434",
+      "concept_fingerprint": "2c6cc4d2b0187c242453ae23125a879b06a45c594c90325fad32bfd1914bdeab",
+      "notes": "kept as a strong summer vacation concept",
+      "recorded_at": "2026-04-27T12:00:00Z"
+    }
+  ]
+}

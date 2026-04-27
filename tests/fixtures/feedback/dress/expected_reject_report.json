@@ -1,0 +1,59 @@
+{
+  "schema_version": "feedback-report-v1",
+  "category": "dress",
+  "source_artifacts": {
+    "result_payload": "result_success.json",
+    "reviewed_feedback": "reviewed_reject.json"
+  },
+  "summary": {
+    "decision": "reject",
+    "affected_element_count": 6,
+    "applied_delta": -0.02,
+    "clamped_element_count": 0
+  },
+  "affected_elements": [
+    {
+      "element_id": "dress-silhouette-a-line-001",
+      "slot": "silhouette",
+      "value": "a-line",
+      "old_base_score": 0.82,
+      "new_base_score": 0.8
+    },
+    {
+      "element_id": "dress-fabric-cotton-poplin-001",
+      "slot": "fabric",
+      "value": "cotton poplin",
+      "old_base_score": 0.84,
+      "new_base_score": 0.82
+    },
+    {
+      "element_id": "dress-neckline-square-001",
+      "slot": "neckline",
+      "value": "square neckline",
+      "old_base_score": 0.73,
+      "new_base_score": 0.71
+    },
+    {
+      "element_id": "dress-sleeve-flutter-001",
+      "slot": "sleeve",
+      "value": "flutter sleeve",
+      "old_base_score": 0.71,
+      "new_base_score": 0.69
+    },
+    {
+      "element_id": "dress-pattern-floral-001",
+      "slot": "pattern",
+      "value": "floral print",
+      "old_base_score": 0.77,
+      "new_base_score": 0.75
+    },
+    {
+      "element_id": "dress-detail-smocked-bodice-001",
+      "slot": "detail",
+      "value": "smocked bodice",
+      "old_base_score": 0.69,
+      "new_base_score": 0.67
+    }
+  ],
+  "warnings": []
+}

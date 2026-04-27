@@ -1,0 +1,67 @@
+{
+  "schema_version": "feedback-review-v1",
+  "category": "dress",
+  "feedback_target": {
+    "request_normalized": {
+      "category": "dress",
+      "target_market": "US",
+      "target_launch_date": "2026-06-15",
+      "mode": "A",
+      "price_band": "mid",
+      "occasion_tags": [
+        "vacation"
+      ],
+      "must_have_tags": [
+        "floral"
+      ],
+      "avoid_tags": [
+        "bodycon"
+      ]
+    },
+    "selected_elements": [
+      {
+        "slot": "detail",
+        "element_id": "dress-detail-smocked-bodice-001",
+        "value": "smocked bodice"
+      },
+      {
+        "slot": "fabric",
+        "element_id": "dress-fabric-cotton-poplin-001",
+        "value": "cotton poplin"
+      },
+      {
+        "slot": "neckline",
+        "element_id": "dress-neckline-square-001",
+        "value": "square neckline"
+      },
+      {
+        "slot": "pattern",
+        "element_id": "dress-pattern-floral-001",
+        "value": "floral print"
+      },
+      {
+        "slot": "silhouette",
+        "element_id": "dress-silhouette-a-line-001",
+        "value": "a-line"
+      },
+      {
+        "slot": "sleeve",
+        "element_id": "dress-sleeve-flutter-001",
+        "value": "flutter sleeve"
+      }
+    ],
+    "selected_element_ids": [
+      "dress-detail-smocked-bodice-001",
+      "dress-fabric-cotton-poplin-001",
+      "dress-neckline-square-001",
+      "dress-pattern-floral-001",
+      "dress-silhouette-a-line-001",
+      "dress-sleeve-flutter-001"
+    ],
+    "concept_score": 0.87,
+    "request_fingerprint": "90492a0399568d75ffd770563cff3fdaa6aae9db05a7e84d25dceed5b4996434",
+    "concept_fingerprint": "2c6cc4d2b0187c242453ae23125a879b06a45c594c90325fad32bfd1914bdeab"
+  },
+  "decision": "keep",
+  "notes": "kept as a strong summer vacation concept"
+}
