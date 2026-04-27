@@ -1,7 +1,7 @@
 # signal-ingestion-pipeline Specification
 
 ## Purpose
-TBD - created by archiving change add-signal-ingestion-pipeline. Update Purpose after archive.
+Define the stable contract for ingesting file-backed `dress` market signals into deterministic staged draft evidence artifacts without mutating active runtime evidence.
 ## Requirements
 ### Requirement: Structured dress signal bundle validation
 The system SHALL accept a file-backed `dress` signal bundle and validate its top-level structure plus each raw signal record before normalization begins.
