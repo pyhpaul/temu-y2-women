@@ -1,0 +1,16 @@
+{
+  "schema_version": "public-source-registry-v1",
+  "sources": [
+    {
+      "source_id": "whowhatwear-summer-2025-dress-trends",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.whowhatwear.com/fashion/summer/summer-2025-dress-trends",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "whowhatwear_editorial_v1",
+      "default_price_band": "mid",
+      "enabled": true
+    }
+  ]
+}

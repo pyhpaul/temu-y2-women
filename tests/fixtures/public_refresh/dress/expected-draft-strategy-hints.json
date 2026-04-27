@@ -1,0 +1,55 @@
+{
+  "schema_version": "signal-ingestion-v1",
+  "strategy_hints": [
+    {
+      "hint_id": "draft-strategy-us-summer-vacation",
+      "category": "dress",
+      "target_market": "US",
+      "season_tags": [
+        "summer"
+      ],
+      "occasion_tags": [
+        "vacation"
+      ],
+      "boost_tags": [
+        "airy",
+        "feminine",
+        "vacation"
+      ],
+      "slot_preferences": {
+        "detail": [
+          "smocked bodice"
+        ],
+        "sleeve": [
+          "flutter sleeve"
+        ]
+      },
+      "priority_signal": 2,
+      "source_signal_ids": [
+        "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002",
+        "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001"
+      ],
+      "reason_summary": "Aggregated from 2 signals for US summer dress demand.",
+      "extraction_provenance": {
+        "kind": "draft-element-aggregation",
+        "source_draft_ids": [
+          "draft-detail-smocked-bodice",
+          "draft-sleeve-flutter-sleeve"
+        ],
+        "slot_value_identities": [
+          {
+            "draft_id": "draft-detail-smocked-bodice",
+            "slot": "detail",
+            "value": "smocked bodice"
+          },
+          {
+            "draft_id": "draft-sleeve-flutter-sleeve",
+            "slot": "sleeve",
+            "value": "flutter sleeve"
+          }
+        ]
+      },
+      "status": "draft"
+    }
+  ]
+}
