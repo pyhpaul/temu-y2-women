@@ -1,0 +1,20 @@
+{
+  "schema_version": "signal-ingestion-v1",
+  "elements": [
+    {
+      "draft_id": "draft-detail-waist-tie",
+      "category": "dress",
+      "slot": "detail",
+      "value": "waist tie",
+      "tags": ["feminine", "summer", "vacation"],
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "suggested_base_score": 0.61,
+      "evidence_summary": "Derived from 2 signals for waist-defined summer dress demand.",
+      "source_signal_ids": ["dress-signal-101", "dress-signal-102"],
+      "status": "draft"
+    }
+  ]
+}

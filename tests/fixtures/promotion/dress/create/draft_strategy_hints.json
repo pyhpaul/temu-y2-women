@@ -1,0 +1,24 @@
+{
+  "schema_version": "signal-ingestion-v1",
+  "strategy_hints": [
+    {
+      "hint_id": "draft-strategy-us-summer-waist-tie-vacation",
+      "category": "dress",
+      "target_market": "US",
+      "season_tags": ["summer"],
+      "occasion_tags": ["vacation"],
+      "boost_tags": ["feminine", "summer", "vacation"],
+      "slot_preferences": {
+        "detail": ["waist tie"],
+        "fabric": ["cotton poplin"],
+        "neckline": ["square neckline"],
+        "silhouette": ["a-line"],
+        "sleeve": ["flutter sleeve"]
+      },
+      "priority_signal": 2,
+      "source_signal_ids": ["dress-signal-101", "dress-signal-102"],
+      "reason_summary": "Aggregated from 2 signals for waist-defined summer dress demand.",
+      "status": "draft"
+    }
+  ]
+}

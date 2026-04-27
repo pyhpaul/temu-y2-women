@@ -1,0 +1,34 @@
+{
+  "schema_version": "mvp-v1",
+  "strategy_templates": [
+    {
+      "strategy_id": "dress-us-summer-vacation",
+      "category": "dress",
+      "target_market": "US",
+      "priority": 11,
+      "date_window": {
+        "start": "05-15",
+        "end": "08-31"
+      },
+      "occasion_tags": ["resort", "vacation"],
+      "boost_tags": ["airy", "breathable", "floral", "lightweight", "summer", "vacation"],
+      "suppress_tags": ["bodycon", "heavy", "holiday"],
+      "slot_preferences": {
+        "detail": ["smocked bodice"],
+        "fabric": ["cotton poplin"],
+        "neckline": ["square neckline"],
+        "pattern": ["floral print"],
+        "silhouette": ["a-line"],
+        "sleeve": ["flutter sleeve"]
+      },
+      "score_boost": 0.14,
+      "score_cap": 0.22,
+      "prompt_hints": [
+        "fresh summer styling",
+        "crisp breathable vacation fabrication"
+      ],
+      "reason_template": "summer vacation strategy refreshed with stronger breathable cotton-poplin evidence",
+      "status": "active"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": "promotion-report-v1",
+  "category": "dress",
+  "source_artifacts": {
+    "draft_elements": "draft_elements.json",
+    "draft_strategy_hints": "draft_strategy_hints.json",
+    "reviewed_decisions": "reviewed_decisions.json"
+  },
+  "summary": {
+    "elements": {
+      "accepted": 1,
+      "rejected": 0,
+      "created": 0,
+      "updated": 1
+    },
+    "strategy_hints": {
+      "accepted": 1,
+      "rejected": 0,
+      "created": 0,
+      "updated": 1
+    }
+  },
+  "elements": [
+    {
+      "draft_id": "draft-fabric-cotton-poplin-refresh",
+      "decision": "accept",
+      "merge_action": "update",
+      "element_id": "dress-fabric-cotton-poplin-001",
+      "source_signal_ids": ["dress-signal-201", "dress-signal-202", "dress-signal-203"]
+    }
+  ],
+  "strategy_hints": [
+    {
+      "hint_id": "draft-strategy-us-summer-vacation-refresh",
+      "decision": "accept",
+      "merge_action": "update",
+      "strategy_id": "dress-us-summer-vacation",
+      "source_signal_ids": ["dress-signal-201", "dress-signal-202", "dress-signal-203"]
+    }
+  ],
+  "warnings": []
+}

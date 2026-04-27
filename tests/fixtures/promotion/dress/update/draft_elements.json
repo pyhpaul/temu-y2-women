@@ -1,0 +1,20 @@
+{
+  "schema_version": "signal-ingestion-v1",
+  "elements": [
+    {
+      "draft_id": "draft-fabric-cotton-poplin-refresh",
+      "category": "dress",
+      "slot": "fabric",
+      "value": "cotton poplin",
+      "tags": ["breathable", "lightweight", "summer", "vacation"],
+      "price_bands": ["mid"],
+      "occasion_tags": ["resort", "vacation"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "suggested_base_score": 0.88,
+      "evidence_summary": "Derived from 3 signals for crisp breathable summer dress demand.",
+      "source_signal_ids": ["dress-signal-201", "dress-signal-202", "dress-signal-203"],
+      "status": "draft"
+    }
+  ]
+}

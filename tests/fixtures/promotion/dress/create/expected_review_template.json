@@ -1,0 +1,63 @@
+{
+  "schema_version": "promotion-review-v1",
+  "category": "dress",
+  "elements": [
+    {
+      "draft_id": "draft-detail-waist-tie",
+      "merge_action": "create",
+      "matched_active_element_id": null,
+      "source_signal_ids": ["dress-signal-101", "dress-signal-102"],
+      "decision": "pending",
+      "proposed_element": {
+        "element_id": "dress-detail-waist-tie-001",
+        "category": "dress",
+        "slot": "detail",
+        "value": "waist tie",
+        "tags": ["feminine", "summer", "vacation"],
+        "base_score": 0.61,
+        "price_bands": ["mid"],
+        "occasion_tags": ["vacation"],
+        "season_tags": ["summer"],
+        "risk_flags": [],
+        "evidence_summary": "Derived from 2 signals for waist-defined summer dress demand.",
+        "status": "active"
+      }
+    }
+  ],
+  "strategy_hints": [
+    {
+      "hint_id": "draft-strategy-us-summer-waist-tie-vacation",
+      "merge_action": "create",
+      "matched_active_strategy_id": null,
+      "source_signal_ids": ["dress-signal-101", "dress-signal-102"],
+      "decision": "pending",
+      "proposed_strategy_template": {
+        "strategy_id": "dress-us-summer-waist-tie-vacation",
+        "category": "dress",
+        "target_market": "US",
+        "priority": 2,
+        "date_window": {
+          "start": "01-01",
+          "end": "12-31"
+        },
+        "occasion_tags": ["vacation"],
+        "boost_tags": ["feminine", "summer", "vacation"],
+        "suppress_tags": [],
+        "slot_preferences": {
+          "detail": ["waist tie"],
+          "fabric": ["cotton poplin"],
+          "neckline": ["square neckline"],
+          "silhouette": ["a-line"],
+          "sleeve": ["flutter sleeve"]
+        },
+        "score_boost": 0.0,
+        "score_cap": 0.0,
+        "prompt_hints": [
+          "Aggregated from 2 signals for waist-defined summer dress demand."
+        ],
+        "reason_template": "Aggregated from 2 signals for waist-defined summer dress demand.",
+        "status": "active"
+      }
+    }
+  ]
+}

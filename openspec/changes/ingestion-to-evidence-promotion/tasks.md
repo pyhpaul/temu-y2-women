@@ -1,8 +1,8 @@
 ## 1. Promotion fixtures and schema definitions
 
-- [ ] 1.1 Add staged-promotion fixtures for valid draft inputs, reviewed decision files, and expected promotion reports
-- [ ] 1.2 Add expected active-evidence snapshots for successful create and update promotion paths
-- [ ] 1.3 Define the deterministic review-template shape for draft elements and draft strategy hints
+- [x] 1.1 Add staged-promotion fixtures for valid draft inputs, reviewed decision files, and expected promotion reports
+- [x] 1.2 Add expected active-evidence snapshots for successful create and update promotion paths
+- [x] 1.3 Define the deterministic review-template shape for draft elements and draft strategy hints
 
 ## 2. Review-template generation and decision validation
 
