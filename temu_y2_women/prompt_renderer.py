@@ -2,6 +2,18 @@ from __future__ import annotations
 
 from temu_y2_women.models import ComposedConcept, NormalizedRequest, SelectedStrategy
 
+_HERO_JOB_SPECS = (
+    ("hero_front", "hero_front.png", "front view"),
+    ("hero_three_quarter", "hero_three_quarter.png", "three-quarter view"),
+    ("hero_back", "hero_back.png", "back view"),
+)
+
+_DETAIL_JOB_SPECS = (
+    ("construction_closeup", "construction_closeup.png"),
+    ("fabric_print_closeup", "fabric_print_closeup.png"),
+    ("hem_and_drape_closeup", "hem_and_drape_closeup.png"),
+)
+
 
 def render_prompt_bundle(
     request: NormalizedRequest,
@@ -10,13 +22,14 @@ def render_prompt_bundle(
     warnings: tuple[str, ...],
 ) -> dict[str, object]:
     development_notes = list(concept.style_summary or warnings or ("dress MVP development guidance",))
-    prompt = _build_prompt(request, concept, selected_strategies, development_notes)
+    render_jobs = _render_jobs(request, concept, selected_strategies, development_notes)
     bundle: dict[str, object] = {
         "mode": request.mode,
-        "prompt": prompt,
+        "prompt": render_jobs[0]["prompt"],
         "template_version": "visual-prompt-v1",
         "render_notes": _render_notes(request.mode),
-        "detail_prompts": _detail_prompts(concept),
+        "render_jobs": render_jobs,
+        "detail_prompts": _detail_prompts(render_jobs),
     }
     if request.mode == "B":
         bundle["development_notes"] = development_notes
@@ -40,13 +53,14 @@ def _build_prompt(
     concept: ComposedConcept,
     selected_strategies: tuple[SelectedStrategy, ...],
     development_notes: list[str],
+    shot_line: str,
 ) -> str:
     return "\n".join(
         (
             f"[商品主体] {_subject_line(request, concept)}",
             f"[核心结构] {_structure_line(request, concept)}",
             f"[生产与细节展示要求] {_detail_requirements_line(request, selected_strategies, development_notes)}",
-            f"[镜头与构图] {_shot_line(request)}",
+            f"[镜头与构图] {shot_line}",
             f"[面料与工艺表现] {_material_line(concept)}",
             f"[场景与光线] {_scene_line(request)}",
             f"[约束与避免项] {_constraint_line(request)}",
@@ -103,10 +117,50 @@ def _detail_requirements_line(
     return "; ".join(items)
 
 
-def _shot_line(request: NormalizedRequest) -> str:
+def _render_jobs(
+    request: NormalizedRequest,
+    concept: ComposedConcept,
+    selected_strategies: tuple[SelectedStrategy, ...],
+    development_notes: list[str],
+) -> list[dict[str, str]]:
+    return _hero_jobs(request, concept, selected_strategies, development_notes) + _detail_jobs(concept)
+
+
+def _hero_jobs(
+    request: NormalizedRequest,
+    concept: ComposedConcept,
+    selected_strategies: tuple[SelectedStrategy, ...],
+    development_notes: list[str],
+) -> list[dict[str, str]]:
+    jobs: list[dict[str, str]] = []
+    for prompt_id, output_name, angle in _HERO_JOB_SPECS:
+        jobs.append(
+            {
+                "prompt_id": prompt_id,
+                "group": "hero",
+                "output_name": output_name,
+                "prompt": _build_prompt(
+                    request,
+                    concept,
+                    selected_strategies,
+                    development_notes,
+                    _hero_shot_line(request, angle),
+                ),
+            }
+        )
+    return jobs
+
+
+def _hero_shot_line(request: NormalizedRequest, angle: str) -> str:
     if request.mode == "A":
-        return "full-body; vertical 4:5; eye-level camera; centered composition; full dress visible from shoulder to hem; clean negative space"
-    return "full-body; vertical 4:5; eye-level camera; front or slight 3/4 view; full dress visible from shoulder to hem; neutral review framing"
+        return (
+            f"full-body; vertical 4:5; eye-level camera; {angle}; centered composition; "
+            "full dress visible from shoulder to hem; clean negative space"
+        )
+    return (
+        f"full-body; vertical 4:5; eye-level camera; {angle}; "
+        "full dress visible from shoulder to hem; neutral review framing"
+    )
 
 
 def _material_line(concept: ComposedConcept) -> str:
@@ -141,20 +195,33 @@ def _constraint_line(request: NormalizedRequest) -> str:
     return "; ".join(items)
 
 
-def _detail_prompts(concept: ComposedConcept) -> list[dict[str, str]]:
+def _detail_jobs(concept: ComposedConcept) -> list[dict[str, str]]:
+    prompts = {
+        "construction_closeup": _construction_prompt(concept),
+        "fabric_print_closeup": _fabric_prompt(concept),
+        "hem_and_drape_closeup": _hem_prompt(concept),
+    }
+    jobs: list[dict[str, str]] = []
+    for prompt_id, output_name in _DETAIL_JOB_SPECS:
+        jobs.append(
+            {
+                "prompt_id": prompt_id,
+                "group": "detail",
+                "output_name": output_name,
+                "prompt": prompts[prompt_id],
+            }
+        )
+    return jobs
+
+
+def _detail_prompts(render_jobs: list[dict[str, str]]) -> list[dict[str, str]]:
     return [
         {
-            "prompt_id": "construction_closeup",
-            "prompt": _construction_prompt(concept),
-        },
-        {
-            "prompt_id": "fabric_print_closeup",
-            "prompt": _fabric_prompt(concept),
-        },
-        {
-            "prompt_id": "hem_and_drape_closeup",
-            "prompt": _hem_prompt(concept),
-        },
+            "prompt_id": item["prompt_id"],
+            "prompt": item["prompt"],
+        }
+        for item in render_jobs
+        if item["group"] == "detail"
     ]
 
 
