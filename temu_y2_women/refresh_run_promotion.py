@@ -1,0 +1,77 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+from temu_y2_women.errors import GenerationError
+from temu_y2_women.evidence_promotion import prepare_dress_promotion_review
+
+
+_REQUIRED_REFRESH_RUN_FILES = (
+    "draft_elements.json",
+    "draft_strategy_hints.json",
+    "ingestion_report.json",
+    "refresh_report.json",
+)
+
+
+def prepare_dress_promotion_from_refresh_run(
+    run_dir: Path,
+    active_elements_path: Path,
+    active_strategies_path: Path,
+    output_path: Path | None = None,
+) -> dict[str, Any]:
+    try:
+        paths = resolve_prepare_refresh_run_paths(run_dir, output_path)
+        result = prepare_dress_promotion_review(
+            draft_elements_path=paths["draft_elements_path"],
+            draft_strategy_hints_path=paths["draft_strategy_hints_path"],
+            active_elements_path=active_elements_path,
+            active_strategies_path=active_strategies_path,
+        )
+        if "error" not in result:
+            _write_json(paths["output_path"], result)
+        return result
+    except GenerationError as error:
+        return error.to_dict()
+    except OSError as error:
+        return _refresh_run_io_error(error).to_dict()
+
+
+def resolve_prepare_refresh_run_paths(run_dir: Path, output_path: Path | None = None) -> dict[str, Path]:
+    _validate_refresh_run_dir(run_dir)
+    return {
+        "draft_elements_path": run_dir / "draft_elements.json",
+        "draft_strategy_hints_path": run_dir / "draft_strategy_hints.json",
+        "output_path": output_path or (run_dir / "promotion_review.json"),
+    }
+
+
+def _validate_refresh_run_dir(run_dir: Path) -> None:
+    if not run_dir.is_dir():
+        raise _refresh_run_error(run_dir, "run_dir", "refresh run directory does not exist")
+    for filename in _REQUIRED_REFRESH_RUN_FILES:
+        if (run_dir / filename).exists():
+            continue
+        raise _refresh_run_error(run_dir, filename, "refresh run directory is missing a required artifact")
+
+
+def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _refresh_run_error(run_dir: Path, field: str, message: str) -> GenerationError:
+    return GenerationError(
+        code="INVALID_REFRESH_RUN",
+        message=message,
+        details={"path": str(run_dir), "field": field},
+    )
+
+
+def _refresh_run_io_error(error: OSError) -> GenerationError:
+    return GenerationError(
+        code="PROMOTION_WRITE_FAILED",
+        message="failed to write promotion review output",
+        details={"path": str(getattr(error, "filename", ""))},
+    )
