@@ -55,6 +55,23 @@ class GenerateAndRenderWorkflowFailureTest(unittest.TestCase):
             self.assertEqual(result["error"]["code"], "INVALID_GENERATE_AND_RENDER_INPUT")
             self.assertFalse(output_dir.exists())
 
+    def test_generate_and_render_rejects_non_utf8_request_payload(self) -> None:
+        from temu_y2_women.generate_and_render_workflow import generate_and_render_dress_concept
+        from temu_y2_women.image_generation_output import FakeImageProvider
+
+        with TemporaryDirectory() as temp_dir:
+            request_path = Path(temp_dir) / "request.json"
+            request_path.write_bytes(b"\xff\xfe\x80invalid")
+            output_dir = Path(temp_dir) / "render-output"
+            result = generate_and_render_dress_concept(
+                request_path=request_path,
+                output_dir=output_dir,
+                provider_factory=lambda: FakeImageProvider(),
+            )
+
+            self.assertEqual(result["error"]["code"], "INVALID_GENERATE_AND_RENDER_INPUT")
+            self.assertFalse(output_dir.exists())
+
     def test_generate_and_render_returns_generation_error_without_outputs(self) -> None:
         from temu_y2_women.generate_and_render_workflow import generate_and_render_dress_concept
         from temu_y2_women.image_generation_output import FakeImageProvider
@@ -130,20 +147,24 @@ class GenerateAndRenderWorkflowFailureTest(unittest.TestCase):
             self.assertFalse((output_dir / "concept_result.json.tmp").exists())
             self.assertFalse((output_dir / "concept_result.json").exists())
 
-    def test_generate_and_render_does_not_map_provider_factory_os_error_to_concept_result_failure(self) -> None:
+    def test_generate_and_render_returns_structured_error_when_provider_factory_fails(self) -> None:
         from temu_y2_women.generate_and_render_workflow import generate_and_render_dress_concept
 
         with TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir) / "render-output"
-            with self.assertRaises(OSError):
-                generate_and_render_dress_concept(
-                    request_path=_REQUEST_FIXTURE_PATH,
-                    output_dir=output_dir,
-                    provider_factory=_raising_os_error_provider_factory,
-                )
+            result = generate_and_render_dress_concept(
+                request_path=_REQUEST_FIXTURE_PATH,
+                output_dir=output_dir,
+                provider_factory=_raising_os_error_provider_factory,
+            )
 
+            self.assertEqual(result["error"]["code"], "IMAGE_PROVIDER_FAILED")
+            self.assertEqual(result["error"]["details"]["stage"], "provider_factory")
+            self.assertIn("provider factory failed", result["error"]["details"]["reason"])
             self.assertTrue((output_dir / "concept_result.json").exists())
             self.assertFalse((output_dir / "concept_result.json.tmp").exists())
+            self.assertFalse((output_dir / "rendered_image.png").exists())
+            self.assertFalse((output_dir / "image_render_report.json").exists())
 
 
 class _ExplodingProvider:

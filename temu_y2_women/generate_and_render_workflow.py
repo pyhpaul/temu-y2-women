@@ -29,7 +29,7 @@ def generate_and_render_dress_concept(
         return render_dress_concept_image(
             result_path=result_path,
             output_dir=output_dir,
-            provider=provider_factory(),
+            provider=_resolve_provider(provider_factory),
         )
     except GenerationError as error:
         return error.to_dict()
@@ -40,6 +40,8 @@ def _load_request_payload(path: Path) -> dict[str, Any]:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except OSError as error:
         raise _invalid_input_error(path, "request", "generate-and-render input could not be read") from error
+    except UnicodeDecodeError as error:
+        raise _invalid_input_error(path, "request", "generate-and-render input must be valid UTF-8 JSON") from error
     except json.JSONDecodeError as error:
         raise _invalid_input_error(path, "request", "generate-and-render input must contain valid JSON") from error
     if isinstance(payload, dict):
@@ -63,6 +65,19 @@ def _write_concept_result(output_dir: Path, concept_result: dict[str, Any]) -> P
 def _cleanup_file(path: Path) -> None:
     if path.exists():
         path.unlink()
+
+
+def _resolve_provider(provider_factory: ImageProviderFactory) -> ImageProvider:
+    try:
+        return provider_factory()
+    except GenerationError:
+        raise
+    except Exception as error:
+        raise GenerationError(
+            code="IMAGE_PROVIDER_FAILED",
+            message="image provider failed to render the requested image",
+            details={"stage": "provider_factory", "reason": str(error)},
+        ) from error
 
 
 def _invalid_input_error(path: Path, field: str, message: str) -> GenerationError:
