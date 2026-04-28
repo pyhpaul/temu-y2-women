@@ -26,7 +26,7 @@ def render_prompt_bundle(
     bundle: dict[str, object] = {
         "mode": request.mode,
         "prompt": render_jobs[0]["prompt"],
-        "template_version": "visual-prompt-v1",
+        "template_version": "visual-prompt-v2",
         "render_notes": _render_notes(request.mode),
         "render_jobs": render_jobs,
         "detail_prompts": _detail_prompts(render_jobs),
@@ -98,6 +98,14 @@ def _element_phrase(slot: str, value: str) -> str:
         return f"{value} silhouette"
     if slot == "fabric":
         return f"{value} fabric"
+    if slot == "dress_length":
+        return f"{value} length"
+    if slot == "color_family":
+        return f"{value} color story"
+    if slot == "print_scale":
+        return f"{value} scale"
+    if slot == "opacity_level":
+        return "sheer overlay effect" if value == "sheer" else f"{value} coverage"
     return value
 
 
@@ -146,9 +154,23 @@ def _hero_jobs(
                     development_notes,
                     _hero_shot_line(request, angle),
                 ),
+                "render_strategy": _hero_render_strategy(prompt_id),
+                "reference_prompt_id": _hero_reference_prompt_id(prompt_id),
             }
         )
     return jobs
+
+
+def _hero_render_strategy(prompt_id: str) -> str:
+    if prompt_id == "hero_front":
+        return "generate"
+    return "edit"
+
+
+def _hero_reference_prompt_id(prompt_id: str) -> str | None:
+    if prompt_id == "hero_front":
+        return None
+    return "hero_front"
 
 
 def _hero_shot_line(request: NormalizedRequest, angle: str) -> str:
@@ -164,15 +186,16 @@ def _hero_shot_line(request: NormalizedRequest, angle: str) -> str:
 
 
 def _material_line(concept: ComposedConcept) -> str:
-    fabric = concept.selected_elements.get("fabric", None)
-    pattern = concept.selected_elements.get("pattern", None)
-    detail = concept.selected_elements.get("detail", None)
-    fabric_text = fabric.value if fabric else "dress fabric"
-    pattern_text = pattern.value if pattern else "surface print"
-    detail_text = detail.value if detail else "construction detail"
+    fabric_text = _selected_value(concept, "fabric", "dress fabric")
+    pattern_text = _selected_value(concept, "pattern", "surface print")
+    detail_text = _selected_value(concept, "detail", "construction detail")
+    color_text = _selected_value(concept, "color_family", "commercial color")
+    print_scale_text = _element_phrase("print_scale", _selected_value(concept, "print_scale", "commercial print"))
+    opacity_text = _element_phrase("opacity_level", _selected_value(concept, "opacity_level", "opaque"))
     return (
         f"crisp {fabric_text} texture; visible {detail_text}; visible seam lines; clean hem finish; "
-        f"true-to-color {pattern_text}; natural drape; commercially realistic construction"
+        f"true-to-color {color_text}; visible {pattern_text}; {print_scale_text}; {opacity_text}; natural drape; "
+        "commercially realistic construction"
     )
 
 
@@ -209,6 +232,8 @@ def _detail_jobs(concept: ComposedConcept) -> list[dict[str, str]]:
                 "group": "detail",
                 "output_name": output_name,
                 "prompt": prompts[prompt_id],
+                "render_strategy": "edit",
+                "reference_prompt_id": "hero_front",
             }
         )
     return jobs
@@ -219,6 +244,8 @@ def _detail_prompts(render_jobs: list[dict[str, str]]) -> list[dict[str, str]]:
         {
             "prompt_id": item["prompt_id"],
             "prompt": item["prompt"],
+            "render_strategy": item["render_strategy"],
+            "reference_prompt_id": item["reference_prompt_id"],
         }
         for item in render_jobs
         if item["group"] == "detail"
@@ -227,29 +254,36 @@ def _detail_prompts(render_jobs: list[dict[str, str]]) -> list[dict[str, str]]:
 
 def _construction_prompt(concept: ComposedConcept) -> str:
     neckline = concept.selected_elements["neckline"].value
-    sleeve = concept.selected_elements["sleeve"].value
     detail = concept.selected_elements.get("detail", concept.selected_elements["fabric"]).value
-    pattern = concept.selected_elements["pattern"].value
+    waistline = concept.selected_elements.get("waistline", concept.selected_elements["silhouette"]).value
     return (
-        f"close-up ecommerce detail image of the {neckline}, {detail}, and {sleeve} on the dress; "
-        f"clearly show seam lines, neckline edge finish, print placement, and true-to-color {pattern}; "
+        f"close-up ecommerce detail image of the {neckline}, {detail}, and waistline placement; "
+        f"clearly show {waistline}, seam lines, neckline edge finish, and bodice construction; "
         "neutral studio background; no hands, no accessories, no text"
     )
 
 
 def _fabric_prompt(concept: ComposedConcept) -> str:
     fabric = concept.selected_elements["fabric"].value
-    pattern = concept.selected_elements["pattern"].value
+    pattern = _selected_value(concept, "pattern", "solid color")
+    print_scale = _element_phrase("print_scale", _selected_value(concept, "print_scale", "commercial print"))
+    opacity = _element_phrase("opacity_level", _selected_value(concept, "opacity_level", "opaque"))
     return (
-        f"macro fabric detail image of {fabric} with {pattern}; clearly show print scale, weave texture, "
-        "color accuracy, and commercially realistic construction; soft studio lighting; no blur, no props, no text"
+        f"macro fabric detail image of {fabric} with {pattern} and {print_scale}; clearly show {opacity}, print scale, "
+        "weave texture, and color accuracy; soft studio lighting; no blur, no props, no text"
     )
 
 
 def _hem_prompt(concept: ComposedConcept) -> str:
     silhouette = concept.selected_elements["silhouette"].value
-    pattern = concept.selected_elements["pattern"].value
+    dress_length = _selected_value(concept, "dress_length", "balanced")
+    pattern = _selected_value(concept, "pattern", "surface print")
     return (
-        f"close-up lower-skirt detail image of the {silhouette} dress; clearly show hem finish, skirt volume, "
-        f"seam transitions, drape, and {pattern} continuity; neutral background; no cropped hem edge, no props, no text"
+        f"close-up lower-skirt detail image of the {silhouette} dress; clearly show {dress_length} proportion, hem finish, "
+        f"skirt volume, seam transitions, drape, and {pattern} continuity; neutral background; no cropped hem edge, no props, no text"
     )
+
+
+def _selected_value(concept: ComposedConcept, slot: str, default: str) -> str:
+    element = concept.selected_elements.get(slot)
+    return default if element is None else element.value

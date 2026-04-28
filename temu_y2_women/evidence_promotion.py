@@ -248,7 +248,7 @@ def _build_element_review_entry(
     identity = _canonical_identity(str(draft_element["slot"]), str(draft_element["value"]))
     matched = active_by_identity.get(identity)
     canonical_identity = {"slot": draft_element["slot"], "value": draft_element["value"]}
-    return {
+    entry = {
         "draft_id": draft_element["draft_id"],
         "merge_action": "update" if matched else "create",
         "matched_active_element_id": matched["element_id"] if matched else None,
@@ -270,6 +270,50 @@ def _build_element_review_entry(
             "evidence_summary": draft_element["evidence_summary"],
             "status": "active",
         },
+    }
+    review_context = _build_structured_review_context(draft_element)
+    if review_context is not None:
+        entry["review_context"] = review_context
+    return entry
+
+
+def _build_structured_review_context(draft_element: dict[str, Any]) -> dict[str, Any] | None:
+    provenance = draft_element.get("extraction_provenance")
+    if not isinstance(provenance, dict):
+        return None
+    structured_matches = provenance.get("structured_matches")
+    if not isinstance(structured_matches, list) or not structured_matches:
+        return None
+    context = {
+        "matched_channels": list(provenance.get("matched_channels", [])),
+        "structured_matches": [_structured_review_match(match) for match in structured_matches if isinstance(match, dict)],
+    }
+    rule_matches = provenance.get("rule_matches")
+    if isinstance(rule_matches, list) and rule_matches:
+        context["rule_matches"] = [_rule_review_match(match) for match in rule_matches if isinstance(match, dict)]
+    return context
+
+
+def _structured_review_match(match: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "signal_id": match["signal_id"],
+        "slot": match["slot"],
+        "value": match["value"],
+        "candidate_source": match["candidate_source"],
+        "supporting_card_ids": list(match["supporting_card_ids"]),
+        "supporting_card_count": match["supporting_card_count"],
+        "aggregation_threshold": match["aggregation_threshold"],
+        "observation_model": match["observation_model"],
+        "evidence_summary": match["evidence_summary"],
+    }
+
+
+def _rule_review_match(match: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "signal_id": match["signal_id"],
+        "rule_slot": match["rule_slot"],
+        "rule_value": match["rule_value"],
+        "matched_phrases": list(match["matched_phrases"]),
     }
 
 

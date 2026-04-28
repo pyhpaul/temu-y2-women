@@ -1,0 +1,130 @@
+{
+  "schema_version": "feedback-ledger-v1",
+  "records": [
+    {
+      "feedback_id": "feedback-001",
+      "category": "dress",
+      "decision": "reject",
+      "element_ids": ["dress-pattern-floral-001", "dress-detail-smocked-bodice-001"],
+      "score_delta": -0.02,
+      "request_fingerprint": "req-001",
+      "concept_fingerprint": "concept-001",
+      "notes": "Too busy together.",
+      "recorded_at": "2026-04-27T12:00:00Z",
+      "feedback_target": {
+        "selected_elements": [
+          {
+            "slot": "pattern",
+            "element_id": "dress-pattern-floral-001",
+            "value": "floral print"
+          },
+          {
+            "slot": "detail",
+            "element_id": "dress-detail-smocked-bodice-001",
+            "value": "smocked bodice"
+          }
+        ]
+      }
+    },
+    {
+      "feedback_id": "feedback-002",
+      "category": "dress",
+      "decision": "reject",
+      "element_ids": ["dress-pattern-floral-001", "dress-detail-smocked-bodice-001"],
+      "score_delta": -0.02,
+      "request_fingerprint": "req-002",
+      "concept_fingerprint": "concept-002",
+      "notes": "Conflict still shows up.",
+      "recorded_at": "2026-04-27T12:05:00Z",
+      "feedback_target": {
+        "selected_elements": [
+          {
+            "slot": "pattern",
+            "element_id": "dress-pattern-floral-001",
+            "value": "floral print"
+          },
+          {
+            "slot": "detail",
+            "element_id": "dress-detail-smocked-bodice-001",
+            "value": "smocked bodice"
+          }
+        ]
+      }
+    },
+    {
+      "feedback_id": "feedback-003",
+      "category": "dress",
+      "decision": "keep",
+      "element_ids": ["dress-pattern-floral-001", "dress-detail-smocked-bodice-001"],
+      "score_delta": 0.02,
+      "request_fingerprint": "req-003",
+      "concept_fingerprint": "concept-003",
+      "notes": "Worked once.",
+      "recorded_at": "2026-04-27T12:10:00Z",
+      "feedback_target": {
+        "selected_elements": [
+          {
+            "slot": "pattern",
+            "element_id": "dress-pattern-floral-001",
+            "value": "floral print"
+          },
+          {
+            "slot": "detail",
+            "element_id": "dress-detail-smocked-bodice-001",
+            "value": "smocked bodice"
+          }
+        ]
+      }
+    },
+    {
+      "feedback_id": "feedback-004",
+      "category": "dress",
+      "decision": "reject",
+      "element_ids": ["dress-pattern-floral-001", "dress-detail-smocked-bodice-001"],
+      "score_delta": -0.02,
+      "request_fingerprint": "req-004",
+      "concept_fingerprint": "concept-004",
+      "notes": "Reject again.",
+      "recorded_at": "2026-04-27T12:15:00Z",
+      "feedback_target": {
+        "selected_elements": [
+          {
+            "slot": "pattern",
+            "element_id": "dress-pattern-floral-001",
+            "value": "floral print"
+          },
+          {
+            "slot": "detail",
+            "element_id": "dress-detail-smocked-bodice-001",
+            "value": "smocked bodice"
+          }
+        ]
+      }
+    },
+    {
+      "feedback_id": "feedback-005",
+      "category": "dress",
+      "decision": "reject",
+      "element_ids": ["dress-pattern-floral-001", "dress-detail-smocked-bodice-001"],
+      "score_delta": -0.02,
+      "request_fingerprint": "req-005",
+      "concept_fingerprint": "concept-005",
+      "notes": "Still too dense.",
+      "recorded_at": "2026-04-27T12:20:00Z",
+      "feedback_target": {
+        "selected_elements": [
+          {
+            "slot": "pattern",
+            "element_id": "dress-pattern-floral-001",
+            "value": "floral print"
+          },
+          {
+            "slot": "detail",
+            "element_id": "dress-detail-smocked-bodice-001",
+            "value": "smocked bodice"
+          }
+        ]
+      }
+    }
+  ]
+}

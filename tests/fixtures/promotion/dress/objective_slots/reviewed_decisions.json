@@ -1,0 +1,108 @@
+{
+  "schema_version": "promotion-review-v1",
+  "category": "dress",
+  "elements": [
+    {
+      "draft_id": "draft-dress-length-maxi",
+      "merge_action": "create",
+      "matched_active_element_id": null,
+      "canonical_identity": {
+        "slot": "dress_length",
+        "value": "maxi"
+      },
+      "merge_rationale": {
+        "rule": "canonical-slot-value",
+        "resolved_element_id": "dress-dress_length-maxi-001",
+        "matched_active_element_id": null
+      },
+      "source_signal_ids": ["dress-signal-301", "dress-signal-302"],
+      "decision": "accept",
+      "proposed_element": {
+        "element_id": "dress-dress_length-maxi-001",
+        "category": "dress",
+        "slot": "dress_length",
+        "value": "maxi",
+        "tags": ["dress", "feminine"],
+        "base_score": 0.88,
+        "price_bands": ["mid"],
+        "occasion_tags": ["vacation"],
+        "season_tags": ["summer"],
+        "risk_flags": [],
+        "evidence_summary": "Signals point to longer dress proportions as a fresh vacation shape cue.",
+        "status": "active"
+      }
+    },
+    {
+      "draft_id": "draft-waistline-empire",
+      "merge_action": "create",
+      "matched_active_element_id": null,
+      "canonical_identity": {
+        "slot": "waistline",
+        "value": "empire waist"
+      },
+      "merge_rationale": {
+        "rule": "canonical-slot-value",
+        "resolved_element_id": "dress-waistline-empire-waist-001",
+        "matched_active_element_id": null
+      },
+      "source_signal_ids": ["dress-signal-301", "dress-signal-303"],
+      "decision": "accept",
+      "proposed_element": {
+        "element_id": "dress-waistline-empire-waist-001",
+        "category": "dress",
+        "slot": "waistline",
+        "value": "empire waist",
+        "tags": ["dress", "romantic"],
+        "base_score": 0.89,
+        "price_bands": ["mid"],
+        "occasion_tags": ["vacation"],
+        "season_tags": ["summer"],
+        "risk_flags": [],
+        "evidence_summary": "Signals indicate empire waist placement is resurfacing in vacation-focused dress edits.",
+        "status": "active"
+      }
+    }
+  ],
+  "strategy_hints": [
+    {
+      "hint_id": "draft-strategy-us-summer-vacation-objective-slots",
+      "merge_action": "create",
+      "matched_active_strategy_id": null,
+      "canonical_identity": {
+        "target_market": "US",
+        "resolved_strategy_id": "dress-us-summer-vacation-objective-slots"
+      },
+      "merge_rationale": {
+        "rule": "resolved-strategy-id",
+        "resolved_strategy_id": "dress-us-summer-vacation-objective-slots",
+        "matched_active_strategy_id": null
+      },
+      "source_signal_ids": ["dress-signal-301", "dress-signal-302", "dress-signal-303"],
+      "decision": "accept",
+      "proposed_strategy_template": {
+        "strategy_id": "dress-us-summer-vacation-objective-slots",
+        "category": "dress",
+        "target_market": "US",
+        "priority": 3,
+        "date_window": {
+          "start": "01-01",
+          "end": "12-31"
+        },
+        "occasion_tags": ["vacation"],
+        "boost_tags": ["romantic"],
+        "suppress_tags": [],
+        "slot_preferences": {
+          "dress_length": ["maxi"],
+          "waistline": ["empire waist"]
+        },
+        "score_boost": 0.0,
+        "score_cap": 0.0,
+        "prompt_hints": [
+          "Aggregated signals indicate objective fit slots are shifting toward longer proportions and raised waist placement."
+        ],
+        "reason_template": "Aggregated signals indicate objective fit slots are shifting toward longer proportions and raised waist placement.",
+        "status": "active"
+      }
+    }
+  ]
+}

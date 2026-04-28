@@ -25,7 +25,7 @@ class PromptRendererTest(unittest.TestCase):
         )
 
         self.assertEqual(bundle["mode"], "A")
-        self.assertEqual(bundle["template_version"], "visual-prompt-v1")
+        self.assertEqual(bundle["template_version"], "visual-prompt-v2")
         self.assert_prompt_has_required_blocks(bundle["prompt"])
         self.assertIn("product-first presentation", bundle["prompt"])
         self.assertIn("on-model ecommerce hero image", bundle["prompt"])
@@ -46,7 +46,7 @@ class PromptRendererTest(unittest.TestCase):
         )
 
         self.assertEqual(bundle["mode"], "B")
-        self.assertEqual(bundle["template_version"], "visual-prompt-v1")
+        self.assertEqual(bundle["template_version"], "visual-prompt-v2")
         self.assert_prompt_has_required_blocks(bundle["prompt"])
         self.assertIn("development reference image", bundle["prompt"])
         self.assertIn("construction review clarity", " ".join(bundle["render_notes"]))
@@ -57,6 +57,27 @@ class PromptRendererTest(unittest.TestCase):
         self.assertIn("development notes: summer-ready; vacation-oriented; feminine silhouette", bundle["prompt"])
         self.assert_render_jobs(bundle)
         self.assert_detail_prompts(bundle["detail_prompts"])
+
+    def test_render_mode_a_prompt_includes_objective_slots(self) -> None:
+        from temu_y2_women.prompt_renderer import render_prompt_bundle
+
+        bundle = render_prompt_bundle(
+            request=_request(mode="A"),
+            concept=_objective_concept(),
+            selected_strategies=(_strategy(),),
+            warnings=(),
+        )
+
+        prompt = bundle["prompt"]
+        self.assertIn("mini length", prompt)
+        self.assertIn("drop waist", prompt)
+        self.assertIn("white color story", prompt)
+        self.assertIn("micro print scale", prompt)
+        self.assertIn("sheer overlay effect", prompt)
+        detail_prompts = {item["prompt_id"]: item["prompt"] for item in bundle["detail_prompts"]}
+        self.assertIn("waistline placement", detail_prompts["construction_closeup"])
+        self.assertIn("micro print scale", detail_prompts["fabric_print_closeup"])
+        self.assertIn("mini proportion", detail_prompts["hem_and_drape_closeup"])
 
     def assert_prompt_has_required_blocks(self, prompt: str) -> None:
         self.assertIn("[商品主体]", prompt)
@@ -77,6 +98,8 @@ class PromptRendererTest(unittest.TestCase):
         for item in detail_prompts:
             self.assertIn("prompt", item)
             self.assertTrue(item["prompt"].strip())
+            self.assertEqual(item["render_strategy"], "edit")
+            self.assertEqual(item["reference_prompt_id"], "hero_front")
 
     def assert_render_jobs(self, bundle: dict[str, object]) -> None:
         render_jobs = bundle["render_jobs"]
@@ -94,8 +117,14 @@ class PromptRendererTest(unittest.TestCase):
         )
         self.assertEqual(bundle["prompt"], render_jobs[0]["prompt"])
         detail_prompts = {item["prompt_id"]: item["prompt"] for item in bundle["detail_prompts"]}
-        for item in render_jobs:
+        for index, item in enumerate(render_jobs):
             self.assertTrue(item["prompt"].strip())
+            if index == 0:
+                self.assertEqual(item["render_strategy"], "generate")
+                self.assertIsNone(item["reference_prompt_id"])
+            else:
+                self.assertEqual(item["render_strategy"], "edit")
+                self.assertEqual(item["reference_prompt_id"], "hero_front")
             if item["group"] == "detail":
                 self.assertEqual(detail_prompts[item["prompt_id"]], item["prompt"])
 
@@ -123,6 +152,28 @@ def _concept() -> ComposedConcept:
             "neckline": ComposedElement("dress-neckline-square-001", "square neckline"),
             "sleeve": ComposedElement("dress-sleeve-puff-001", "short puff sleeve"),
             "pattern": ComposedElement("dress-pattern-floral-001", "floral print"),
+        },
+        style_summary=("summer-ready", "vacation-oriented", "feminine silhouette"),
+        constraint_notes=("must_have_tags satisfied: floral",),
+    )
+
+
+def _objective_concept() -> ComposedConcept:
+    return ComposedConcept(
+        category="dress",
+        concept_score=0.94,
+        selected_elements={
+            "silhouette": ComposedElement("dress-silhouette-a-line-001", "a-line"),
+            "fabric": ComposedElement("dress-fabric-cotton-poplin-001", "cotton poplin"),
+            "neckline": ComposedElement("dress-neckline-square-001", "square neckline"),
+            "sleeve": ComposedElement("dress-sleeve-puff-001", "short puff sleeve"),
+            "dress_length": ComposedElement("dress-length-mini-001", "mini"),
+            "waistline": ComposedElement("dress-waistline-drop-waist-001", "drop waist"),
+            "color_family": ComposedElement("dress-color-family-white-001", "white"),
+            "pattern": ComposedElement("dress-pattern-polka-dot-001", "polka dot"),
+            "print_scale": ComposedElement("dress-print-scale-micro-print-001", "micro print"),
+            "opacity_level": ComposedElement("dress-opacity-level-sheer-001", "sheer"),
+            "detail": ComposedElement("dress-detail-neck-scarf-001", "neck scarf"),
         },
         style_summary=("summer-ready", "vacation-oriented", "feminine silhouette"),
         constraint_notes=("must_have_tags satisfied: floral",),

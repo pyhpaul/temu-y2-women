@@ -26,6 +26,10 @@ _DETAIL_REVIEW_RULES = {
         "verify smocking stitch consistency, recovery, and clean attachment",
         "confirm bodice tension stays even without distorting print placement",
     ),
+    "neck scarf": (
+        "verify neck scarf attachment, width consistency, and clean turning",
+        "confirm neck scarf placement frames the neckline without twisting or collapse",
+    ),
 }
 _OPEN_QUESTIONS = (
     "open question: confirm fiber_content from approved fabric submission",
@@ -211,6 +215,10 @@ def _fit_review_cues(
         cues.append("fit cue: protect non-bodycon ease through bust, waist, and skirt sweep")
     if _selected_value(concept, "silhouette") == "a-line":
         cues.append("fit cue: keep a-line volume easy and mobile instead of collapsing into a narrow shape")
+    if _selected_value(concept, "waistline") == "drop waist":
+        cues.append("fit cue: confirm drop-waist placement does not collapse the skirt balance")
+    if _selected_value(concept, "dress_length") == "mini":
+        cues.append("fit cue: confirm mini length still feels secure and commercially wearable in motion")
     if _selected_value(concept, "detail") == "smocked bodice":
         cues.append("fit cue: make sure smocked bodice shaping stays flexible rather than restrictive")
     return cues or ["fit cue: confirm the sample stays easy to wear for the intended market"]
@@ -222,6 +230,10 @@ def _commercial_review_cues(
     selected_strategies: tuple[SelectedStrategy, ...],
 ) -> list[str]:
     cues = []
+    if _selected_value(concept, "color_family") == "white" and _selected_value(concept, "opacity_level") == "sheer":
+        cues.append("commercial cue: keep white color direction and sheer balance commercially readable in first-glance imagery")
+    if _selected_value(concept, "print_scale") == "micro print":
+        cues.append("commercial cue: keep micro print scale crisp enough to read without visual noise")
     if selected_strategies:
         cues.append(f"commercial cue: seasonal review should stay anchored to {selected_strategies[0].reason}")
     if request.occasion_tags:
@@ -247,6 +259,12 @@ def _visible_construction_checks(concept: ComposedConcept) -> list[str]:
         checks.append(f"visible check: confirm {sleeve} openings keep soft volume with clean finishing")
     if _selected_value(concept, "silhouette"):
         checks.append("visible check: confirm waist seam placement supports balanced a-line proportion")
+    if _selected_value(concept, "waistline") == "drop waist":
+        checks.append("visible check: confirm drop-waist seam reads level and balanced across the full body")
+    if _selected_value(concept, "print_scale") == "micro print":
+        checks.append("visible check: confirm micro print scale stays readable without muddying the fabric surface")
+    if _selected_value(concept, "opacity_level") == "sheer":
+        checks.append("visible check: confirm sheer behavior stays intentional rather than accidentally transparent")
     checks.append("visible check: confirm hem finish hangs cleanly without torque")
     pattern = _selected_value(concept, "pattern")
     if pattern:
@@ -275,12 +293,16 @@ def _fabric_watchpoint(concept: ComposedConcept) -> str:
 def _detail_qa_note(detail: str) -> str:
     if detail == "smocked bodice":
         return "qa review: check smocking rows for even tension, secure attachment, and balanced visual spacing"
+    if detail == "neck scarf":
+        return "qa review: check neck scarf attachment, symmetry, and edge finish for clean repeatability"
     return "qa review: check visible detail attachment stays secure, even, and repeatable"
 
 
 def _detail_visible_check(detail: str) -> str:
     if detail == "smocked bodice":
         return "visible check: confirm smocked bodice construction stays consistent across the front bodice"
+    if detail == "neck scarf":
+        return "visible check: confirm neck scarf attachment stays clean and balanced around the neckline"
     return "visible check: confirm visible detail construction stays clean and balanced"
 
 

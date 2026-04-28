@@ -35,6 +35,8 @@ class ImageRenderInputTest(unittest.TestCase):
         self.assertEqual(render_input.render_jobs[0].prompt_id, "hero_front")
         self.assertEqual(render_input.render_jobs[0].group, "hero")
         self.assertEqual(render_input.render_jobs[0].output_name, "rendered_image.png")
+        self.assertEqual(render_input.render_jobs[0].render_strategy, "generate")
+        self.assertIsNone(render_input.render_jobs[0].reference_prompt_id)
         self.assertEqual(
             render_input.render_notes,
             ("prioritize product-first presentation", "keep garment construction realistic"),
@@ -51,14 +53,23 @@ class ImageRenderInputTest(unittest.TestCase):
 
         self.assertEqual(render_input.prompt, "hero front prompt")
         self.assertEqual(
-            [(job.prompt_id, job.group, job.output_name) for job in render_input.render_jobs],
             [
-                ("hero_front", "hero", "hero_front.png"),
-                ("hero_three_quarter", "hero", "hero_three_quarter.png"),
-                ("hero_back", "hero", "hero_back.png"),
-                ("construction_closeup", "detail", "construction_closeup.png"),
-                ("fabric_print_closeup", "detail", "fabric_print_closeup.png"),
-                ("hem_and_drape_closeup", "detail", "hem_and_drape_closeup.png"),
+                (
+                    job.prompt_id,
+                    job.group,
+                    job.output_name,
+                    job.render_strategy,
+                    job.reference_prompt_id,
+                )
+                for job in render_input.render_jobs
+            ],
+            [
+                ("hero_front", "hero", "hero_front.png", "generate", None),
+                ("hero_three_quarter", "hero", "hero_three_quarter.png", "edit", "hero_front"),
+                ("hero_back", "hero", "hero_back.png", "edit", "hero_front"),
+                ("construction_closeup", "detail", "construction_closeup.png", "edit", "hero_front"),
+                ("fabric_print_closeup", "detail", "fabric_print_closeup.png", "edit", "hero_front"),
+                ("hem_and_drape_closeup", "detail", "hem_and_drape_closeup.png", "edit", "hero_front"),
             ],
         )
 
@@ -123,36 +134,48 @@ def _bundle_result_payload() -> dict[str, object]:
             "group": "hero",
             "output_name": "hero_front.png",
             "prompt": "hero front prompt",
+            "render_strategy": "generate",
+            "reference_prompt_id": None,
         },
         {
             "prompt_id": "hero_three_quarter",
             "group": "hero",
             "output_name": "hero_three_quarter.png",
             "prompt": "hero three quarter prompt",
+            "render_strategy": "edit",
+            "reference_prompt_id": "hero_front",
         },
         {
             "prompt_id": "hero_back",
             "group": "hero",
             "output_name": "hero_back.png",
             "prompt": "hero back prompt",
+            "render_strategy": "edit",
+            "reference_prompt_id": "hero_front",
         },
         {
             "prompt_id": "construction_closeup",
             "group": "detail",
             "output_name": "construction_closeup.png",
             "prompt": "construction prompt",
+            "render_strategy": "edit",
+            "reference_prompt_id": "hero_front",
         },
         {
             "prompt_id": "fabric_print_closeup",
             "group": "detail",
             "output_name": "fabric_print_closeup.png",
             "prompt": "fabric prompt",
+            "render_strategy": "edit",
+            "reference_prompt_id": "hero_front",
         },
         {
             "prompt_id": "hem_and_drape_closeup",
             "group": "detail",
             "output_name": "hem_and_drape_closeup.png",
             "prompt": "hem prompt",
+            "render_strategy": "edit",
+            "reference_prompt_id": "hero_front",
         },
     ]
     payload["prompt_bundle"]["prompt"] = "legacy hero prompt should be ignored"

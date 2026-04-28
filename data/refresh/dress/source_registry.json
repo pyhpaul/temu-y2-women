@@ -10,6 +10,7 @@
       "fetch_mode": "html",
       "adapter_id": "whowhatwear_editorial_v1",
       "default_price_band": "mid",
+      "pipeline_mode": "editorial_text",
       "priority": 100,
       "weight": 1.0,
       "enabled": true
@@ -23,6 +24,7 @@
       "fetch_mode": "html",
       "adapter_id": "whowhatwear_editorial_v1",
       "default_price_band": "mid",
+      "pipeline_mode": "editorial_text",
       "priority": 90,
       "weight": 0.95,
       "enabled": true
@@ -36,8 +38,26 @@
       "fetch_mode": "html",
       "adapter_id": "marieclaire_editorial_v1",
       "default_price_band": "mid",
+      "pipeline_mode": "editorial_text",
       "priority": 80,
       "weight": 0.85,
+      "enabled": true
+    },
+    {
+      "source_id": "whowhatwear-best-summer-dresses-2025",
+      "source_type": "public_roundup_web",
+      "source_url": "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "whowhatwear_roundup_v1",
+      "default_price_band": "mid",
+      "pipeline_mode": "roundup_image_cards",
+      "card_limit": 12,
+      "aggregation_threshold": 2,
+      "observation_model": "gpt-4.1-mini",
+      "priority": 70,
+      "weight": 0.7,
       "enabled": true
     }
   ]

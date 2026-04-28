@@ -7,14 +7,33 @@
       "target_market": "US",
       "season_tags": ["summer"],
       "occasion_tags": ["resort", "vacation"],
-      "boost_tags": ["airy", "dress", "feminine", "floral", "lightweight", "summer", "vacation"],
+      "boost_tags": [
+        "airy",
+        "dress",
+        "drop-waist",
+        "feminine",
+        "floral",
+        "lightweight",
+        "micro-print",
+        "mini",
+        "polka-dot",
+        "sheer",
+        "summer",
+        "vacation",
+        "white"
+      ],
       "slot_preferences": {
+        "color_family": ["white"],
         "detail": ["smocked bodice"],
+        "dress_length": ["mini"],
         "fabric": ["cotton poplin"],
         "neckline": ["square neckline"],
+        "opacity_level": ["sheer"],
         "pattern": ["floral print"],
+        "print_scale": ["micro print"],
         "silhouette": ["a-line"],
-        "sleeve": ["flutter sleeve"]
+        "sleeve": ["flutter sleeve"],
+        "waistline": ["drop waist"]
       },
       "priority_signal": 2,
       "source_signal_ids": ["dress-signal-001", "dress-signal-002"],
@@ -22,18 +41,33 @@
       "extraction_provenance": {
         "kind": "draft-element-aggregation",
         "source_draft_ids": [
+          "draft-color_family-white",
           "draft-detail-smocked-bodice",
+          "draft-dress_length-mini",
           "draft-fabric-cotton-poplin",
           "draft-neckline-square-neckline",
+          "draft-opacity_level-sheer",
           "draft-pattern-floral-print",
+          "draft-print_scale-micro-print",
           "draft-silhouette-a-line",
-          "draft-sleeve-flutter-sleeve"
+          "draft-sleeve-flutter-sleeve",
+          "draft-waistline-drop-waist"
         ],
         "slot_value_identities": [
+          {
+            "draft_id": "draft-color_family-white",
+            "slot": "color_family",
+            "value": "white"
+          },
           {
             "draft_id": "draft-detail-smocked-bodice",
             "slot": "detail",
             "value": "smocked bodice"
+          },
+          {
+            "draft_id": "draft-dress_length-mini",
+            "slot": "dress_length",
+            "value": "mini"
           },
           {
             "draft_id": "draft-fabric-cotton-poplin",
@@ -46,9 +80,19 @@
             "value": "square neckline"
           },
           {
+            "draft_id": "draft-opacity_level-sheer",
+            "slot": "opacity_level",
+            "value": "sheer"
+          },
+          {
             "draft_id": "draft-pattern-floral-print",
             "slot": "pattern",
             "value": "floral print"
+          },
+          {
+            "draft_id": "draft-print_scale-micro-print",
+            "slot": "print_scale",
+            "value": "micro print"
           },
           {
             "draft_id": "draft-silhouette-a-line",
@@ -59,6 +103,11 @@
             "draft_id": "draft-sleeve-flutter-sleeve",
             "slot": "sleeve",
             "value": "flutter sleeve"
+          },
+          {
+            "draft_id": "draft-waistline-drop-waist",
+            "slot": "waistline",
+            "value": "drop waist"
           }
         ]
       },

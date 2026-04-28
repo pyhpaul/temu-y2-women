@@ -1,0 +1,60 @@
+{
+  "schema_version": "canonical-signals-v1",
+  "signals": [
+    {
+      "canonical_signal_id": "whowhatwear-best-summer-dresses-2025-dress_length-mini-001",
+      "source_id": "whowhatwear-best-summer-dresses-2025",
+      "source_type": "public_roundup_web",
+      "source_url": "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025",
+      "captured_at": "2025-06-20",
+      "fetched_at": "2026-04-28T00:00:00Z",
+      "target_market": "US",
+      "category": "dress",
+      "title": "Best Summer Dresses 2025",
+      "summary": "Observed dress_length=mini across 2 roundup cards.",
+      "evidence_excerpt": "White Mini Dress | Polka-Dot Mini Dress",
+      "observed_occasion_tags": [],
+      "observed_season_tags": [
+        "summer"
+      ],
+      "manual_tags": [
+        "summer",
+        "shopping",
+        "dress"
+      ],
+      "structured_candidates": [
+        {
+          "slot": "dress_length",
+          "value": "mini",
+          "candidate_source": "roundup_card_image_aggregation",
+          "supporting_card_ids": [
+            "whowhatwear-best-summer-dresses-2025-card-001",
+            "whowhatwear-best-summer-dresses-2025-card-002"
+          ],
+          "supporting_card_count": 2,
+          "aggregation_threshold": 2,
+          "observation_model": "fake-roundup-observer",
+          "evidence_summary": "2 cards agree on dress_length=mini: White Mini Dress (hemline ends above knee); Polka-Dot Mini Dress (hemline ends above knee)."
+        }
+      ],
+      "observed_price_band": "mid",
+      "price_band_resolution": "source_default",
+      "status": "active",
+      "extraction_provenance": {
+        "aggregation_kind": "roundup_card_slot_aggregation",
+        "slot": "dress_length",
+        "value": "mini",
+        "supporting_card_ids": [
+          "whowhatwear-best-summer-dresses-2025-card-001",
+          "whowhatwear-best-summer-dresses-2025-card-002"
+        ],
+        "supporting_card_count": 2,
+        "card_limit": 2,
+        "aggregation_threshold": 2,
+        "adapter_version": "whowhatwear_roundup_v1",
+        "observation_model": "fake-roundup-observer",
+        "warnings": []
+      }
+    }
+  ]
+}
