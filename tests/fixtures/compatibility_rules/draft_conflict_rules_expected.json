@@ -1,0 +1,52 @@
+{
+  "schema_version": "draft-conflict-rules-v1",
+  "category": "dress",
+  "source_artifacts": {
+    "feedback_ledger": "feedback-ledger-sample.json"
+  },
+  "summary": {
+    "record_count": 5,
+    "paired_record_count": 5,
+    "evaluated_pair_count": 1,
+    "draft_count": 1,
+    "skipped_pair_count": 0,
+    "minimum_pair_presence_count": 3
+  },
+  "rules": [
+    {
+      "draft_rule_id": "draft-conflict-pattern-floral-print__detail-smocked-bodice",
+      "category": "dress",
+      "left_slot": "pattern",
+      "left_value": "floral print",
+      "right_slot": "detail",
+      "right_value": "smocked bodice",
+      "suggested_severity": "strong",
+      "suggested_penalty": 0.0,
+      "reason": "feedback rejects indicate this pattern/detail pair should be treated as a conflict candidate",
+      "scope": {
+        "category": "dress",
+        "target_market": "US",
+        "season_tags": [],
+        "occasion_tags": [],
+        "price_bands": []
+      },
+      "evidence_summary": "4 rejects out of 5 reviewed feedback records for floral print + smocked bodice.",
+      "evidence": {
+        "pair_presence_count": 5,
+        "keep_count": 1,
+        "reject_count": 4,
+        "review_reject_rate": 0.8,
+        "source_feedback_ids": [
+          "feedback-001",
+          "feedback-002",
+          "feedback-003",
+          "feedback-004",
+          "feedback-005"
+        ]
+      },
+      "confidence": 0.8,
+      "decision_source": "feedback_heuristic",
+      "status": "draft"
+    }
+  ]
+}
