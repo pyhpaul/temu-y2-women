@@ -141,6 +141,31 @@ class ImageRenderWorkflowTest(unittest.TestCase):
             self.assertEqual(result["error"]["details"]["field"], "reference_prompt_id")
             self.assertFalse((output_dir / "hero_back.png").exists())
 
+    def test_render_dress_concept_image_surfaces_edit_failure_without_generate_fallback(self) -> None:
+        from temu_y2_women.image_generation_workflow import render_dress_concept_image
+
+        with TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "render-output"
+            result_path = Path(temp_dir) / "bundle-result.json"
+            _write_json(result_path, _two_job_result_payload())
+            provider = _FailOnEditProvider()
+
+            result = render_dress_concept_image(
+                result_path=result_path,
+                output_dir=output_dir,
+                provider=provider,
+            )
+
+            self.assertEqual(result["error"]["code"], "IMAGE_PROVIDER_FAILED")
+            self.assertEqual(
+                provider.calls,
+                [
+                    ("hero_front", "generate", None),
+                    ("hero_back", "edit", b"hero_front-bytes"),
+                ],
+            )
+            self.assertFalse((output_dir / "hero_back.png").exists())
+
     def test_render_dress_concept_image_rolls_back_when_output_publication_fails(self) -> None:
         from temu_y2_women.image_generation_output import FakeImageProvider
         from temu_y2_women.image_generation_workflow import render_dress_concept_image
@@ -186,6 +211,23 @@ class _RecordingWorkflowProvider:
         if getattr(render_input, "prompt_id") == "hero_front":
             return _provider_result(b"hero_front-bytes")
         return _provider_result(b"hero_back-bytes")
+
+
+class _FailOnEditProvider:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str, bytes | None]] = []
+
+    def render(self, render_input: object) -> object:
+        self.calls.append(
+            (
+                getattr(render_input, "prompt_id"),
+                getattr(render_input, "render_strategy"),
+                getattr(render_input, "reference_image_bytes"),
+            )
+        )
+        if getattr(render_input, "prompt_id") == "hero_front":
+            return _provider_result(b"hero_front-bytes")
+        raise RuntimeError("edit endpoint unavailable")
 
 
 def _read_json(path: Path) -> dict[str, object]:
