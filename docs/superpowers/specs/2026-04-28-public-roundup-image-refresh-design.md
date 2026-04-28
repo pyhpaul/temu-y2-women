@@ -159,6 +159,18 @@ canonical 层只保留页面级重复出现、达阈值的 slot/value。
 - 单元测试使用 fake / recorded observer
 - 联网 `gpt-image-2` 或兼容网关只作为手动 smoke 验证
 
+### 3.9 项目级 `gpt-image-2` 策略保持“先 edits，后 generations 降级”
+
+这次 change 的主线是**图片观察**，不是图片编辑或重绘。  
+因此本方案不改变项目级图片生成策略，但要明确沿用以下默认规则：
+
+- 参考图编辑 / 扩图场景，默认优先走 `/v1/images/edits`
+- 只有当 `/v1/images/edits` 调用失败时，才允许降级到 `/v1/images/generations`
+- 降级到 `/v1/images/generations` 时，必须采用“基于参考图内容描述的重建生成”
+- 该降级路径只能承诺视觉近似复现，不能承诺严格 reference-conditioned 一致性
+
+这样可以避免不同 agent 在后续实现中把 `generations` 误当作默认主路径。
+
 ## 4. 架构
 
 ### 4.1 Source registry
@@ -508,3 +520,4 @@ active evidence 只通过现有 review-gated workflow 进入主链。
 - 不把图片模型联网调用耦死在单元测试中
 - 不把商品图片聚合逻辑塞进现有 `canonical_signal_builder.py`
 - 不在第一版引入生产级元数据推断
+- 不改变项目级 `gpt-image-2` 策略：默认 `/v1/images/edits`，仅在 edits 失败时降级到基于参考图内容描述的 `/v1/images/generations`

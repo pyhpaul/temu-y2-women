@@ -8,6 +8,8 @@
 
 **Tech Stack:** Python 3 standard library, `unittest`, JSON fixtures, existing `GenerationError`, existing `public_signal_refresh` / `canonical_signal_builder` / `signal_ingestion` modules, OpenAI Python SDK for the live observer.
 
+**Execution Note:** This plan implements image observation only. It does not change the project-level `gpt-image-2` edit/render policy: default to `/v1/images/edits`, and only fall back to `/v1/images/generations` with reference-image-content prompt reconstruction when edits fail.
+
 ---
 
 ## File Map
@@ -936,6 +938,14 @@ def build_openai_public_card_observer(
         OpenAIPublicCardObserverConfig(api_key=resolved_api_key, base_url=resolved_base_url, model=model)
     )
 ```
+
+Implementation note for this task:
+
+- The live card observer is an **analysis** path that reads a card image and returns structured slot observations.
+- Do **not** switch this task to `gpt-image-2` edit/generation endpoints.
+- If later work in this repository touches reference-image rendering, the default order stays:
+  1. `/v1/images/edits`
+  2. fallback `/v1/images/generations` using prompt-based rebuild only when edits fail
 
 - [ ] **Step 4: Run the targeted test to verify it passes**
 
