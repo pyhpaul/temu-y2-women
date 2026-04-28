@@ -38,22 +38,11 @@ def render_dress_concept_image(
 
 def _render_bundle(provider: ImageProvider, render_input: ImageRenderInput) -> list[dict[str, Any]]:
     rendered_images: list[dict[str, Any]] = []
+    rendered_bytes: dict[str, bytes] = {}
     for job in render_input.render_jobs:
-        provider_result = _render_with_provider(provider, _job_render_input(render_input, job))
-        rendered_images.append(
-            {
-                "prompt_id": job.prompt_id,
-                "group": job.group,
-                "output_name": job.output_name,
-                "prompt_fingerprint": _fingerprint(job.prompt),
-                "image_bytes": provider_result.image_bytes,
-                "image_path": "",
-                "provider": provider_result.provider_name,
-                "model": provider_result.model,
-                "base_url": provider_result.base_url,
-                "mime_type": provider_result.mime_type,
-            }
-        )
+        provider_result = _render_job(provider, render_input, job, rendered_bytes)
+        rendered_bytes[job.prompt_id] = provider_result.image_bytes
+        rendered_images.append(_rendered_image_item(job, provider_result))
     return rendered_images
 
 
@@ -66,7 +55,27 @@ def _render_with_provider(provider: ImageProvider, render_input: ImageRenderInpu
         raise _provider_error(provider, error) from error
 
 
-def _job_render_input(render_input: ImageRenderInput, job: ImageRenderJob) -> ImageRenderInput:
+def _render_job(
+    provider: ImageProvider,
+    render_input: ImageRenderInput,
+    job: ImageRenderJob,
+    rendered_bytes: dict[str, bytes],
+) -> ImageProviderResult:
+    return _render_with_provider(
+        provider,
+        _job_render_input(
+            render_input,
+            job,
+            _reference_image_bytes(job, rendered_bytes),
+        ),
+    )
+
+
+def _job_render_input(
+    render_input: ImageRenderInput,
+    job: ImageRenderJob,
+    reference_image_bytes: bytes | None,
+) -> ImageRenderInput:
     return ImageRenderInput(
         source_result_path=render_input.source_result_path,
         category=render_input.category,
@@ -75,9 +84,53 @@ def _job_render_input(render_input: ImageRenderInput, job: ImageRenderJob) -> Im
         prompt_id=job.prompt_id,
         group=job.group,
         output_name=job.output_name,
+        render_strategy=job.render_strategy,
+        reference_prompt_id=job.reference_prompt_id,
+        reference_image_bytes=reference_image_bytes,
         render_notes=render_input.render_notes,
         render_jobs=(job,),
     )
+
+
+def _reference_image_bytes(
+    job: ImageRenderJob,
+    rendered_bytes: dict[str, bytes],
+) -> bytes | None:
+    if job.render_strategy != "edit":
+        return None
+    reference_prompt_id = job.reference_prompt_id
+    if reference_prompt_id and reference_prompt_id in rendered_bytes:
+        return rendered_bytes[reference_prompt_id]
+    raise GenerationError(
+        code="IMAGE_PROVIDER_FAILED",
+        message="image edit reference prompt could not be resolved",
+        details={
+            "field": "reference_prompt_id",
+            "prompt_id": job.prompt_id,
+            "reference_prompt_id": reference_prompt_id,
+            "render_strategy": job.render_strategy,
+        },
+    )
+
+
+def _rendered_image_item(
+    job: ImageRenderJob,
+    provider_result: ImageProviderResult,
+) -> dict[str, Any]:
+    return {
+        "prompt_id": job.prompt_id,
+        "group": job.group,
+        "output_name": job.output_name,
+        "render_strategy": job.render_strategy,
+        "reference_prompt_id": job.reference_prompt_id,
+        "prompt_fingerprint": _fingerprint(job.prompt),
+        "image_bytes": provider_result.image_bytes,
+        "image_path": "",
+        "provider": provider_result.provider_name,
+        "model": provider_result.model,
+        "base_url": provider_result.base_url,
+        "mime_type": provider_result.mime_type,
+    }
 
 
 def _build_render_report(
@@ -104,6 +157,8 @@ def _build_render_report(
                 "prompt_id": item["prompt_id"],
                 "group": item["group"],
                 "output_name": item["output_name"],
+                "render_strategy": item["render_strategy"],
+                "reference_prompt_id": item["reference_prompt_id"],
                 "prompt_fingerprint": item["prompt_fingerprint"],
                 "image_path": item["image_path"],
             }
