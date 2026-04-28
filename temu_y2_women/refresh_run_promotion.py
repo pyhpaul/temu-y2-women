@@ -117,10 +117,10 @@ def _resolve_reviewed_path(run_dir: Path, reviewed_path: Path | None) -> Path:
 
 def _default_reviewed_path(run_dir: Path) -> Path:
     primary = run_dir / "promotion_review.json"
-    if primary.exists():
+    if primary.is_file():
         return primary
     legacy = run_dir / "reviewed_decisions.json"
-    if legacy.exists():
+    if legacy.is_file():
         return legacy
     raise _refresh_run_error(
         run_dir,
