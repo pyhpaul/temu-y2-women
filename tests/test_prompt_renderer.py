@@ -58,6 +58,28 @@ class PromptRendererTest(unittest.TestCase):
         self.assert_render_jobs(bundle)
         self.assert_detail_prompts(bundle["detail_prompts"])
 
+    def test_render_mode_a_prompt_includes_objective_slots(self) -> None:
+        from temu_y2_women.prompt_renderer import render_prompt_bundle
+
+        bundle = render_prompt_bundle(
+            request=_request(mode="A"),
+            concept=_concept(),
+            selected_strategies=(_strategy(),),
+            warnings=(),
+        )
+
+        prompt = bundle["prompt"]
+        self.assertIn("mini length", prompt)
+        self.assertIn("drop waist", prompt)
+        self.assertIn("white color story", prompt)
+        self.assertIn("micro print scale", prompt)
+        self.assertIn("sheer overlay effect", prompt)
+
+        detail_prompts = {item["prompt_id"]: item["prompt"] for item in bundle["detail_prompts"]}
+        self.assertIn("waistline placement", detail_prompts["construction_closeup"])
+        self.assertIn("micro print scale", detail_prompts["fabric_print_closeup"])
+        self.assertIn("mini proportion", detail_prompts["hem_and_drape_closeup"])
+
     def assert_prompt_has_required_blocks(self, prompt: str) -> None:
         self.assertIn("[商品主体]", prompt)
         self.assertIn("[核心结构]", prompt)
@@ -126,11 +148,16 @@ def _concept() -> ComposedConcept:
         category="dress",
         concept_score=0.91,
         selected_elements={
+            "dress_length": ComposedElement("dress-length-mini-001", "mini"),
+            "waistline": ComposedElement("dress-waistline-drop-001", "drop waist"),
             "silhouette": ComposedElement("dress-silhouette-a-line-001", "a-line"),
             "fabric": ComposedElement("dress-fabric-cotton-poplin-001", "cotton poplin"),
+            "color_family": ComposedElement("dress-color-white-001", "white"),
             "neckline": ComposedElement("dress-neckline-square-001", "square neckline"),
             "sleeve": ComposedElement("dress-sleeve-puff-001", "short puff sleeve"),
             "pattern": ComposedElement("dress-pattern-floral-001", "floral print"),
+            "print_scale": ComposedElement("dress-print-scale-micro-001", "micro print"),
+            "opacity_level": ComposedElement("dress-opacity-sheer-001", "sheer"),
         },
         style_summary=("summer-ready", "vacation-oriented", "feminine silhouette"),
         constraint_notes=("must_have_tags satisfied: floral",),

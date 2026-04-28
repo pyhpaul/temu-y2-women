@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from temu_y2_women.models import ComposedConcept, NormalizedRequest, SelectedStrategy
+from temu_y2_women.models import ComposedConcept, ComposedElement, NormalizedRequest, SelectedStrategy
 
 _HERO_JOB_SPECS = (
     ("hero_front", "hero_front.png", "front view"),
@@ -98,6 +98,14 @@ def _element_phrase(slot: str, value: str) -> str:
         return f"{value} silhouette"
     if slot == "fabric":
         return f"{value} fabric"
+    if slot == "dress_length":
+        return f"{value} length"
+    if slot == "color_family":
+        return f"{value} color story"
+    if slot == "print_scale":
+        return f"{value} scale"
+    if slot == "opacity_level" and value == "sheer":
+        return "sheer overlay effect"
     return value
 
 
@@ -245,29 +253,33 @@ def _detail_prompts(render_jobs: list[dict[str, str]]) -> list[dict[str, str]]:
 
 def _construction_prompt(concept: ComposedConcept) -> str:
     neckline = concept.selected_elements["neckline"].value
-    sleeve = concept.selected_elements["sleeve"].value
+    waistline = concept.selected_elements.get("waistline", concept.selected_elements["silhouette"]).value
     detail = concept.selected_elements.get("detail", concept.selected_elements["fabric"]).value
-    pattern = concept.selected_elements["pattern"].value
     return (
-        f"close-up ecommerce detail image of the {neckline}, {detail}, and {sleeve} on the dress; "
-        f"clearly show seam lines, neckline edge finish, print placement, and true-to-color {pattern}; "
+        f"close-up ecommerce detail image of the {neckline}, {detail}, and waistline placement; "
+        f"clearly show {waistline}, seam lines, neckline edge finish, and bodice construction; "
         "neutral studio background; no hands, no accessories, no text"
     )
 
 
 def _fabric_prompt(concept: ComposedConcept) -> str:
     fabric = concept.selected_elements["fabric"].value
-    pattern = concept.selected_elements["pattern"].value
+    pattern = concept.selected_elements.get("pattern", ComposedElement("", "solid color")).value
+    print_scale = concept.selected_elements.get("print_scale", ComposedElement("", "commercial print")).value
+    opacity = concept.selected_elements.get("opacity_level", ComposedElement("", "opaque")).value
     return (
-        f"macro fabric detail image of {fabric} with {pattern}; clearly show print scale, weave texture, "
-        "color accuracy, and commercially realistic construction; soft studio lighting; no blur, no props, no text"
+        f"macro fabric detail image of {fabric} with {pattern} and {print_scale} scale; "
+        f"clearly show {opacity} behavior, print scale, weave texture, and color accuracy; "
+        "soft studio lighting; no blur, no props, no text"
     )
 
 
 def _hem_prompt(concept: ComposedConcept) -> str:
+    dress_length = concept.selected_elements.get("dress_length", ComposedElement("", "balanced")).value
     silhouette = concept.selected_elements["silhouette"].value
     pattern = concept.selected_elements["pattern"].value
     return (
-        f"close-up lower-skirt detail image of the {silhouette} dress; clearly show hem finish, skirt volume, "
-        f"seam transitions, drape, and {pattern} continuity; neutral background; no cropped hem edge, no props, no text"
+        f"close-up lower-skirt detail image of the {silhouette} dress with {dress_length} proportion; "
+        f"clearly show hem finish, {dress_length} proportion, skirt volume, seam transitions, drape, "
+        f"and {pattern} continuity; neutral background; no cropped hem edge, no props, no text"
     )
