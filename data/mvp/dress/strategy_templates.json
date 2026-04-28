@@ -17,7 +17,14 @@
         "silhouette": ["a-line", "bodycon"],
         "fabric": ["cotton poplin"],
         "neckline": ["square neckline", "v-neckline"],
-        "sleeve": ["flutter sleeve"]
+        "sleeve": ["flutter sleeve"],
+        "dress_length": ["midi", "mini"],
+        "waistline": ["natural waist", "drop waist"],
+        "color_family": ["white", "red"],
+        "pattern": ["floral print", "polka dot"],
+        "print_scale": ["micro print", "oversized print"],
+        "opacity_level": ["opaque", "sheer"],
+        "detail": ["smocked bodice", "neck scarf"]
       },
       "score_boost": 0.03,
       "score_cap": 0.08,

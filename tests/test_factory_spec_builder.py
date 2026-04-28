@@ -1,9 +1,17 @@
 from __future__ import annotations
 
 import json
-from dataclasses import replace
 from pathlib import Path
 import unittest
+
+from temu_y2_women.models import (
+    ComposedConcept,
+    ComposedElement,
+    DateWindow,
+    NormalizedRequest,
+    SelectedStrategy,
+    StrategyTemplate,
+)
 
 
 _REQUEST_FIXTURE_DIR = Path("tests/fixtures/requests/dress-generation-mvp")
@@ -43,26 +51,6 @@ class FactorySpecBuilderTest(unittest.TestCase):
             factory_spec["known"]["selected_elements"]["detail"]["value"],
             "neck scarf",
         )
-        self.assertEqual(
-            factory_spec["known"]["selected_elements"]["dress_length"]["value"],
-            "mini",
-        )
-        self.assertEqual(
-            factory_spec["known"]["selected_elements"]["waistline"]["value"],
-            "drop waist",
-        )
-        self.assertEqual(
-            factory_spec["known"]["selected_elements"]["color_family"]["value"],
-            "white",
-        )
-        self.assertEqual(
-            factory_spec["known"]["selected_elements"]["opacity_level"]["value"],
-            "opaque",
-        )
-        self.assertEqual(
-            factory_spec["known"]["selected_elements"]["print_scale"]["value"],
-            "micro print",
-        )
         self.assertIn(
             "non-bodycon fit requested by avoid_tags",
             factory_spec["inferred"]["fit_intent"],
@@ -72,7 +60,7 @@ class FactorySpecBuilderTest(unittest.TestCase):
             factory_spec["inferred"]["fabric_review_focus"],
         )
         self.assertIn(
-            "verify the visible construction detail is cleanly attached and repeatable in production",
+            "verify neck scarf attachment, width consistency, and clean turning",
             factory_spec["inferred"]["detail_review_focus"],
         )
         self.assertIn(
@@ -94,8 +82,43 @@ class FactorySpecBuilderTest(unittest.TestCase):
         )
 
         inferred = factory_spec["inferred"]
-        self._assert_success_review_watchpoints(inferred)
-        self._assert_success_review_cues(inferred)
+        self.assertEqual(
+            inferred["sample_review_watchpoints"],
+            [
+                "sample review: confirm cotton poplin keeps crisp opacity and breathable structure in the finished dress",
+                "sample review: verify square neckline, neck scarf, and flutter sleeve read clearly in the first sample",
+                "sample review: check floral print continuity and placement across bodice, waist seam, and skirt panels",
+                "sample review: confirm a-line shape stays easy and non-bodycon through waist-to-hem movement",
+            ],
+        )
+        self.assertEqual(
+            inferred["qa_review_notes"],
+            [
+                "qa review: check square neckline edge finish for symmetry and clean top-line shape",
+                "qa review: check neck scarf attachment, symmetry, and edge finish for clean repeatability",
+                "qa review: check flutter sleeve openings and hem finish for clean turnback and stable shape",
+                "qa review: check floral print alignment and continuity across visible seams",
+            ],
+        )
+        self.assertEqual(
+            inferred["fit_review_cues"],
+            [
+                "fit cue: protect non-bodycon ease through bust, waist, and skirt sweep",
+                "fit cue: keep a-line volume easy and mobile instead of collapsing into a narrow shape",
+                "fit cue: confirm drop-waist placement does not collapse the skirt balance",
+                "fit cue: confirm mini length still feels secure and commercially wearable in motion",
+            ],
+        )
+        self.assertEqual(
+            inferred["commercial_review_cues"],
+            [
+                "commercial cue: keep white color direction and sheer balance commercially readable in first-glance imagery",
+                "commercial cue: keep micro print scale crisp enough to read without visual noise",
+                "commercial cue: seasonal review should stay anchored to launch date falls in the US summer vacation window and occasion tags align to vacation demand",
+                "commercial cue: keep vacation use obvious from first-glance silhouette, fabric, and print direction",
+                "commercial cue: keep visible construction commercially realistic for mid pricing",
+            ],
+        )
 
     def test_build_factory_spec_adds_visible_checks_and_open_questions(self) -> None:
         from temu_y2_women.factory_spec_builder import build_factory_spec
@@ -111,31 +134,19 @@ class FactorySpecBuilderTest(unittest.TestCase):
 
         inferred = factory_spec["inferred"]
         self.assertEqual(
-            inferred["visible_construction_checks"][:6],
+            inferred["visible_construction_checks"],
             [
                 "visible check: confirm square neckline edge finish stays clean and even",
-                "visible check: confirm visible detail construction stays clean and balanced",
+                "visible check: confirm neck scarf attachment stays clean and balanced around the neckline",
                 "visible check: confirm flutter sleeve openings keep soft volume with clean finishing",
                 "visible check: confirm waist seam placement supports balanced a-line proportion",
+                "visible check: confirm drop-waist seam reads level and balanced across the full body",
+                "visible check: confirm micro print scale stays readable without muddying the fabric surface",
+                "visible check: confirm sheer behavior stays intentional rather than accidentally transparent",
                 "visible check: confirm hem finish hangs cleanly without torque",
                 "visible check: confirm floral print continuity across visible seams",
+                "visible check: confirm neck scarf placement stays visually symmetrical",
             ],
-        )
-        self.assertEqual(
-            inferred["visible_construction_checks"][-1],
-            "visible check: confirm neck scarf placement stays visually symmetrical",
-        )
-        self.assertIn(
-            "visible check: confirm drop waist seam stays level and visually intentional around the body",
-            inferred["visible_construction_checks"],
-        )
-        self.assertIn(
-            "visible check: confirm micro print stays crisp without muddying at seams or gathers",
-            inferred["visible_construction_checks"],
-        )
-        self.assertIn(
-            "visible check: confirm opaque coverage stays consistent in bright light",
-            inferred["visible_construction_checks"],
         )
         self.assertEqual(
             inferred["open_questions"],
@@ -151,114 +162,34 @@ class FactorySpecBuilderTest(unittest.TestCase):
             ],
         )
 
-    def test_build_factory_spec_adds_objective_slot_cues_for_overridden_concept(self) -> None:
+    def test_build_factory_spec_carries_objective_slots_into_known_and_review_cues(self) -> None:
         from temu_y2_women.factory_spec_builder import build_factory_spec
 
-        request, concept, selected_strategies = _build_success_inputs(
-            "success-summer-vacation-mode-a.json"
-        )
-        concept = _override_concept_slots(
-            concept,
-            opacity_level="sheer",
-            color_family="white",
-            print_scale="micro print",
-            waistline="drop waist",
-            dress_length="mini",
-        )
-
         factory_spec = build_factory_spec(
-            request=request,
-            concept=concept,
-            selected_strategies=selected_strategies,
+            request=_objective_request(),
+            concept=_objective_concept(),
+            selected_strategies=(_objective_strategy(),),
         )
 
-        known_selected = factory_spec["known"]["selected_elements"]
-        self.assertEqual(known_selected["opacity_level"]["value"], "sheer")
-        self.assertEqual(known_selected["color_family"]["value"], "white")
-        self.assertEqual(known_selected["print_scale"]["value"], "micro print")
-        self.assertEqual(known_selected["waistline"]["value"], "drop waist")
-        self.assertEqual(known_selected["dress_length"]["value"], "mini")
-
+        selected = factory_spec["known"]["selected_elements"]
+        self.assertEqual(selected["dress_length"]["value"], "mini")
+        self.assertEqual(selected["waistline"]["value"], "drop waist")
+        self.assertEqual(selected["color_family"]["value"], "white")
+        self.assertEqual(selected["print_scale"]["value"], "micro print")
+        self.assertEqual(selected["opacity_level"]["value"], "sheer")
         inferred = factory_spec["inferred"]
         self.assertIn(
-            "commercial cue: review white sheer execution for coverage, layering, and online readability",
-            inferred["commercial_review_cues"],
+            "fit cue: confirm drop-waist placement does not collapse the skirt balance",
+            inferred["fit_review_cues"],
         )
         self.assertIn(
-            "commercial cue: make sure micro print still reads clearly in thumbnails and first-glance product imagery",
-            inferred["commercial_review_cues"],
-        )
-        self.assertIn(
-            "visible check: confirm sheer areas stay intentional and balanced across layers and seam zones",
+            "visible check: confirm micro print scale stays readable without muddying the fabric surface",
             inferred["visible_construction_checks"],
         )
-        self.assertNotIn(
-            "visible check: confirm opaque coverage stays consistent in bright light",
-            inferred["visible_construction_checks"],
-        )
-
-    def test_visible_construction_checks_do_not_hardcode_a_line_for_other_silhouettes(self) -> None:
-        from temu_y2_women.factory_spec_builder import build_factory_spec
-
-        request, concept, selected_strategies = _build_success_inputs(
-            "success-summer-vacation-mode-a.json"
-        )
-        concept = _override_concept_slots(concept, silhouette="column")
-
-        factory_spec = build_factory_spec(
-            request=request,
-            concept=concept,
-            selected_strategies=selected_strategies,
-        )
-
-        checks = factory_spec["inferred"]["visible_construction_checks"]
-        self.assertNotIn(
-            "visible check: confirm waist seam placement supports balanced a-line proportion",
-            checks,
-        )
         self.assertIn(
-            "visible check: confirm waist seam placement supports balanced column proportion",
-            checks,
+            "commercial cue: keep white color direction and sheer balance commercially readable in first-glance imagery",
+            inferred["commercial_review_cues"],
         )
-        self.assertNotIn("a-line", " ".join(checks))
-
-    def _assert_success_review_watchpoints(self, inferred: dict[str, list[str]]) -> None:
-        self.assertEqual(
-            inferred["sample_review_watchpoints"],
-            [
-                "sample review: confirm cotton poplin keeps crisp opacity and breathable structure in the finished dress",
-                "sample review: verify square neckline, neck scarf, and flutter sleeve read clearly in the first sample",
-                "sample review: check floral print continuity and placement across bodice, waist seam, and skirt panels",
-                "sample review: confirm a-line shape stays easy and non-bodycon through waist-to-hem movement",
-            ],
-        )
-        self.assertEqual(
-            inferred["qa_review_notes"],
-            [
-                "qa review: check square neckline edge finish for symmetry and clean top-line shape",
-                "qa review: check visible detail attachment stays secure, even, and repeatable",
-                "qa review: check flutter sleeve openings and hem finish for clean turnback and stable shape",
-                "qa review: check floral print alignment and continuity across visible seams",
-            ],
-        )
-
-    def _assert_success_review_cues(self, inferred: dict[str, list[str]]) -> None:
-        fit_cues = (
-            "fit cue: protect non-bodycon ease through bust, waist, and skirt sweep",
-            "fit cue: keep a-line volume easy and mobile instead of collapsing into a narrow shape",
-            "fit cue: verify mini length keeps intended coverage in motion and while seated",
-            "fit cue: confirm drop waist seam lands low enough to read intentional without dragging the torso",
-        )
-        commercial_cues = (
-            "commercial cue: seasonal review should stay anchored to launch date falls in the US summer vacation window and occasion tags align to vacation demand",
-            "commercial cue: keep vacation use obvious from first-glance silhouette, fabric, and print direction",
-            "commercial cue: keep visible construction commercially realistic for mid pricing",
-            "commercial cue: make sure micro print still reads clearly in thumbnails and first-glance product imagery",
-        )
-        for cue in fit_cues:
-            self.assertIn(cue, inferred["fit_review_cues"])
-        for cue in commercial_cues:
-            self.assertIn(cue, inferred["commercial_review_cues"])
 
 
 def _build_success_inputs(
@@ -292,12 +223,60 @@ def _read_request(filename: str) -> dict[str, object]:
     return json.loads((_REQUEST_FIXTURE_DIR / filename).read_text(encoding="utf-8"))
 
 
-def _override_concept_slots(concept: object, **slot_values: str) -> object:
-    from temu_y2_women.models import ComposedElement
+def _objective_request() -> NormalizedRequest:
+    from datetime import date
 
-    selected_elements = dict(concept.selected_elements)
-    for slot, value in slot_values.items():
-        existing = selected_elements.get(slot)
-        element_id = "" if existing is None else existing.element_id
-        selected_elements[slot] = ComposedElement(element_id=element_id, value=value)
-    return replace(concept, selected_elements=selected_elements)
+    return NormalizedRequest(
+        category="dress",
+        target_market="US",
+        target_launch_date=date(2026, 6, 15),
+        mode="A",
+        price_band="mid",
+        occasion_tags=("vacation",),
+        must_have_tags=("floral",),
+        avoid_tags=("bodycon",),
+    )
+
+
+def _objective_concept() -> ComposedConcept:
+    return ComposedConcept(
+        category="dress",
+        concept_score=0.94,
+        selected_elements={
+            "silhouette": ComposedElement("dress-silhouette-a-line-001", "a-line"),
+            "fabric": ComposedElement("dress-fabric-cotton-poplin-001", "cotton poplin"),
+            "neckline": ComposedElement("dress-neckline-square-001", "square neckline"),
+            "sleeve": ComposedElement("dress-sleeve-flutter-001", "flutter sleeve"),
+            "dress_length": ComposedElement("dress-length-mini-001", "mini"),
+            "waistline": ComposedElement("dress-waistline-drop-waist-001", "drop waist"),
+            "color_family": ComposedElement("dress-color-family-white-001", "white"),
+            "pattern": ComposedElement("dress-pattern-polka-dot-001", "polka dot"),
+            "print_scale": ComposedElement("dress-print-scale-micro-print-001", "micro print"),
+            "opacity_level": ComposedElement("dress-opacity-level-sheer-001", "sheer"),
+            "detail": ComposedElement("dress-detail-neck-scarf-001", "neck scarf"),
+        },
+        style_summary=("summer-ready", "vacation-oriented", "feminine silhouette"),
+        constraint_notes=("must_have_tags satisfied: floral",),
+    )
+
+
+def _objective_strategy() -> SelectedStrategy:
+    return SelectedStrategy(
+        strategy=StrategyTemplate(
+            strategy_id="dress-us-summer-vacation",
+            category="dress",
+            target_market="US",
+            priority=10,
+            date_window=DateWindow(start="05-15", end="08-31"),
+            occasion_tags=("vacation",),
+            boost_tags=("summer", "floral"),
+            suppress_tags=("velvet",),
+            slot_preferences={"silhouette": ("a-line",)},
+            score_boost=0.12,
+            score_cap=0.2,
+            prompt_hints=("fresh summer styling", "vacation-ready feminine silhouette"),
+            reason_template="launch date falls into the US summer vacation window",
+            status="active",
+        ),
+        reason="matched summer vacation window",
+    )

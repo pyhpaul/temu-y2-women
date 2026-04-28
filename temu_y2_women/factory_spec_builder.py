@@ -26,19 +26,10 @@ _DETAIL_REVIEW_RULES = {
         "verify smocking stitch consistency, recovery, and clean attachment",
         "confirm bodice tension stays even without distorting print placement",
     ),
-}
-_FIT_REVIEW_RULES = {
-    ("dress_length", "mini"): "fit cue: verify mini length keeps intended coverage in motion and while seated",
-    ("waistline", "drop waist"): "fit cue: confirm drop waist seam lands low enough to read intentional without dragging the torso",
-}
-_VISIBLE_CHECK_RULES = {
-    ("waistline", "drop waist"): "visible check: confirm drop waist seam stays level and visually intentional around the body",
-    ("print_scale", "micro print"): "visible check: confirm micro print stays crisp without muddying at seams or gathers",
-    ("opacity_level", "opaque"): "visible check: confirm opaque coverage stays consistent in bright light",
-    ("opacity_level", "sheer"): "visible check: confirm sheer areas stay intentional and balanced across layers and seam zones",
-}
-_COMMERCIAL_CUE_RULES = {
-    ("print_scale", "micro print"): "commercial cue: make sure micro print still reads clearly in thumbnails and first-glance product imagery",
+    "neck scarf": (
+        "verify neck scarf attachment, width consistency, and clean turning",
+        "confirm neck scarf placement frames the neckline without twisting or collapse",
+    ),
 }
 _OPEN_QUESTIONS = (
     "open question: confirm fiber_content from approved fabric submission",
@@ -224,9 +215,12 @@ def _fit_review_cues(
         cues.append("fit cue: protect non-bodycon ease through bust, waist, and skirt sweep")
     if _selected_value(concept, "silhouette") == "a-line":
         cues.append("fit cue: keep a-line volume easy and mobile instead of collapsing into a narrow shape")
+    if _selected_value(concept, "waistline") == "drop waist":
+        cues.append("fit cue: confirm drop-waist placement does not collapse the skirt balance")
+    if _selected_value(concept, "dress_length") == "mini":
+        cues.append("fit cue: confirm mini length still feels secure and commercially wearable in motion")
     if _selected_value(concept, "detail") == "smocked bodice":
         cues.append("fit cue: make sure smocked bodice shaping stays flexible rather than restrictive")
-    cues.extend(_objective_slot_notes(concept, _FIT_REVIEW_RULES))
     return cues or ["fit cue: confirm the sample stays easy to wear for the intended market"]
 
 
@@ -236,6 +230,10 @@ def _commercial_review_cues(
     selected_strategies: tuple[SelectedStrategy, ...],
 ) -> list[str]:
     cues = []
+    if _selected_value(concept, "color_family") == "white" and _selected_value(concept, "opacity_level") == "sheer":
+        cues.append("commercial cue: keep white color direction and sheer balance commercially readable in first-glance imagery")
+    if _selected_value(concept, "print_scale") == "micro print":
+        cues.append("commercial cue: keep micro print scale crisp enough to read without visual noise")
     if selected_strategies:
         cues.append(f"commercial cue: seasonal review should stay anchored to {selected_strategies[0].reason}")
     if request.occasion_tags:
@@ -244,9 +242,6 @@ def _commercial_review_cues(
         )
     if request.price_band:
         cues.append(f"commercial cue: keep visible construction commercially realistic for {request.price_band} pricing")
-    if _selected_value(concept, "color_family") == "white" and _selected_value(concept, "opacity_level") == "sheer":
-        cues.append("commercial cue: review white sheer execution for coverage, layering, and online readability")
-    cues.extend(_objective_slot_notes(concept, _COMMERCIAL_CUE_RULES))
     if _selected_value(concept, "detail") and not cues:
         cues.append("commercial cue: keep the selected detail readable without overcomplicating production")
     return cues
@@ -262,14 +257,18 @@ def _visible_construction_checks(concept: ComposedConcept) -> list[str]:
     sleeve = _selected_value(concept, "sleeve")
     if sleeve:
         checks.append(f"visible check: confirm {sleeve} openings keep soft volume with clean finishing")
-    silhouette = _selected_value(concept, "silhouette")
-    if silhouette:
-        checks.append(_silhouette_visible_check(silhouette))
+    if _selected_value(concept, "silhouette"):
+        checks.append("visible check: confirm waist seam placement supports balanced a-line proportion")
+    if _selected_value(concept, "waistline") == "drop waist":
+        checks.append("visible check: confirm drop-waist seam reads level and balanced across the full body")
+    if _selected_value(concept, "print_scale") == "micro print":
+        checks.append("visible check: confirm micro print scale stays readable without muddying the fabric surface")
+    if _selected_value(concept, "opacity_level") == "sheer":
+        checks.append("visible check: confirm sheer behavior stays intentional rather than accidentally transparent")
     checks.append("visible check: confirm hem finish hangs cleanly without torque")
     pattern = _selected_value(concept, "pattern")
     if pattern:
         checks.append(f"visible check: confirm {pattern} continuity across visible seams")
-    checks.extend(_objective_slot_notes(concept, _VISIBLE_CHECK_RULES))
     if detail:
         checks.append(f"visible check: confirm {_detail_visible_label(detail)} placement stays visually symmetrical")
     return checks
@@ -294,12 +293,16 @@ def _fabric_watchpoint(concept: ComposedConcept) -> str:
 def _detail_qa_note(detail: str) -> str:
     if detail == "smocked bodice":
         return "qa review: check smocking rows for even tension, secure attachment, and balanced visual spacing"
+    if detail == "neck scarf":
+        return "qa review: check neck scarf attachment, symmetry, and edge finish for clean repeatability"
     return "qa review: check visible detail attachment stays secure, even, and repeatable"
 
 
 def _detail_visible_check(detail: str) -> str:
     if detail == "smocked bodice":
         return "visible check: confirm smocked bodice construction stays consistent across the front bodice"
+    if detail == "neck scarf":
+        return "visible check: confirm neck scarf attachment stays clean and balanced around the neckline"
     return "visible check: confirm visible detail construction stays clean and balanced"
 
 
@@ -309,21 +312,7 @@ def _detail_visible_label(detail: str) -> str:
     return detail or "detail"
 
 
-def _silhouette_visible_check(silhouette: str) -> str:
-    if silhouette == "a-line":
-        return "visible check: confirm waist seam placement supports balanced a-line proportion"
-    return f"visible check: confirm waist seam placement supports balanced {silhouette} proportion"
-
-
 def _join_values(values: list[str]) -> str:
     if len(values) < 3:
         return " and ".join(values)
     return f"{', '.join(values[:-1])}, and {values[-1]}"
-
-
-def _objective_slot_notes(concept: ComposedConcept, rules: dict[tuple[str, str], str]) -> list[str]:
-    return [
-        note
-        for (slot, expected_value), note in rules.items()
-        if _selected_value(concept, slot) == expected_value
-    ]

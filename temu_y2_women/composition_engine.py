@@ -12,14 +12,7 @@ from temu_y2_women.errors import GenerationError
 from temu_y2_women.models import CandidateElement, ComposedConcept, ComposedElement, NormalizedRequest
 
 _REQUIRED_SLOTS = ("silhouette", "fabric")
-_STANDARD_OPTIONAL_SLOTS = (
-    "neckline",
-    "sleeve",
-    "dress_length",
-    "waistline",
-    "color_family",
-    "opacity_level",
-)
+_STANDARD_OPTIONAL_SLOTS = ("neckline", "sleeve", "dress_length", "waistline", "color_family", "opacity_level")
 _SURFACE_TOP_K = 3
 
 
@@ -107,11 +100,25 @@ def _first_eligible_optional(
     notes: list[str],
 ) -> CandidateElement | None:
     for candidate in ranked:
-        if slot == "waistline" and _selected_value(selected, "silhouette") == "bodycon" and candidate.value == "drop waist":
-            notes.append("structural conflict avoided: bodycon + drop waist")
+        if _has_structural_conflict(slot, candidate, selected):
+            note = "structural conflict avoided: bodycon + drop waist"
+            if note not in notes:
+                notes.append(note)
             continue
         return candidate
     return None
+
+
+def _has_structural_conflict(
+    slot: str,
+    candidate: CandidateElement,
+    selected: dict[str, CandidateElement],
+) -> bool:
+    return (
+        slot == "waistline"
+        and candidate.value == "drop waist"
+        and _selected_value(selected, "silhouette") == "bodycon"
+    )
 
 
 def _select_surface_group(
@@ -122,13 +129,10 @@ def _select_surface_group(
     best_evaluation = CompatibilityEvaluation((), (), 0.0, ())
     best_rank = _selection_rank(best_selected, best_evaluation)
     skipped_conflicts: list[tuple[dict[str, CandidateElement], CompatibilityEvaluation]] = []
-    pattern_options = [None, *_top_candidates(parsed_candidates.get("pattern", []), limit=_SURFACE_TOP_K)]
-    detail_options = [None, *_top_candidates(parsed_candidates.get("detail", []), limit=_SURFACE_TOP_K)]
+    pattern_options = [None, *_top_candidates(parsed_candidates.get("pattern", []))]
+    detail_options = [None, *_top_candidates(parsed_candidates.get("detail", []))]
     for pattern in pattern_options:
-        print_scale_options = [None] if pattern is None else [
-            None,
-            *_top_candidates(parsed_candidates.get("print_scale", []), limit=_SURFACE_TOP_K),
-        ]
+        print_scale_options = [None] if pattern is None else [None, *_top_candidates(parsed_candidates.get("print_scale", []))]
         for print_scale in print_scale_options:
             for detail in detail_options:
                 current = _selected_surface(pattern, print_scale, detail)
@@ -222,19 +226,11 @@ def _selected_surface(
     selected: dict[str, CandidateElement] = {}
     if pattern is not None:
         selected["pattern"] = pattern
-    if print_scale is not None:
+    if pattern is not None and print_scale is not None:
         selected["print_scale"] = print_scale
     if detail is not None:
         selected["detail"] = detail
     return selected
-
-
-def _selected_element_id(
-    selected: dict[str, CandidateElement],
-    slot: str,
-) -> str:
-    candidate = selected.get(slot)
-    return "" if candidate is None else candidate.element_id
 
 
 def _selected_value(
@@ -243,6 +239,14 @@ def _selected_value(
 ) -> str:
     candidate = selected.get(slot)
     return "" if candidate is None else candidate.value
+
+
+def _selected_element_id(
+    selected: dict[str, CandidateElement],
+    slot: str,
+) -> str:
+    candidate = selected.get(slot)
+    return "" if candidate is None else candidate.element_id
 
 
 def _must_have_notes(

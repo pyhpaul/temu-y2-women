@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from temu_y2_women.models import ComposedConcept, ComposedElement, NormalizedRequest, SelectedStrategy
+from temu_y2_women.models import ComposedConcept, NormalizedRequest, SelectedStrategy
 
 _HERO_JOB_SPECS = (
     ("hero_front", "hero_front.png", "front view"),
@@ -59,7 +59,7 @@ def _build_prompt(
         (
             f"[商品主体] {_subject_line(request, concept)}",
             f"[核心结构] {_structure_line(request, concept)}",
-            f"[生产与细节展示要求] {_detail_requirements_line(request, concept, selected_strategies, development_notes)}",
+            f"[生产与细节展示要求] {_detail_requirements_line(request, selected_strategies, development_notes)}",
             f"[镜头与构图] {shot_line}",
             f"[面料与工艺表现] {_material_line(concept)}",
             f"[场景与光线] {_scene_line(request)}",
@@ -105,29 +105,17 @@ def _element_phrase(slot: str, value: str) -> str:
     if slot == "print_scale":
         return f"{value} scale"
     if slot == "opacity_level":
-        return _opacity_phrase(value)
+        return "sheer overlay effect" if value == "sheer" else f"{value} coverage"
     return value
-
-
-def _opacity_phrase(value: str) -> str:
-    if value == "sheer":
-        return "sheer overlay effect"
-    if value == "opaque":
-        return "full-opacity coverage"
-    return f"{value} opacity effect"
 
 
 def _detail_requirements_line(
     request: NormalizedRequest,
-    concept: ComposedConcept,
     selected_strategies: tuple[SelectedStrategy, ...],
     development_notes: list[str],
 ) -> str:
     items = [
-        (
-            "clearly show neckline depth, bodice construction, sleeve opening, waist seam position, "
-            f"skirt volume, hem finish, {_surface_detail_focus(concept)}, and fabric texture"
-        ),
+        "clearly show neckline depth, bodice construction, sleeve opening, waist seam position, skirt volume, hem finish, floral print scale, and fabric texture",
         "keep the garment visually realistic and feasible for factory production",
     ]
     if request.mode == "B":
@@ -135,12 +123,6 @@ def _detail_requirements_line(
     elif selected_strategies:
         items.append(f"seasonal direction: {selected_strategies[0].reason}")
     return "; ".join(items)
-
-
-def _surface_detail_focus(concept: ComposedConcept) -> str:
-    if concept.selected_elements.get("pattern"):
-        return "surface pattern scale"
-    return "surface treatment"
 
 
 def _render_jobs(
@@ -204,15 +186,16 @@ def _hero_shot_line(request: NormalizedRequest, angle: str) -> str:
 
 
 def _material_line(concept: ComposedConcept) -> str:
-    fabric = concept.selected_elements.get("fabric", None)
-    pattern = concept.selected_elements.get("pattern", None)
-    detail = concept.selected_elements.get("detail", None)
-    fabric_text = fabric.value if fabric else "dress fabric"
-    pattern_text = pattern.value if pattern else "surface print"
-    detail_text = detail.value if detail else "construction detail"
+    fabric_text = _selected_value(concept, "fabric", "dress fabric")
+    pattern_text = _selected_value(concept, "pattern", "surface print")
+    detail_text = _selected_value(concept, "detail", "construction detail")
+    color_text = _selected_value(concept, "color_family", "commercial color")
+    print_scale_text = _element_phrase("print_scale", _selected_value(concept, "print_scale", "commercial print"))
+    opacity_text = _element_phrase("opacity_level", _selected_value(concept, "opacity_level", "opaque"))
     return (
         f"crisp {fabric_text} texture; visible {detail_text}; visible seam lines; clean hem finish; "
-        f"true-to-color {pattern_text}; natural drape; commercially realistic construction"
+        f"true-to-color {color_text}; visible {pattern_text}; {print_scale_text}; {opacity_text}; natural drape; "
+        "commercially realistic construction"
     )
 
 
@@ -272,61 +255,35 @@ def _detail_prompts(render_jobs: list[dict[str, str]]) -> list[dict[str, str]]:
 def _construction_prompt(concept: ComposedConcept) -> str:
     neckline = concept.selected_elements["neckline"].value
     detail = concept.selected_elements.get("detail", concept.selected_elements["fabric"]).value
-    waistline = _waistline_phrase(concept)
-    sleeve_opening = _sleeve_opening_phrase(concept)
+    waistline = concept.selected_elements.get("waistline", concept.selected_elements["silhouette"]).value
     return (
-        f"close-up ecommerce detail image of the {neckline}, {detail}, {waistline}, and {sleeve_opening}; "
-        f"clearly show {waistline}, {sleeve_opening}, seam lines, neckline edge finish, and bodice construction; "
+        f"close-up ecommerce detail image of the {neckline}, {detail}, and waistline placement; "
+        f"clearly show {waistline}, seam lines, neckline edge finish, and bodice construction; "
         "neutral studio background; no hands, no accessories, no text"
     )
 
 
 def _fabric_prompt(concept: ComposedConcept) -> str:
     fabric = concept.selected_elements["fabric"].value
-    pattern = _surface_phrase(concept)
-    print_scale = _print_scale_phrase(concept)
-    opacity = _opacity_phrase(concept.selected_elements.get("opacity_level", ComposedElement("", "opaque")).value)
+    pattern = _selected_value(concept, "pattern", "solid color")
+    print_scale = _element_phrase("print_scale", _selected_value(concept, "print_scale", "commercial print"))
+    opacity = _element_phrase("opacity_level", _selected_value(concept, "opacity_level", "opaque"))
     return (
-        f"macro fabric detail image of {fabric} with {pattern} and {print_scale}; "
-        f"clearly show {opacity}, print scale, weave texture, and color accuracy; "
-        "soft studio lighting; no blur, no props, no text"
+        f"macro fabric detail image of {fabric} with {pattern} and {print_scale}; clearly show {opacity}, print scale, "
+        "weave texture, and color accuracy; soft studio lighting; no blur, no props, no text"
     )
 
 
 def _hem_prompt(concept: ComposedConcept) -> str:
-    dress_length = concept.selected_elements.get("dress_length", ComposedElement("", "balanced")).value
     silhouette = concept.selected_elements["silhouette"].value
-    pattern = _surface_phrase(concept)
+    dress_length = _selected_value(concept, "dress_length", "balanced")
+    pattern = _selected_value(concept, "pattern", "surface print")
     return (
-        f"close-up lower-skirt detail image of the {silhouette} dress with {dress_length} proportion; "
-        f"clearly show hem finish, {dress_length} proportion, skirt volume, seam transitions, drape, "
-        f"and {pattern} continuity; neutral background; no cropped hem edge, no props, no text"
+        f"close-up lower-skirt detail image of the {silhouette} dress; clearly show {dress_length} proportion, hem finish, "
+        f"skirt volume, seam transitions, drape, and {pattern} continuity; neutral background; no cropped hem edge, no props, no text"
     )
 
 
-def _waistline_phrase(concept: ComposedConcept) -> str:
-    waistline = concept.selected_elements.get("waistline")
-    if waistline:
-        return f"{waistline.value} waistline placement"
-    return "waistline placement"
-
-
-def _sleeve_opening_phrase(concept: ComposedConcept) -> str:
-    sleeve = concept.selected_elements.get("sleeve")
-    if sleeve:
-        return f"{sleeve.value} opening finish"
-    return "sleeve opening"
-
-
-def _surface_phrase(concept: ComposedConcept) -> str:
-    pattern = concept.selected_elements.get("pattern")
-    if pattern:
-        return pattern.value
-    return "solid-color surface"
-
-
-def _print_scale_phrase(concept: ComposedConcept) -> str:
-    print_scale = concept.selected_elements.get("print_scale")
-    if print_scale:
-        return f"{print_scale.value} scale"
-    return "commercial print scale"
+def _selected_value(concept: ComposedConcept, slot: str, default: str) -> str:
+    element = concept.selected_elements.get(slot)
+    return default if element is None else element.value
