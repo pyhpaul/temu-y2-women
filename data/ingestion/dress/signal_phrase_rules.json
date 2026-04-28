@@ -36,6 +36,36 @@
       "value": "smocked bodice",
       "phrases": ["smocked bodice", "smocked bodices"],
       "tags": ["feminine", "vacation"]
+    },
+    {
+      "slot": "dress_length",
+      "value": "mini",
+      "phrases": ["mini", "minis"],
+      "tags": ["dress", "mini", "summer", "vacation"]
+    },
+    {
+      "slot": "waistline",
+      "value": "drop waist",
+      "phrases": ["drop-waist", "drop waist"],
+      "tags": ["drop-waist", "feminine", "vacation"]
+    },
+    {
+      "slot": "color_family",
+      "value": "white",
+      "phrases": ["white dress", "white dresses"],
+      "tags": ["summer", "vacation", "white"]
+    },
+    {
+      "slot": "print_scale",
+      "value": "micro print",
+      "phrases": ["micro-dot", "micro dot", "micro print"],
+      "tags": ["micro-print", "polka-dot", "summer"]
+    },
+    {
+      "slot": "opacity_level",
+      "value": "sheer",
+      "phrases": ["sheer"],
+      "tags": ["airy", "sheer", "summer"]
     }
   ]
 }

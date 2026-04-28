@@ -84,11 +84,47 @@ class SignalIngestionTest(unittest.TestCase):
             strategy_hints = _read_json(output_dir / "draft_strategy_hints.json")["strategy_hints"]
 
         fabric = next(item for item in draft_elements if item["draft_id"] == "draft-fabric-cotton-poplin")
+        neckline = next(item for item in draft_elements if item["draft_id"] == "draft-neckline-square-neckline")
+        pattern = next(item for item in draft_elements if item["draft_id"] == "draft-pattern-floral-print")
+        sleeve = next(item for item in draft_elements if item["draft_id"] == "draft-sleeve-flutter-sleeve")
         hint = strategy_hints[0]
         self.assertIn("extraction_provenance", fabric)
         self.assertIn("rule_matches", fabric["extraction_provenance"])
         self.assertIn("extraction_provenance", hint)
         self.assertIn("source_draft_ids", hint["extraction_provenance"])
+        self.assertEqual(
+            neckline["extraction_provenance"]["rule_matches"][0]["matched_phrases"],
+            ["square neckline"],
+        )
+        self.assertEqual(
+            pattern["extraction_provenance"]["rule_matches"][0]["matched_phrases"],
+            ["floral print"],
+        )
+        self.assertEqual(
+            sleeve["extraction_provenance"]["rule_matches"][0]["matched_phrases"],
+            ["flutter sleeves"],
+        )
+
+    def test_ingest_dress_signals_emits_new_objective_slot_drafts(self) -> None:
+        from temu_y2_women.signal_ingestion import ingest_dress_signals
+
+        with TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            ingest_dress_signals(
+                input_path=_SIGNAL_FIXTURE_DIR / "valid-signal-bundle.json",
+                output_dir=output_dir,
+            )
+            draft_elements = _read_json(output_dir / "draft_elements.json")["elements"]
+
+        actual_pairs = {(item["slot"], item["value"]) for item in draft_elements}
+        expected_pairs = {
+            ("dress_length", "mini"),
+            ("color_family", "white"),
+            ("print_scale", "micro print"),
+            ("opacity_level", "sheer"),
+            ("waistline", "drop waist"),
+        }
+        self.assertTrue(expected_pairs.issubset(actual_pairs))
 
     def test_ingest_dress_signals_reports_coverage_and_unmatched_signals(self) -> None:
         from temu_y2_women.signal_ingestion import ingest_dress_signals
@@ -120,7 +156,8 @@ class SignalIngestionTest(unittest.TestCase):
         self.assertIn("coverage", report)
         self.assertEqual(report["coverage"]["unmatched_signal_ids"], ["dress-signal-003"])
         self.assertIn("signal_outcomes", report)
-        self.assertEqual(report["signal_outcomes"][-1]["status"], "unmatched")
+        unmatched = next(item for item in report["signal_outcomes"] if item["signal_id"] == "dress-signal-003")
+        self.assertEqual(unmatched["status"], "unmatched")
 
 
 def _read_json(path: Path) -> dict[str, object]:
