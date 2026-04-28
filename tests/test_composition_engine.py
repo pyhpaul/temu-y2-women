@@ -222,6 +222,65 @@ class CompositionEngineTest(unittest.TestCase):
         load_rules.assert_not_called()
         self.assertEqual(concept.selected_elements["detail"].value, "waist tie")
 
+    def test_selects_new_objective_slots_for_a_line_vacation_concept(self) -> None:
+        from temu_y2_women.composition_engine import compose_concept
+
+        request = _request()
+        candidates = {
+            "silhouette": [_candidate("dress-silhouette-a-line-001", "silhouette", "a-line", 0.91, ("summer",))],
+            "fabric": [_candidate("dress-fabric-cotton-poplin-001", "fabric", "cotton poplin", 0.89, ("lightweight",))],
+            "dress_length": [
+                _candidate("dress-length-mini-001", "dress_length", "mini", 0.81, ("mini",)),
+                _candidate("dress-length-midi-001", "dress_length", "midi", 0.78, ("midi",)),
+            ],
+            "waistline": [_candidate("dress-waistline-drop-waist-001", "waistline", "drop waist", 0.82, ("drop-waist",))],
+            "color_family": [_candidate("dress-color-family-white-001", "color_family", "white", 0.8, ("white",))],
+            "opacity_level": [_candidate("dress-opacity-level-sheer-001", "opacity_level", "sheer", 0.74, ("sheer",))],
+            "pattern": [_candidate("dress-pattern-polka-dot-001", "pattern", "polka dot", 0.77, ("polka-dot",))],
+            "print_scale": [_candidate("dress-print-scale-micro-print-001", "print_scale", "micro print", 0.75, ("micro-print",))],
+        }
+
+        concept = compose_concept(request, candidates)
+
+        self.assertEqual(concept.selected_elements["dress_length"].value, "mini")
+        self.assertEqual(concept.selected_elements["waistline"].value, "drop waist")
+        self.assertEqual(concept.selected_elements["color_family"].value, "white")
+        self.assertEqual(concept.selected_elements["opacity_level"].value, "sheer")
+        self.assertEqual(concept.selected_elements["pattern"].value, "polka dot")
+        self.assertEqual(concept.selected_elements["print_scale"].value, "micro print")
+
+    def test_omits_print_scale_when_pattern_is_missing(self) -> None:
+        from temu_y2_women.composition_engine import compose_concept
+
+        request = _request()
+        candidates = {
+            "silhouette": [_candidate("dress-silhouette-a-line-001", "silhouette", "a-line", 0.91, ("summer",))],
+            "fabric": [_candidate("dress-fabric-cotton-poplin-001", "fabric", "cotton poplin", 0.89, ("lightweight",))],
+            "print_scale": [_candidate("dress-print-scale-micro-print-001", "print_scale", "micro print", 0.75, ("micro-print",))],
+        }
+
+        concept = compose_concept(request, candidates)
+
+        self.assertNotIn("print_scale", concept.selected_elements)
+
+    def test_prefers_natural_waist_when_drop_waist_conflicts_with_bodycon(self) -> None:
+        from temu_y2_women.composition_engine import compose_concept
+
+        request = _request()
+        candidates = {
+            "silhouette": [_candidate("dress-silhouette-bodycon-001", "silhouette", "bodycon", 0.9, ("bodycon",))],
+            "fabric": [_candidate("dress-fabric-cotton-poplin-001", "fabric", "cotton poplin", 0.89, ("lightweight",))],
+            "waistline": [
+                _candidate("dress-waistline-drop-waist-001", "waistline", "drop waist", 0.84, ("drop-waist",)),
+                _candidate("dress-waistline-natural-waist-001", "waistline", "natural waist", 0.74, ("feminine",)),
+            ],
+        }
+
+        concept = compose_concept(request, candidates)
+
+        self.assertEqual(concept.selected_elements["waistline"].value, "natural waist")
+        self.assertIn("structural conflict avoided: bodycon + drop waist", concept.constraint_notes)
+
 
 def _request(
     must_have_tags: tuple[str, ...] = (),

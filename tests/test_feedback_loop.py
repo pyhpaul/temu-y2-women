@@ -10,6 +10,14 @@ _FEEDBACK_FIXTURE_DIR = Path("tests/fixtures/feedback/dress")
 _ACTIVE_ELEMENTS_PATH = Path("data/mvp/dress/elements.json")
 _LEDGER_SEED_PATH = Path("data/feedback/dress/feedback_ledger.json")
 _FIXED_RECORDED_AT = "2026-04-27T12:00:00Z"
+_TARGET_ELEMENT_IDS = {
+    "dress-detail-smocked-bodice-001",
+    "dress-fabric-cotton-poplin-001",
+    "dress-neckline-square-001",
+    "dress-pattern-floral-001",
+    "dress-silhouette-a-line-001",
+    "dress-sleeve-flutter-001",
+}
 
 
 class FeedbackPrepareTest(unittest.TestCase):
@@ -44,6 +52,7 @@ class FeedbackApplyTest(unittest.TestCase):
         with TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             elements_path, ledger_path = _seed_active_feedback_files(temp_root)
+            elements_before = _read_json(elements_path)
             report_path = temp_root / "feedback_report.json"
             result = apply_reviewed_dress_concept_feedback(
                 reviewed_path=_FEEDBACK_FIXTURE_DIR / "reviewed_keep.json",
@@ -56,7 +65,7 @@ class FeedbackApplyTest(unittest.TestCase):
 
             self.assertEqual(result, _read_json(_FEEDBACK_FIXTURE_DIR / "expected_keep_report.json"))
             self.assertEqual(_read_json(report_path), _read_json(_FEEDBACK_FIXTURE_DIR / "expected_keep_report.json"))
-            self.assertEqual(_read_json(elements_path), _read_json(_FEEDBACK_FIXTURE_DIR / "expected_elements_after_keep.json"))
+            _assert_element_score_updates(self, before=elements_before, after=_read_json(elements_path), delta=0.02)
             self.assertEqual(_read_json(ledger_path), _read_json(_FEEDBACK_FIXTURE_DIR / "expected_ledger_after_keep.json"))
 
     def test_apply_reviewed_reject_feedback_updates_elements_ledger_and_report(self) -> None:
@@ -65,6 +74,7 @@ class FeedbackApplyTest(unittest.TestCase):
         with TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             elements_path, ledger_path = _seed_active_feedback_files(temp_root)
+            elements_before = _read_json(elements_path)
             report_path = temp_root / "feedback_report.json"
             result = apply_reviewed_dress_concept_feedback(
                 reviewed_path=_FEEDBACK_FIXTURE_DIR / "reviewed_reject.json",
@@ -77,7 +87,7 @@ class FeedbackApplyTest(unittest.TestCase):
 
             self.assertEqual(result, _read_json(_FEEDBACK_FIXTURE_DIR / "expected_reject_report.json"))
             self.assertEqual(_read_json(report_path), _read_json(_FEEDBACK_FIXTURE_DIR / "expected_reject_report.json"))
-            self.assertEqual(_read_json(elements_path), _read_json(_FEEDBACK_FIXTURE_DIR / "expected_elements_after_reject.json"))
+            _assert_element_score_updates(self, before=elements_before, after=_read_json(elements_path), delta=-0.02)
             self.assertEqual(_read_json(ledger_path), _read_json(_FEEDBACK_FIXTURE_DIR / "expected_ledger_after_reject.json"))
 
     def test_apply_reviewed_feedback_rejects_tampered_selected_ids(self) -> None:
@@ -205,3 +215,28 @@ def _seed_active_feedback_files(temp_root: Path) -> tuple[Path, Path]:
     elements_path.write_text(_ACTIVE_ELEMENTS_PATH.read_text(encoding="utf-8"), encoding="utf-8")
     ledger_path.write_text(_LEDGER_SEED_PATH.read_text(encoding="utf-8"), encoding="utf-8")
     return elements_path, ledger_path
+
+
+def _assert_element_score_updates(
+    test_case: unittest.TestCase,
+    *,
+    before: dict[str, object],
+    after: dict[str, object],
+    delta: float,
+) -> None:
+    before_elements = before["elements"]
+    after_elements = after["elements"]
+    test_case.assertEqual(len(after_elements), len(before_elements))
+
+    before_by_id = {item["element_id"]: item for item in before_elements}
+    after_by_id = {item["element_id"]: item for item in after_elements}
+    test_case.assertEqual(set(after_by_id), set(before_by_id))
+
+    for element_id, before_item in before_by_id.items():
+        after_item = after_by_id[element_id]
+        expected_score = before_item["base_score"] + (delta if element_id in _TARGET_ELEMENT_IDS else 0.0)
+        test_case.assertAlmostEqual(after_item["base_score"], expected_score, places=7, msg=element_id)
+
+        before_without_score = {key: value for key, value in before_item.items() if key != "base_score"}
+        after_without_score = {key: value for key, value in after_item.items() if key != "base_score"}
+        test_case.assertEqual(after_without_score, before_without_score, msg=element_id)

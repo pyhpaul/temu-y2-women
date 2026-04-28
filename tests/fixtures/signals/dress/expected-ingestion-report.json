@@ -2,7 +2,7 @@
   "schema_version": "signal-ingestion-v1",
   "summary": {
     "accepted_signal_count": 2,
-    "draft_element_count": 6,
+    "draft_element_count": 11,
     "draft_strategy_hint_count": 1,
     "warning_count": 0
   },
@@ -20,18 +20,28 @@
       "signal_id": "dress-signal-001",
       "status": "matched",
       "emitted_draft_ids": [
+        "draft-color_family-white",
+        "draft-dress_length-mini",
         "draft-fabric-cotton-poplin",
         "draft-neckline-square-neckline",
+        "draft-opacity_level-sheer",
         "draft-pattern-floral-print",
+        "draft-print_scale-micro-print",
         "draft-silhouette-a-line",
-        "draft-sleeve-flutter-sleeve"
+        "draft-sleeve-flutter-sleeve",
+        "draft-waistline-drop-waist"
       ],
       "matched_rule_keys": [
+        "color_family:white",
+        "dress_length:mini",
         "fabric:cotton poplin",
         "neckline:square neckline",
+        "opacity_level:sheer",
         "pattern:floral print",
+        "print_scale:micro print",
         "silhouette:a-line",
-        "sleeve:flutter sleeve"
+        "sleeve:flutter sleeve",
+        "waistline:drop waist"
       ]
     },
     {

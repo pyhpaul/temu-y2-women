@@ -2,6 +2,33 @@
   "schema_version": "signal-ingestion-v1",
   "elements": [
     {
+      "draft_id": "draft-color_family-white",
+      "category": "dress",
+      "slot": "color_family",
+      "value": "white",
+      "tags": ["summer", "vacation", "white"],
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "suggested_base_score": 0.65,
+      "evidence_summary": "Derived from 1 signal for US dress demand.",
+      "source_signal_ids": ["dress-signal-001"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-001",
+            "matched_phrases": ["white dress"],
+            "rule_slot": "color_family",
+            "rule_value": "white",
+            "rule_tags": ["summer", "vacation", "white"]
+          }
+        ]
+      },
+      "status": "draft"
+    },
+    {
       "draft_id": "draft-detail-smocked-bodice",
       "category": "dress",
       "slot": "detail",
@@ -23,6 +50,33 @@
             "rule_slot": "detail",
             "rule_value": "smocked bodice",
             "rule_tags": ["feminine", "vacation"]
+          }
+        ]
+      },
+      "status": "draft"
+    },
+    {
+      "draft_id": "draft-dress_length-mini",
+      "category": "dress",
+      "slot": "dress_length",
+      "value": "mini",
+      "tags": ["dress", "mini", "summer", "vacation"],
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "suggested_base_score": 0.65,
+      "evidence_summary": "Derived from 1 signal for US dress demand.",
+      "source_signal_ids": ["dress-signal-001"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-001",
+            "matched_phrases": ["mini"],
+            "rule_slot": "dress_length",
+            "rule_value": "mini",
+            "rule_tags": ["dress", "mini", "summer", "vacation"]
           }
         ]
       },
@@ -80,17 +134,44 @@
         "rule_matches": [
           {
             "signal_id": "dress-signal-001",
-            "matched_phrases": ["square neck", "square neckline"],
+            "matched_phrases": ["square neckline"],
             "rule_slot": "neckline",
             "rule_value": "square neckline",
             "rule_tags": ["feminine", "summer", "vacation"]
           },
           {
             "signal_id": "dress-signal-002",
-            "matched_phrases": ["square neck", "square neckline"],
+            "matched_phrases": ["square neckline"],
             "rule_slot": "neckline",
             "rule_value": "square neckline",
             "rule_tags": ["feminine", "summer", "vacation"]
+          }
+        ]
+      },
+      "status": "draft"
+    },
+    {
+      "draft_id": "draft-opacity_level-sheer",
+      "category": "dress",
+      "slot": "opacity_level",
+      "value": "sheer",
+      "tags": ["airy", "sheer", "summer"],
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "suggested_base_score": 0.65,
+      "evidence_summary": "Derived from 1 signal for US dress demand.",
+      "source_signal_ids": ["dress-signal-001"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-001",
+            "matched_phrases": ["sheer"],
+            "rule_slot": "opacity_level",
+            "rule_value": "sheer",
+            "rule_tags": ["airy", "sheer", "summer"]
           }
         ]
       },
@@ -114,10 +195,37 @@
         "rule_matches": [
           {
             "signal_id": "dress-signal-001",
-            "matched_phrases": ["floral", "floral print"],
+            "matched_phrases": ["floral print"],
             "rule_slot": "pattern",
             "rule_value": "floral print",
             "rule_tags": ["floral", "summer", "vacation"]
+          }
+        ]
+      },
+      "status": "draft"
+    },
+    {
+      "draft_id": "draft-print_scale-micro-print",
+      "category": "dress",
+      "slot": "print_scale",
+      "value": "micro print",
+      "tags": ["micro-print", "polka-dot", "summer"],
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "suggested_base_score": 0.65,
+      "evidence_summary": "Derived from 1 signal for US dress demand.",
+      "source_signal_ids": ["dress-signal-001"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-001",
+            "matched_phrases": ["micro-dot"],
+            "rule_slot": "print_scale",
+            "rule_value": "micro print",
+            "rule_tags": ["micro-print", "polka-dot", "summer"]
           }
         ]
       },
@@ -175,7 +283,7 @@
         "rule_matches": [
           {
             "signal_id": "dress-signal-001",
-            "matched_phrases": ["flutter sleeve", "flutter sleeves"],
+            "matched_phrases": ["flutter sleeves"],
             "rule_slot": "sleeve",
             "rule_value": "flutter sleeve",
             "rule_tags": ["airy", "feminine", "vacation"]
@@ -186,6 +294,33 @@
             "rule_slot": "sleeve",
             "rule_value": "flutter sleeve",
             "rule_tags": ["airy", "feminine", "vacation"]
+          }
+        ]
+      },
+      "status": "draft"
+    },
+    {
+      "draft_id": "draft-waistline-drop-waist",
+      "category": "dress",
+      "slot": "waistline",
+      "value": "drop waist",
+      "tags": ["drop-waist", "feminine", "vacation"],
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "suggested_base_score": 0.65,
+      "evidence_summary": "Derived from 1 signal for US dress demand.",
+      "source_signal_ids": ["dress-signal-001"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-001",
+            "matched_phrases": ["drop-waist"],
+            "rule_slot": "waistline",
+            "rule_value": "drop waist",
+            "rule_tags": ["drop-waist", "feminine", "vacation"]
           }
         ]
       },

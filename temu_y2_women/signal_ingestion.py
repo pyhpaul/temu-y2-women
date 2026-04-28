@@ -244,10 +244,19 @@ def _matching_rules(signal: dict[str, Any], rules: list[dict[str, Any]]) -> list
     normalized_text = str(signal["normalized_text"])
     matches: list[dict[str, Any]] = []
     for rule in rules:
-        matched_phrases = sorted({phrase for phrase in rule["phrases"] if phrase in normalized_text})
+        matched_phrases = _dedupe_matched_phrases(phrase for phrase in rule["phrases"] if phrase in normalized_text)
         if matched_phrases:
             matches.append({**rule, "matched_phrases": matched_phrases})
     return matches
+
+
+def _dedupe_matched_phrases(phrases: Any) -> list[str]:
+    kept: list[str] = []
+    for phrase in sorted(set(str(item) for item in phrases), key=lambda item: (-len(item), item)):
+        if any(phrase in existing for existing in kept):
+            continue
+        kept.append(phrase)
+    return sorted(kept)
 
 
 def _build_raw_candidate(signal: dict[str, Any], rule: dict[str, Any]) -> dict[str, Any]:

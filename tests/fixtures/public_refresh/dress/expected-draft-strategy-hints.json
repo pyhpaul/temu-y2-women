@@ -13,28 +13,54 @@
       ],
       "boost_tags": [
         "airy",
+        "dress",
+        "drop-waist",
         "feminine",
+        "micro-print",
+        "mini",
+        "polka-dot",
+        "sheer",
+        "summer",
         "vacation"
       ],
       "slot_preferences": {
         "detail": [
           "smocked bodice"
         ],
+        "dress_length": [
+          "mini"
+        ],
+        "opacity_level": [
+          "sheer"
+        ],
+        "print_scale": [
+          "micro print"
+        ],
         "sleeve": [
           "flutter sleeve"
+        ],
+        "waistline": [
+          "drop waist"
         ]
       },
-      "priority_signal": 2,
+      "priority_signal": 5,
       "source_signal_ids": [
+        "whowhatwear-summer-2025-dress-trends-all-things-polka-dots-003",
         "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002",
+        "whowhatwear-summer-2025-dress-trends-sheer-printed-midis-005",
+        "whowhatwear-summer-2025-dress-trends-the-exaggerated-drop-waist-004",
         "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001"
       ],
-      "reason_summary": "Aggregated from 2 signals for US summer dress demand.",
+      "reason_summary": "Aggregated from 5 signals for US summer dress demand.",
       "extraction_provenance": {
         "kind": "draft-element-aggregation",
         "source_draft_ids": [
           "draft-detail-smocked-bodice",
-          "draft-sleeve-flutter-sleeve"
+          "draft-dress_length-mini",
+          "draft-opacity_level-sheer",
+          "draft-print_scale-micro-print",
+          "draft-sleeve-flutter-sleeve",
+          "draft-waistline-drop-waist"
         ],
         "slot_value_identities": [
           {
@@ -43,9 +69,29 @@
             "value": "smocked bodice"
           },
           {
+            "draft_id": "draft-dress_length-mini",
+            "slot": "dress_length",
+            "value": "mini"
+          },
+          {
+            "draft_id": "draft-opacity_level-sheer",
+            "slot": "opacity_level",
+            "value": "sheer"
+          },
+          {
+            "draft_id": "draft-print_scale-micro-print",
+            "slot": "print_scale",
+            "value": "micro print"
+          },
+          {
             "draft_id": "draft-sleeve-flutter-sleeve",
             "slot": "sleeve",
             "value": "flutter sleeve"
+          },
+          {
+            "draft_id": "draft-waistline-drop-waist",
+            "slot": "waistline",
+            "value": "drop waist"
           }
         ]
       },

@@ -16,6 +16,8 @@ class ImageRenderJob:
     group: str
     output_name: str
     prompt: str
+    render_strategy: str = "generate"
+    reference_prompt_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,6 +29,9 @@ class ImageRenderInput:
     prompt_id: str
     group: str
     output_name: str
+    render_strategy: str
+    reference_prompt_id: str | None
+    reference_image_bytes: bytes | None
     render_notes: tuple[str, ...]
     render_jobs: tuple[ImageRenderJob, ...]
 
@@ -37,6 +42,7 @@ class ImageProviderResult:
     mime_type: str
     provider_name: str
     model: str
+    base_url: str | None = None
 
 
 class ImageProvider(Protocol):
@@ -66,6 +72,9 @@ def load_dress_image_render_input(result_path: Path) -> ImageRenderInput:
         prompt_id=render_jobs[0].prompt_id,
         group=render_jobs[0].group,
         output_name=render_jobs[0].output_name,
+        render_strategy=render_jobs[0].render_strategy,
+        reference_prompt_id=render_jobs[0].reference_prompt_id,
+        reference_image_bytes=None,
         render_notes=_render_notes(result_path, prompt_bundle),
         render_jobs=render_jobs,
     )
@@ -122,6 +131,8 @@ def _render_jobs(path: Path, prompt_bundle: dict[str, Any]) -> tuple[ImageRender
             group="hero",
             output_name="rendered_image.png",
             prompt=prompt,
+            render_strategy="generate",
+            reference_prompt_id=None,
         ),
     )
 
@@ -139,7 +150,25 @@ def _parse_render_job(path: Path, payload: Any, index: int) -> ImageRenderJob:
         group=_non_empty_job_field(path, payload, index, "group"),
         output_name=_non_empty_job_field(path, payload, index, "output_name"),
         prompt=_non_empty_job_field(path, payload, index, "prompt"),
+        render_strategy=_job_render_strategy(payload),
+        reference_prompt_id=_job_reference_prompt_id(payload),
     )
+
+
+def _job_render_strategy(payload: dict[str, Any]) -> str:
+    value = payload.get("render_strategy")
+    if value is None:
+        return "generate"
+    if value in {"generate", "edit"}:
+        return value
+    return str(value).strip() or "generate"
+
+
+def _job_reference_prompt_id(payload: dict[str, Any]) -> str | None:
+    value = payload.get("reference_prompt_id")
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return None
 
 
 def _non_empty_job_field(path: Path, payload: dict[str, Any], index: int, field: str) -> str:

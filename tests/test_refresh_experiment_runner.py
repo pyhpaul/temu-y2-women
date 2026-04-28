@@ -143,7 +143,7 @@ class RefreshExperimentPrepareTest(unittest.TestCase):
             self.assertEqual(review["schema_version"], "promotion-review-v1")
             self.assertEqual(
                 baseline["composed_concept"]["selected_elements"]["detail"]["element_id"],
-                "dress-detail-smocked-bodice-001",
+                "dress-detail-neck-scarf-001",
             )
             self.assertTrue((Path(result["workspace_root"]) / "data" / "mvp" / "dress" / "elements.json").exists())
 
@@ -221,16 +221,10 @@ class RefreshExperimentApplyTest(unittest.TestCase):
             workspace_after = _read_json(workspace_elements_path)
 
             self.assertEqual(report["request_count"], 2)
-            self.assertEqual(report["change_summary"]["selection_changed"], 2)
-            self.assertEqual(compare["change_type"], "selection_changed")
-            self.assertEqual(
-                compare["diff"]["selected_element_changes"]["detail"]["before"]["element_id"],
-                "dress-detail-smocked-bodice-001",
-            )
-            self.assertEqual(
-                compare["diff"]["selected_element_changes"]["detail"]["after"]["element_id"],
-                "dress-detail-waist-tie-001",
-            )
+            self.assertEqual(report["change_summary"]["retrieval_changed_only"], 2)
+            self.assertEqual(compare["change_type"], "retrieval_changed_only")
+            self.assertEqual(compare["diff"]["selected_element_changes"], {})
+            self.assertIn("dress-us-summer-waist-tie-vacation", compare["post_apply_summary"]["factory_spec"]["selected_strategy_ids"])
             self.assertIn("dress-detail-waist-tie-001", report["accepted_evidence_summary"]["element_ids"])
             self.assertEqual(source_after, source_before)
             self.assertNotEqual(workspace_after, source_before)
@@ -322,10 +316,11 @@ class RefreshExperimentApplyTest(unittest.TestCase):
             review_path = Path(prepared["promotion_review_path"])
             _write_json(review_path, _read_json(_PROMOTION_FIXTURE_DIR / "create" / "reviewed_decisions.json"))
             module_write_json = "temu_y2_women.refresh_experiment_runner._write_json"
+            staging_compare_path = _load_staging_apply_paths()(Path(prepared["workspace_root"]))["compare_dir"] / "summer-vacation-a.json"
 
             def flaky_write(path: Path, payload: dict[str, object]) -> None:
-                if path.parent.name.startswith(".compare") and path.name == "summer-vacation-a.json":
-                    raise OSError("simulated compare write failure")
+                if path == staging_compare_path:
+                    raise OSError(0, "simulated compare write failure", str(path))
                 _write_json(path, payload)
 
             with patch(module_write_json, side_effect=flaky_write):
@@ -349,14 +344,12 @@ class RefreshExperimentApplyTest(unittest.TestCase):
             )
             review_path = Path(prepared["promotion_review_path"])
             _write_json(review_path, _read_json(_PROMOTION_FIXTURE_DIR / "create" / "reviewed_decisions.json"))
-            call_count = 0
             original_replace = None
+            final_compare_dir = _load_final_apply_paths()(Path(prepared["workspace_root"]))["compare_dir"]
 
             def flaky_replace(destination: Path, source: Path) -> None:
-                nonlocal call_count
-                call_count += 1
-                if call_count == 2:
-                    raise OSError("simulated publish failure")
+                if destination == final_compare_dir:
+                    raise OSError(0, "simulated publish failure", str(destination))
                 original_replace(destination, source)
 
             original_replace = _load_replace_path()
@@ -367,6 +360,40 @@ class RefreshExperimentApplyTest(unittest.TestCase):
             self.assertFalse((Path(prepared["workspace_root"]) / "compare").exists())
             self.assertFalse((Path(prepared["workspace_root"]) / "post_apply").exists())
             self.assertFalse((Path(prepared["workspace_root"]) / "experiment_report.json").exists())
+
+    def test_apply_reports_objective_slot_changes(self) -> None:
+        from temu_y2_women.refresh_experiment_runner import apply_refresh_experiment
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            prepared = _prepare_experiment(
+                temp_root=temp_root,
+                scenario="objective_slots",
+                request_entries=[("summer-vacation-a", _SUMMER_REQUEST_FIXTURE_PATH)],
+                source_paths=_seed_experiment_source_bundle(temp_root),
+            )
+            review_path = Path(prepared["promotion_review_path"])
+            _write_json(review_path, _read_json(_PROMOTION_FIXTURE_DIR / "objective_slots" / "reviewed_decisions.json"))
+
+            result = apply_refresh_experiment(manifest_path=Path(prepared["manifest_path"]))
+
+            report = _read_json(Path(result["experiment_report_path"]))
+            compare = _read_json(Path(result["compare_dir"]) / "summer-vacation-a.json")
+            self.assertEqual(report["slot_change_summary"], {"dress_length": 1, "waistline": 1})
+            self.assertEqual(compare["change_type"], "selection_changed")
+            self.assertEqual(
+                compare["diff"]["selected_element_changes"],
+                {
+                    "dress_length": {
+                        "before": {"element_id": "dress-length-mini-001", "value": "mini"},
+                        "after": {"element_id": "dress-dress_length-maxi-001", "value": "maxi"},
+                    },
+                    "waistline": {
+                        "before": {"element_id": "dress-waistline-drop-waist-001", "value": "drop waist"},
+                        "after": {"element_id": "dress-waistline-empire-waist-001", "value": "empire waist"},
+                    },
+                },
+            )
 
 
 def _prepare_experiment(
@@ -464,9 +491,21 @@ def _write_json(path: Path, payload: dict[str, object]) -> None:
 
 
 def _load_replace_path():
+    return _load_refresh_experiment_runner_module()._replace_path
+
+
+def _load_staging_apply_paths():
+    return _load_refresh_experiment_runner_module()._staging_apply_paths
+
+
+def _load_final_apply_paths():
+    return _load_refresh_experiment_runner_module()._final_apply_paths
+
+
+def _load_refresh_experiment_runner_module():
     from temu_y2_women import refresh_experiment_runner
 
-    return refresh_experiment_runner._replace_path
+    return refresh_experiment_runner
 
 
 @contextmanager

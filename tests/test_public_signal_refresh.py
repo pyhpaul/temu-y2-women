@@ -123,7 +123,7 @@ class PublicSignalRefreshTest(unittest.TestCase):
 
         self.assertEqual(result["source_summary"], {"total": 4, "succeeded": 4, "failed": 0})
         self.assertEqual(result["canonical_signal_count"], 16)
-        self.assertEqual(result["coverage"]["matched_signals"], 9)
+        self.assertEqual(result["coverage"]["matched_signals"], 15)
         self.assertEqual(
             result["selected_source_ids"],
             [
@@ -135,7 +135,7 @@ class PublicSignalRefreshTest(unittest.TestCase):
         )
         self.assertEqual(
             [item["matched_signal_count"] for item in result["source_details"]],
-            [2, 3, 4, 0],
+            [5, 5, 4, 1],
         )
         self.assertTrue(second_whowhatwear_exists)
         self.assertTrue(marieclaire_exists)

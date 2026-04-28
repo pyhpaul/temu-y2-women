@@ -2,23 +2,22 @@
   "schema_version": "signal-ingestion-v1",
   "summary": {
     "accepted_signal_count": 5,
-    "draft_element_count": 2,
+    "draft_element_count": 6,
     "draft_strategy_hint_count": 1,
-    "warning_count": 3
+    "warning_count": 0
   },
   "coverage": {
-    "matched_signal_count": 2,
-    "unmatched_signal_count": 3,
+    "matched_signal_count": 5,
+    "unmatched_signal_count": 0,
     "matched_signal_ids": [
       "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001",
-      "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002"
-    ],
-    "unmatched_signal_ids": [
+      "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002",
       "whowhatwear-summer-2025-dress-trends-all-things-polka-dots-003",
       "whowhatwear-summer-2025-dress-trends-the-exaggerated-drop-waist-004",
       "whowhatwear-summer-2025-dress-trends-sheer-printed-midis-005"
     ],
-    "match_rate": 0.4
+    "unmatched_signal_ids": [],
+    "match_rate": 1.0
   },
   "accepted_signal_ids": [
     "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001",
@@ -33,47 +32,56 @@
       "signal_id": "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001",
       "status": "matched",
       "emitted_draft_ids": [
-        "draft-detail-smocked-bodice"
+        "draft-detail-smocked-bodice",
+        "draft-dress_length-mini"
       ],
       "matched_rule_keys": [
-        "detail:smocked bodice"
+        "detail:smocked bodice",
+        "dress_length:mini"
       ]
     },
     {
       "signal_id": "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002",
       "status": "matched",
       "emitted_draft_ids": [
+        "draft-dress_length-mini",
         "draft-sleeve-flutter-sleeve"
       ],
       "matched_rule_keys": [
+        "dress_length:mini",
         "sleeve:flutter sleeve"
       ]
     },
     {
       "signal_id": "whowhatwear-summer-2025-dress-trends-all-things-polka-dots-003",
-      "status": "unmatched",
-      "emitted_draft_ids": [],
-      "matched_rule_keys": [],
-      "reason": "no supported phrase rules matched normalized signal text"
+      "status": "matched",
+      "emitted_draft_ids": [
+        "draft-print_scale-micro-print"
+      ],
+      "matched_rule_keys": [
+        "print_scale:micro print"
+      ]
     },
     {
       "signal_id": "whowhatwear-summer-2025-dress-trends-the-exaggerated-drop-waist-004",
-      "status": "unmatched",
-      "emitted_draft_ids": [],
-      "matched_rule_keys": [],
-      "reason": "no supported phrase rules matched normalized signal text"
+      "status": "matched",
+      "emitted_draft_ids": [
+        "draft-waistline-drop-waist"
+      ],
+      "matched_rule_keys": [
+        "waistline:drop waist"
+      ]
     },
     {
       "signal_id": "whowhatwear-summer-2025-dress-trends-sheer-printed-midis-005",
-      "status": "unmatched",
-      "emitted_draft_ids": [],
-      "matched_rule_keys": [],
-      "reason": "no supported phrase rules matched normalized signal text"
+      "status": "matched",
+      "emitted_draft_ids": [
+        "draft-opacity_level-sheer"
+      ],
+      "matched_rule_keys": [
+        "opacity_level:sheer"
+      ]
     }
   ],
-  "warnings": [
-    "no supported draft candidates extracted for signal whowhatwear-summer-2025-dress-trends-all-things-polka-dots-003",
-    "no supported draft candidates extracted for signal whowhatwear-summer-2025-dress-trends-the-exaggerated-drop-waist-004",
-    "no supported draft candidates extracted for signal whowhatwear-summer-2025-dress-trends-sheer-printed-midis-005"
-  ]
+  "warnings": []
 }

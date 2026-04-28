@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 
 _SIGNAL_FIXTURE_DIR = Path("tests/fixtures/signals/dress")
+_EXPECTED_REPORT_PATH = _SIGNAL_FIXTURE_DIR / "expected-ingestion-report.json"
 
 
 class SignalIngestionCliTest(unittest.TestCase):
@@ -29,8 +30,12 @@ class SignalIngestionCliTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         payload = json.loads(stdout.getvalue())
+        expected_report = json.loads(_EXPECTED_REPORT_PATH.read_text(encoding="utf-8"))
         self.assertEqual(payload["summary"]["accepted_signal_count"], 2)
-        self.assertEqual(payload["summary"]["draft_element_count"], 6)
+        self.assertEqual(
+            payload["summary"]["draft_element_count"],
+            expected_report["summary"]["draft_element_count"],
+        )
 
     def test_cli_prints_failure_json(self) -> None:
         from temu_y2_women.signal_ingestion_cli import main

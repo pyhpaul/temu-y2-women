@@ -5,7 +5,12 @@
     "neckline",
     "sleeve",
     "pattern",
-    "detail"
+    "detail",
+    "dress_length",
+    "waistline",
+    "color_family",
+    "print_scale",
+    "opacity_level"
   ],
   "allowed_tags": [
     "airy",
@@ -13,17 +18,28 @@
     "breathable",
     "comfort",
     "dress",
+    "drop-waist",
     "feminine",
     "fitted",
     "floral",
     "heavy",
     "holiday",
     "lightweight",
+    "micro-print",
+    "midi",
+    "mini",
     "night-out",
+    "opaque",
+    "oversized-print",
+    "polka-dot",
+    "red",
     "romantic",
+    "scarf",
+    "sheer",
     "summer",
     "transitional",
-    "vacation"
+    "vacation",
+    "white"
   ],
   "allowed_occasions": [
     "casual",
