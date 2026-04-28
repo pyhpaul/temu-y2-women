@@ -1,0 +1,73 @@
+{
+  "schema_version": "signal-ingestion-v1",
+  "elements": [
+    {
+      "draft_id": "draft-dress-length-maxi",
+      "category": "dress",
+      "slot": "dress_length",
+      "value": "maxi",
+      "tags": ["dress", "feminine"],
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "suggested_base_score": 0.88,
+      "evidence_summary": "Signals point to longer dress proportions as a fresh vacation shape cue.",
+      "source_signal_ids": ["dress-signal-301", "dress-signal-302"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-301",
+            "matched_phrases": ["maxi dress"],
+            "rule_slot": "dress_length",
+            "rule_value": "maxi",
+            "rule_tags": ["dress", "feminine"]
+          },
+          {
+            "signal_id": "dress-signal-302",
+            "matched_phrases": ["long dress"],
+            "rule_slot": "dress_length",
+            "rule_value": "maxi",
+            "rule_tags": ["dress", "feminine"]
+          }
+        ]
+      },
+      "status": "draft"
+    },
+    {
+      "draft_id": "draft-waistline-empire",
+      "category": "dress",
+      "slot": "waistline",
+      "value": "empire waist",
+      "tags": ["dress", "romantic"],
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation"],
+      "season_tags": ["summer"],
+      "risk_flags": [],
+      "suggested_base_score": 0.89,
+      "evidence_summary": "Signals indicate empire waist placement is resurfacing in vacation-focused dress edits.",
+      "source_signal_ids": ["dress-signal-301", "dress-signal-303"],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "dress-signal-301",
+            "matched_phrases": ["empire waist"],
+            "rule_slot": "waistline",
+            "rule_value": "empire waist",
+            "rule_tags": ["dress", "romantic"]
+          },
+          {
+            "signal_id": "dress-signal-303",
+            "matched_phrases": ["high waist seam"],
+            "rule_slot": "waistline",
+            "rule_value": "empire waist",
+            "rule_tags": ["dress", "romantic"]
+          }
+        ]
+      },
+      "status": "draft"
+    }
+  ]
+}

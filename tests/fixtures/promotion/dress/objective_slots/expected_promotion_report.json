@@ -1,0 +1,49 @@
+{
+  "schema_version": "promotion-report-v1",
+  "category": "dress",
+  "source_artifacts": {
+    "draft_elements": "draft_elements.json",
+    "draft_strategy_hints": "draft_strategy_hints.json",
+    "reviewed_decisions": "reviewed_decisions.json"
+  },
+  "summary": {
+    "elements": {
+      "accepted": 2,
+      "rejected": 0,
+      "created": 2,
+      "updated": 0
+    },
+    "strategy_hints": {
+      "accepted": 1,
+      "rejected": 0,
+      "created": 1,
+      "updated": 0
+    }
+  },
+  "elements": [
+    {
+      "draft_id": "draft-dress-length-maxi",
+      "decision": "accept",
+      "merge_action": "create",
+      "element_id": "dress-dress_length-maxi-001",
+      "source_signal_ids": ["dress-signal-301", "dress-signal-302"]
+    },
+    {
+      "draft_id": "draft-waistline-empire",
+      "decision": "accept",
+      "merge_action": "create",
+      "element_id": "dress-waistline-empire-waist-001",
+      "source_signal_ids": ["dress-signal-301", "dress-signal-303"]
+    }
+  ],
+  "strategy_hints": [
+    {
+      "hint_id": "draft-strategy-us-summer-vacation-objective-slots",
+      "decision": "accept",
+      "merge_action": "create",
+      "strategy_id": "dress-us-summer-vacation-objective-slots",
+      "source_signal_ids": ["dress-signal-301", "dress-signal-302", "dress-signal-303"]
+    }
+  ],
+  "warnings": []
+}
