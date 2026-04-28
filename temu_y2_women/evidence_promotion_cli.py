@@ -10,6 +10,10 @@ from temu_y2_women.evidence_promotion import (
     apply_reviewed_dress_promotion,
     prepare_dress_promotion_review,
 )
+from temu_y2_women.refresh_run_promotion import (
+    apply_reviewed_dress_promotion_from_refresh_run,
+    prepare_dress_promotion_from_refresh_run,
+)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -25,23 +29,25 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 def _add_prepare_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     parser = subparsers.add_parser("prepare", help="Build a promotion review template from staged drafts.")
-    parser.add_argument("--draft-elements", required=True, help="Path to staged draft_elements.json.")
-    parser.add_argument("--draft-strategy-hints", required=True, help="Path to staged draft_strategy_hints.json.")
+    parser.add_argument("--run-dir", help="Path to a refresh run directory containing staged promotion inputs.")
+    parser.add_argument("--draft-elements", help="Path to staged draft_elements.json.")
+    parser.add_argument("--draft-strategy-hints", help="Path to staged draft_strategy_hints.json.")
     parser.add_argument("--active-elements", required=True, help="Path to active elements.json.")
     parser.add_argument("--active-strategies", required=True, help="Path to active strategy_templates.json.")
     parser.add_argument("--taxonomy", help="Optional path to evidence_taxonomy.json.")
-    parser.add_argument("--output", required=True, help="Path to write the generated review template JSON.")
+    parser.add_argument("--output", help="Path to write the generated review template JSON.")
 
 
 def _add_apply_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     parser = subparsers.add_parser("apply", help="Apply a reviewed promotion bundle to active evidence.")
-    parser.add_argument("--reviewed", required=True, help="Path to the reviewed promotion decision JSON.")
-    parser.add_argument("--draft-elements", required=True, help="Path to staged draft_elements.json.")
-    parser.add_argument("--draft-strategy-hints", required=True, help="Path to staged draft_strategy_hints.json.")
+    parser.add_argument("--run-dir", help="Path to a refresh run directory containing staged promotion inputs.")
+    parser.add_argument("--reviewed", help="Path to the reviewed promotion decision JSON.")
+    parser.add_argument("--draft-elements", help="Path to staged draft_elements.json.")
+    parser.add_argument("--draft-strategy-hints", help="Path to staged draft_strategy_hints.json.")
     parser.add_argument("--active-elements", required=True, help="Path to active elements.json.")
     parser.add_argument("--active-strategies", required=True, help="Path to active strategy_templates.json.")
     parser.add_argument("--taxonomy", help="Optional path to evidence_taxonomy.json.")
-    parser.add_argument("--report-output", required=True, help="Path to write the promotion report JSON.")
+    parser.add_argument("--report-output", help="Path to write the promotion report JSON.")
 
 
 def _run_command(args: argparse.Namespace) -> dict[str, object]:
@@ -53,6 +59,18 @@ def _run_command(args: argparse.Namespace) -> dict[str, object]:
 
 
 def _run_prepare(args: argparse.Namespace) -> dict[str, object]:
+    try:
+        _validate_prepare_args(args)
+    except GenerationError as error:
+        return error.to_dict()
+    if args.run_dir:
+        return prepare_dress_promotion_from_refresh_run(
+            run_dir=Path(args.run_dir),
+            active_elements_path=Path(args.active_elements),
+            active_strategies_path=Path(args.active_strategies),
+            output_path=_optional_path(args.output),
+            taxonomy_path=_taxonomy_path(args),
+        )
     result = prepare_dress_promotion_review(
         draft_elements_path=Path(args.draft_elements),
         draft_strategy_hints_path=Path(args.draft_strategy_hints),
@@ -69,6 +87,19 @@ def _run_prepare(args: argparse.Namespace) -> dict[str, object]:
 
 
 def _run_apply(args: argparse.Namespace) -> dict[str, object]:
+    try:
+        _validate_apply_args(args)
+    except GenerationError as error:
+        return error.to_dict()
+    if args.run_dir:
+        return apply_reviewed_dress_promotion_from_refresh_run(
+            run_dir=Path(args.run_dir),
+            active_elements_path=Path(args.active_elements),
+            active_strategies_path=Path(args.active_strategies),
+            reviewed_path=_optional_path(args.reviewed),
+            report_path=_optional_path(args.report_output),
+            taxonomy_path=_taxonomy_path(args),
+        )
     return apply_reviewed_dress_promotion(
         reviewed_path=Path(args.reviewed),
         draft_elements_path=Path(args.draft_elements),
@@ -82,6 +113,48 @@ def _run_apply(args: argparse.Namespace) -> dict[str, object]:
 
 def _write_json(path: Path, payload: dict[str, object]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _validate_prepare_args(args: argparse.Namespace) -> None:
+    if args.run_dir and (args.draft_elements or args.draft_strategy_hints):
+        raise GenerationError(
+            code="INVALID_REFRESH_RUN",
+            message="run-dir mode cannot be combined with explicit staged input paths",
+            details={"field": "run_dir"},
+        )
+    if args.run_dir:
+        return
+    if args.draft_elements and args.draft_strategy_hints and args.output:
+        return
+    raise GenerationError(
+        code="INVALID_PROMOTION_INPUT",
+        message="prepare requires either --run-dir or explicit staged input paths plus --output",
+        details={"field": "prepare"},
+    )
+
+
+def _validate_apply_args(args: argparse.Namespace) -> None:
+    if args.run_dir and (args.draft_elements or args.draft_strategy_hints):
+        raise GenerationError(
+            code="INVALID_REFRESH_RUN",
+            message="run-dir mode cannot be combined with explicit staged input paths",
+            details={"field": "run_dir"},
+        )
+    if args.run_dir:
+        return
+    if args.reviewed and args.draft_elements and args.draft_strategy_hints and args.report_output:
+        return
+    raise GenerationError(
+        code="INVALID_PROMOTION_INPUT",
+        message="apply requires either --run-dir or explicit reviewed and staged input paths plus --report-output",
+        details={"field": "apply"},
+    )
+
+
+def _optional_path(path_value: str | None) -> Path | None:
+    if path_value is None:
+        return None
+    return Path(path_value)
 
 
 def _taxonomy_path(args: argparse.Namespace) -> Path:
