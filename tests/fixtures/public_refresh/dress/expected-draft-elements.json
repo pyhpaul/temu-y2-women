@@ -31,7 +31,6 @@
           {
             "signal_id": "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001",
             "matched_phrases": [
-              "smocked bodice",
               "smocked bodices"
             ],
             "rule_slot": "detail",
@@ -39,6 +38,154 @@
             "rule_tags": [
               "feminine",
               "vacation"
+            ]
+          }
+        ]
+      },
+      "status": "draft"
+    },
+    {
+      "draft_id": "draft-dress_length-mini",
+      "category": "dress",
+      "slot": "dress_length",
+      "value": "mini",
+      "tags": [
+        "dress",
+        "mini",
+        "summer",
+        "vacation"
+      ],
+      "price_bands": [
+        "mid"
+      ],
+      "occasion_tags": [
+        "vacation"
+      ],
+      "season_tags": [
+        "summer"
+      ],
+      "risk_flags": [],
+      "suggested_base_score": 0.7,
+      "evidence_summary": "Derived from 2 signals for US dress demand.",
+      "source_signal_ids": [
+        "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002",
+        "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001"
+      ],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002",
+            "matched_phrases": [
+              "mini"
+            ],
+            "rule_slot": "dress_length",
+            "rule_value": "mini",
+            "rule_tags": [
+              "dress",
+              "mini",
+              "summer",
+              "vacation"
+            ]
+          },
+          {
+            "signal_id": "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001",
+            "matched_phrases": [
+              "minis"
+            ],
+            "rule_slot": "dress_length",
+            "rule_value": "mini",
+            "rule_tags": [
+              "dress",
+              "mini",
+              "summer",
+              "vacation"
+            ]
+          }
+        ]
+      },
+      "status": "draft"
+    },
+    {
+      "draft_id": "draft-opacity_level-sheer",
+      "category": "dress",
+      "slot": "opacity_level",
+      "value": "sheer",
+      "tags": [
+        "airy",
+        "sheer",
+        "summer"
+      ],
+      "price_bands": [
+        "mid"
+      ],
+      "occasion_tags": [],
+      "season_tags": [
+        "summer"
+      ],
+      "risk_flags": [],
+      "suggested_base_score": 0.65,
+      "evidence_summary": "Derived from 1 signal for US dress demand.",
+      "source_signal_ids": [
+        "whowhatwear-summer-2025-dress-trends-sheer-printed-midis-005"
+      ],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "whowhatwear-summer-2025-dress-trends-sheer-printed-midis-005",
+            "matched_phrases": [
+              "sheer"
+            ],
+            "rule_slot": "opacity_level",
+            "rule_value": "sheer",
+            "rule_tags": [
+              "airy",
+              "sheer",
+              "summer"
+            ]
+          }
+        ]
+      },
+      "status": "draft"
+    },
+    {
+      "draft_id": "draft-print_scale-micro-print",
+      "category": "dress",
+      "slot": "print_scale",
+      "value": "micro print",
+      "tags": [
+        "micro-print",
+        "polka-dot",
+        "summer"
+      ],
+      "price_bands": [
+        "mid"
+      ],
+      "occasion_tags": [],
+      "season_tags": [
+        "summer"
+      ],
+      "risk_flags": [],
+      "suggested_base_score": 0.65,
+      "evidence_summary": "Derived from 1 signal for US dress demand.",
+      "source_signal_ids": [
+        "whowhatwear-summer-2025-dress-trends-all-things-polka-dots-003"
+      ],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "whowhatwear-summer-2025-dress-trends-all-things-polka-dots-003",
+            "matched_phrases": [
+              "micro-dot"
+            ],
+            "rule_slot": "print_scale",
+            "rule_value": "micro print",
+            "rule_tags": [
+              "micro-print",
+              "polka-dot",
+              "summer"
             ]
           }
         ]
@@ -80,6 +227,50 @@
             "rule_value": "flutter sleeve",
             "rule_tags": [
               "airy",
+              "feminine",
+              "vacation"
+            ]
+          }
+        ]
+      },
+      "status": "draft"
+    },
+    {
+      "draft_id": "draft-waistline-drop-waist",
+      "category": "dress",
+      "slot": "waistline",
+      "value": "drop waist",
+      "tags": [
+        "drop-waist",
+        "feminine",
+        "vacation"
+      ],
+      "price_bands": [
+        "mid"
+      ],
+      "occasion_tags": [],
+      "season_tags": [
+        "summer"
+      ],
+      "risk_flags": [],
+      "suggested_base_score": 0.65,
+      "evidence_summary": "Derived from 1 signal for US dress demand.",
+      "source_signal_ids": [
+        "whowhatwear-summer-2025-dress-trends-the-exaggerated-drop-waist-004"
+      ],
+      "extraction_provenance": {
+        "kind": "signal-rule-match",
+        "rule_matches": [
+          {
+            "signal_id": "whowhatwear-summer-2025-dress-trends-the-exaggerated-drop-waist-004",
+            "matched_phrases": [
+              "drop waist",
+              "drop-waist"
+            ],
+            "rule_slot": "waistline",
+            "rule_value": "drop waist",
+            "rule_tags": [
+              "drop-waist",
               "feminine",
               "vacation"
             ]
