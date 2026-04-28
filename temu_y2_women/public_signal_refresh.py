@@ -312,7 +312,7 @@ def _build_refresh_report(
     warnings = _build_refresh_warnings(raw_snapshots, observations_by_source, ingestion_result)
     successful_sources = _successful_source_ids(raw_snapshots, errors)
     selected_source_ids = [str(source["source_id"]) for source in registry]
-    return {
+    report = {
         "schema_version": "public-refresh-report-v1",
         "run_id": run_id,
         "started_at": fetched_at,
@@ -337,6 +337,13 @@ def _build_refresh_report(
         "warnings": warnings,
         "errors": errors,
     }
+    structured_summary = _structured_candidate_summary(
+        list(canonical_payload["signals"]),
+        list(ingestion_result.get("signal_outcomes", [])),
+    )
+    if structured_summary is not None:
+        report["structured_candidate_summary"] = structured_summary
+    return report
 
 
 def _build_refresh_warnings(
@@ -421,6 +428,9 @@ def _build_source_detail(
         "warnings": _source_warnings(source_id, snapshot_lookup, observation_lookup),
         "errors": list(errors_lookup.get(source_id, [])),
     }
+    structured_summary = _source_structured_candidate_summary(signals, source_outcomes)
+    if structured_summary is not None:
+        detail["structured_candidate_summary"] = structured_summary
     if _is_roundup_source(source):
         detail.update(_roundup_source_detail(source, snapshot_lookup.get(source_id), observation_lookup.get(source_id), signals))
     return detail
@@ -472,6 +482,52 @@ def _signal_ids_by_source(canonical_payload: dict[str, Any]) -> dict[str, list[d
 def _signal_outcomes_by_id(ingestion_result: dict[str, Any]) -> dict[str, dict[str, Any]]:
     outcomes = ingestion_result.get("signal_outcomes", [])
     return {str(item["signal_id"]): item for item in outcomes}
+
+
+def _structured_candidate_summary(
+    signals: list[dict[str, Any]],
+    outcomes: list[dict[str, Any]],
+) -> dict[str, int] | None:
+    candidate_count = _structured_candidate_count(signals)
+    if candidate_count == 0:
+        return None
+    return {
+        "signal_count": sum(1 for signal in signals if _structured_candidates(signal)),
+        "candidate_count": candidate_count,
+        "matched_signal_count": _matched_structured_signal_count(outcomes),
+        "matched_key_count": _matched_structured_key_count(outcomes),
+    }
+
+
+def _source_structured_candidate_summary(
+    signals: list[dict[str, Any]],
+    outcomes: list[dict[str, Any]],
+) -> dict[str, int] | None:
+    summary = _structured_candidate_summary(signals, outcomes)
+    if summary is None:
+        return None
+    return {
+        "candidate_count": summary["candidate_count"],
+        "matched_signal_count": summary["matched_signal_count"],
+        "matched_key_count": summary["matched_key_count"],
+    }
+
+
+def _structured_candidate_count(signals: list[dict[str, Any]]) -> int:
+    return sum(len(_structured_candidates(signal)) for signal in signals)
+
+
+def _matched_structured_signal_count(outcomes: list[dict[str, Any]]) -> int:
+    return sum(1 for outcome in outcomes if "structured_candidate" in list(outcome.get("matched_channels", [])))
+
+
+def _matched_structured_key_count(outcomes: list[dict[str, Any]]) -> int:
+    return sum(len(list(outcome.get("matched_structured_keys", []))) for outcome in outcomes)
+
+
+def _structured_candidates(signal: dict[str, Any]) -> list[dict[str, Any]]:
+    candidates = signal.get("structured_candidates", [])
+    return list(candidates) if isinstance(candidates, list) else []
 
 
 def _write_refresh_outputs(

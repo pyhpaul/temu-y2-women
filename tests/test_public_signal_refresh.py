@@ -214,6 +214,42 @@ class PublicSignalRefreshTest(unittest.TestCase):
         self.assertEqual(outcome["matched_channels"], ["structured_candidate"])
         self.assertEqual(outcome["matched_structured_keys"], ["pattern:gingham check"])
 
+    def test_run_public_signal_refresh_surfaces_structured_candidate_summary(self) -> None:
+        from temu_y2_women.public_signal_refresh import run_public_signal_refresh
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            registry_path = temp_root / "registry.json"
+            registry_path.write_text(json.dumps(_mixed_source_registry()), encoding="utf-8")
+            result = run_public_signal_refresh(
+                registry_path=registry_path,
+                output_root=temp_root,
+                fetched_at="2026-04-29T00:00:00Z",
+                fetcher=_mixed_registry_fetcher(),
+                card_image_observer=_fake_card_observer_with_new_value,
+            )
+
+        roundup_detail = next(
+            item for item in result["source_details"] if item["source_id"] == "whowhatwear-best-summer-dresses-2025"
+        )
+        self.assertEqual(
+            result["structured_candidate_summary"],
+            {
+                "signal_count": 1,
+                "candidate_count": 1,
+                "matched_signal_count": 1,
+                "matched_key_count": 1,
+            },
+        )
+        self.assertEqual(
+            roundup_detail["structured_candidate_summary"],
+            {
+                "candidate_count": 1,
+                "matched_signal_count": 1,
+                "matched_key_count": 1,
+            },
+        )
+
 
 def _registry_with_broken_source() -> dict[str, object]:
     return {
