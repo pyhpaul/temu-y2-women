@@ -17,13 +17,19 @@ class OrchestratorTest(unittest.TestCase):
         self.assertEqual(result["request_normalized"]["mode"], "A")
         self.assertEqual(result["selected_strategies"][0]["strategy_id"], "dress-us-summer-vacation")
         self.assertEqual(result["prompt_bundle"]["mode"], "A")
-        self.assertEqual(result["prompt_bundle"]["template_version"], "visual-prompt-v1")
+        self.assertEqual(result["prompt_bundle"]["template_version"], "visual-prompt-v2")
         self.assertIn("product-first presentation", result["prompt_bundle"]["prompt"])
+        self.assertIn("mini length", result["prompt_bundle"]["prompt"])
+        self.assertIn("white color story", result["prompt_bundle"]["prompt"])
         self.assertEqual(len(result["prompt_bundle"]["detail_prompts"]), 3)
         self.assertEqual(result["factory_spec"]["schema_version"], "factory-spec-v1")
         self.assertEqual(
             result["factory_spec"]["known"]["selected_elements"]["fabric"]["value"],
             "cotton poplin",
+        )
+        self.assertEqual(
+            result["factory_spec"]["known"]["selected_elements"]["dress_length"]["value"],
+            "mini",
         )
         self.assertIn(
             "print continuity across seams",
@@ -34,7 +40,7 @@ class OrchestratorTest(unittest.TestCase):
             result["factory_spec"]["inferred"]["sample_review_watchpoints"],
         )
         self.assertIn(
-            "qa review: check smocking rows for even tension, secure attachment, and balanced visual spacing",
+            "qa review: check neck scarf attachment, symmetry, and edge finish for clean repeatability",
             result["factory_spec"]["inferred"]["qa_review_notes"],
         )
         self.assertIn(
@@ -42,6 +48,7 @@ class OrchestratorTest(unittest.TestCase):
             result["factory_spec"]["inferred"]["fit_review_cues"],
         )
         self.assertEqual(result["composed_concept"]["selected_elements"]["silhouette"]["value"], "a-line")
+        self.assertEqual(result["composed_concept"]["selected_elements"]["waistline"]["value"], "drop waist")
         self.assertIn("must_have_tags satisfied: floral", result["composed_concept"]["constraint_notes"])
         self.assertIn("avoid_tags removed: bodycon", " ".join(result["warnings"]))
 
