@@ -27,6 +27,19 @@ _DETAIL_REVIEW_RULES = {
         "confirm bodice tension stays even without distorting print placement",
     ),
 }
+_FIT_REVIEW_RULES = {
+    ("dress_length", "mini"): "fit cue: verify mini length keeps intended coverage in motion and while seated",
+    ("waistline", "drop waist"): "fit cue: confirm drop waist seam lands low enough to read intentional without dragging the torso",
+}
+_VISIBLE_CHECK_RULES = {
+    ("waistline", "drop waist"): "visible check: confirm drop waist seam stays level and visually intentional around the body",
+    ("print_scale", "micro print"): "visible check: confirm micro print stays crisp without muddying at seams or gathers",
+    ("opacity_level", "opaque"): "visible check: confirm opaque coverage stays consistent in bright light",
+    ("opacity_level", "sheer"): "visible check: confirm sheer areas stay intentional and balanced across layers and seam zones",
+}
+_COMMERCIAL_CUE_RULES = {
+    ("print_scale", "micro print"): "commercial cue: make sure micro print still reads clearly in thumbnails and first-glance product imagery",
+}
 _OPEN_QUESTIONS = (
     "open question: confirm fiber_content from approved fabric submission",
     "open question: confirm fabric_weight_gsm from supplier or mill data",
@@ -213,6 +226,7 @@ def _fit_review_cues(
         cues.append("fit cue: keep a-line volume easy and mobile instead of collapsing into a narrow shape")
     if _selected_value(concept, "detail") == "smocked bodice":
         cues.append("fit cue: make sure smocked bodice shaping stays flexible rather than restrictive")
+    cues.extend(_objective_slot_notes(concept, _FIT_REVIEW_RULES))
     return cues or ["fit cue: confirm the sample stays easy to wear for the intended market"]
 
 
@@ -230,6 +244,9 @@ def _commercial_review_cues(
         )
     if request.price_band:
         cues.append(f"commercial cue: keep visible construction commercially realistic for {request.price_band} pricing")
+    if _selected_value(concept, "color_family") == "white" and _selected_value(concept, "opacity_level") == "sheer":
+        cues.append("commercial cue: review white sheer execution for coverage, layering, and online readability")
+    cues.extend(_objective_slot_notes(concept, _COMMERCIAL_CUE_RULES))
     if _selected_value(concept, "detail") and not cues:
         cues.append("commercial cue: keep the selected detail readable without overcomplicating production")
     return cues
@@ -251,6 +268,7 @@ def _visible_construction_checks(concept: ComposedConcept) -> list[str]:
     pattern = _selected_value(concept, "pattern")
     if pattern:
         checks.append(f"visible check: confirm {pattern} continuity across visible seams")
+    checks.extend(_objective_slot_notes(concept, _VISIBLE_CHECK_RULES))
     if detail:
         checks.append(f"visible check: confirm {_detail_visible_label(detail)} placement stays visually symmetrical")
     return checks
@@ -294,3 +312,11 @@ def _join_values(values: list[str]) -> str:
     if len(values) < 3:
         return " and ".join(values)
     return f"{', '.join(values[:-1])}, and {values[-1]}"
+
+
+def _objective_slot_notes(concept: ComposedConcept, rules: dict[tuple[str, str], str]) -> list[str]:
+    return [
+        note
+        for (slot, expected_value), note in rules.items()
+        if _selected_value(concept, slot) == expected_value
+    ]
