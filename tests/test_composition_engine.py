@@ -249,6 +249,22 @@ class CompositionEngineTest(unittest.TestCase):
         self.assertEqual(concept.selected_elements["pattern"].value, "polka dot")
         self.assertEqual(concept.selected_elements["print_scale"].value, "micro print")
 
+    def test_selects_print_scale_when_pattern_exists(self) -> None:
+        from temu_y2_women.composition_engine import compose_concept
+
+        request = _request()
+        candidates = {
+            "silhouette": [_candidate("dress-silhouette-a-line-001", "silhouette", "a-line", 0.91, ("summer",))],
+            "fabric": [_candidate("dress-fabric-cotton-poplin-001", "fabric", "cotton poplin", 0.89, ("lightweight",))],
+            "pattern": [_candidate("dress-pattern-polka-dot-001", "pattern", "polka dot", 0.77, ("polka-dot",))],
+            "print_scale": [_candidate("dress-print-scale-micro-print-001", "print_scale", "micro print", 0.75, ("micro-print",))],
+        }
+
+        concept = compose_concept(request, candidates)
+
+        self.assertEqual(concept.selected_elements["pattern"].value, "polka dot")
+        self.assertEqual(concept.selected_elements["print_scale"].value, "micro print")
+
     def test_omits_print_scale_when_pattern_is_missing(self) -> None:
         from temu_y2_women.composition_engine import compose_concept
 
