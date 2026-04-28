@@ -251,7 +251,7 @@ def _canonical_payload_to_signal_bundle(canonical_payload: dict[str, Any]) -> di
 
 
 def _signal_bundle_record(signal: dict[str, Any]) -> dict[str, Any]:
-    return {
+    record = {
         "signal_id": signal["canonical_signal_id"],
         "source_type": signal["source_type"],
         "source_url": signal["source_url"],
@@ -267,6 +267,10 @@ def _signal_bundle_record(signal: dict[str, Any]) -> dict[str, Any]:
         "status": signal["status"],
         "extraction_provenance": dict(signal["extraction_provenance"]),
     }
+    structured_candidates = signal.get("structured_candidates")
+    if isinstance(structured_candidates, list) and structured_candidates:
+        record["structured_candidates"] = [dict(candidate) for candidate in structured_candidates]
+    return record
 
 
 @lru_cache(maxsize=1)

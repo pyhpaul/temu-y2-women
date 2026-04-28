@@ -22,6 +22,21 @@
         "shopping",
         "dress"
       ],
+      "structured_candidates": [
+        {
+          "slot": "dress_length",
+          "value": "mini",
+          "candidate_source": "roundup_card_image_aggregation",
+          "supporting_card_ids": [
+            "whowhatwear-best-summer-dresses-2025-card-001",
+            "whowhatwear-best-summer-dresses-2025-card-002"
+          ],
+          "supporting_card_count": 2,
+          "aggregation_threshold": 2,
+          "observation_model": "fake-roundup-observer",
+          "evidence_summary": "2 cards agree on dress_length=mini: White Mini Dress (hemline ends above knee); Polka-Dot Mini Dress (hemline ends above knee)."
+        }
+      ],
       "observed_price_band": "mid",
       "price_band_resolution": "source_default",
       "status": "active",
