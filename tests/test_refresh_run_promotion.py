@@ -69,6 +69,62 @@ class RefreshRunPromotionPrepareTest(unittest.TestCase):
             self.assertEqual(result["error"]["details"]["field"], "draft_elements.json")
 
 
+class RefreshRunPromotionApplyTest(unittest.TestCase):
+    def test_apply_from_refresh_run_prefers_promotion_review(self) -> None:
+        from temu_y2_women.refresh_run_promotion import apply_reviewed_dress_promotion_from_refresh_run
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            run_dir = _seed_refresh_run(temp_root, scenario="create")
+            elements_path, strategies_path = _seed_active_evidence(temp_root)
+            review_payload = _read_json(_PROMOTION_FIXTURE_DIR / "create" / "reviewed_decisions.json")
+            _write_json(run_dir / "promotion_review.json", review_payload)
+
+            result = apply_reviewed_dress_promotion_from_refresh_run(
+                run_dir=run_dir,
+                active_elements_path=elements_path,
+                active_strategies_path=strategies_path,
+            )
+
+            self.assertEqual(result["schema_version"], "promotion-report-v1")
+            self.assertTrue((run_dir / "promotion_report.json").exists())
+
+    def test_apply_from_refresh_run_falls_back_to_legacy_reviewed_decisions(self) -> None:
+        from temu_y2_women.refresh_run_promotion import apply_reviewed_dress_promotion_from_refresh_run
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            run_dir = _seed_refresh_run(temp_root, scenario="update")
+            elements_path, strategies_path = _seed_active_evidence(temp_root)
+            review_payload = _read_json(_PROMOTION_FIXTURE_DIR / "update" / "reviewed_decisions.json")
+            _write_json(run_dir / "reviewed_decisions.json", review_payload)
+
+            result = apply_reviewed_dress_promotion_from_refresh_run(
+                run_dir=run_dir,
+                active_elements_path=elements_path,
+                active_strategies_path=strategies_path,
+            )
+
+            self.assertEqual(result["schema_version"], "promotion-report-v1")
+
+    def test_apply_from_refresh_run_rejects_missing_reviewed_artifact(self) -> None:
+        from temu_y2_women.refresh_run_promotion import apply_reviewed_dress_promotion_from_refresh_run
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            run_dir = _seed_refresh_run(temp_root, scenario="create")
+            elements_path, strategies_path = _seed_active_evidence(temp_root)
+
+            result = apply_reviewed_dress_promotion_from_refresh_run(
+                run_dir=run_dir,
+                active_elements_path=elements_path,
+                active_strategies_path=strategies_path,
+            )
+
+            self.assertEqual(result["error"]["code"], "INVALID_REFRESH_RUN")
+            self.assertEqual(result["error"]["details"]["field"], "reviewed")
+
+
 def _seed_refresh_run(temp_root: Path, scenario: str) -> Path:
     run_dir = temp_root / "refresh-run"
     run_dir.mkdir()
@@ -104,3 +160,7 @@ def _seed_active_evidence(temp_root: Path) -> tuple[Path, Path]:
 
 def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _write_json(path: Path, payload: dict[str, object]) -> None:
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
