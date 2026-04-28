@@ -46,6 +46,16 @@ def test_resolve_openai_provider_config_reads_auth_json_and_config_toml(self) ->
     self.assertEqual(resolved.base_url, "https://example.test")
 ```
 
+```python
+def test_resolve_openai_provider_config_reads_selected_model_provider_base_url(self) -> None:
+    resolved = resolve_openai_provider_config(
+        ProviderCliOptions(),
+        codex_home=self.codex_home,
+        environ={},
+    )
+    self.assertEqual(resolved.base_url, "https://provider.test")
+```
+
 - [ ] **Step 2: Run the focused test suite and confirm failure**
 
 Run: `python -m unittest tests.test_image_provider_config -v`

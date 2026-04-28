@@ -8,6 +8,7 @@ from typing import Callable, Sequence
 from temu_y2_women.generate_and_render_workflow import generate_and_render_dress_concept
 from temu_y2_women.image_generation_openai import build_openai_image_provider
 from temu_y2_women.image_generation_output import FakeImageProvider, ImageProvider
+from temu_y2_women.image_provider_config import ProviderCliOptions, resolve_openai_provider_config
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -15,6 +16,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--input", required=True, help="Path to the request JSON file.")
     parser.add_argument("--output-dir", required=True, help="Directory for generated concept and render artifacts.")
     parser.add_argument("--provider", choices=("fake", "openai"), default="openai", help="Image provider to use.")
+    parser.add_argument("--api-key", default=None, help="Override the OpenAI-compatible API key.")
+    parser.add_argument("--base-url", default=None, help="Override the OpenAI-compatible API base URL.")
     parser.add_argument("--model", default="gpt-image-1", help="Image model name for the OpenAI provider.")
     parser.add_argument("--size", default="1024x1536", help="Image size for the OpenAI provider.")
     parser.add_argument("--quality", default="high", help="Image quality for the OpenAI provider.")
@@ -33,12 +36,20 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _provider_factory_from_args(args: argparse.Namespace) -> Callable[[], ImageProvider]:
     if args.provider == "fake":
         return FakeImageProvider
-    return lambda: build_openai_image_provider(
-        model=args.model,
-        size=args.size,
-        quality=args.quality,
-        background=args.background,
-        style=args.style,
+    return lambda: build_openai_image_provider(_openai_cli_options(args))
+
+
+def _openai_cli_options(args: argparse.Namespace) -> object:
+    return resolve_openai_provider_config(
+        ProviderCliOptions(
+            api_key=args.api_key,
+            base_url=args.base_url,
+            model=args.model,
+            size=args.size,
+            quality=args.quality,
+            background=args.background,
+            style=args.style,
+        )
     )
 
 

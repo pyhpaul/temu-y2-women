@@ -37,6 +37,7 @@ class ImageProviderResult:
     mime_type: str
     provider_name: str
     model: str
+    base_url: str | None = None
 
 
 class ImageProvider(Protocol):

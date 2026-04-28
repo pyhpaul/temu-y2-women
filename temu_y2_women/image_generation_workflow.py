@@ -50,6 +50,7 @@ def _render_bundle(provider: ImageProvider, render_input: ImageRenderInput) -> l
                 "image_path": "",
                 "provider": provider_result.provider_name,
                 "model": provider_result.model,
+                "base_url": provider_result.base_url,
                 "mime_type": provider_result.mime_type,
             }
         )
@@ -94,6 +95,7 @@ def _build_render_report(
         "prompt_fingerprint": first_image["prompt_fingerprint"],
         "provider": first_image["provider"],
         "model": first_image["model"],
+        "base_url": first_image["base_url"],
         "mime_type": first_image["mime_type"],
         "image_path": first_image["image_path"],
         "report_path": str(output_dir / _REPORT_FILENAME),
