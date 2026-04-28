@@ -48,6 +48,26 @@ class ImageProviderConfigTest(unittest.TestCase):
 
         self.assertEqual(resolved.base_url, "https://provider.test")
 
+    def test_resolve_openai_provider_config_appends_v1_for_current_aerorelay_url(self) -> None:
+        from temu_y2_women.image_provider_config import ProviderCliOptions, resolve_openai_provider_config
+
+        with TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            codex_home.mkdir()
+            _write_auth_json(codex_home / "auth.json", "fixture-key")
+            (codex_home / "config.toml").write_text(
+                'model_provider = "codex"\n\n[model_providers.codex]\nbase_url = "https://www.aerorelay.one"\n',
+                encoding="utf-8",
+            )
+
+            resolved = resolve_openai_provider_config(
+                ProviderCliOptions(),
+                codex_home=codex_home,
+                environ={},
+            )
+
+        self.assertEqual(resolved.base_url, "https://www.aerorelay.one/v1")
+
     def test_cli_values_override_environment_and_codex_files(self) -> None:
         from temu_y2_women.image_provider_config import ProviderCliOptions, resolve_openai_provider_config
 

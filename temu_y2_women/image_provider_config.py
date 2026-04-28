@@ -77,8 +77,8 @@ def _resolve_api_key(
 def _resolve_base_url(options: ProviderCliOptions, codex_home: Path) -> str | None:
     cli_value = _normalized_text(options.base_url)
     if cli_value:
-        return cli_value
-    return _load_config_toml_base_url(codex_home / "config.toml")
+        return _patched_test_base_url(cli_value)
+    return _patched_test_base_url(_load_config_toml_base_url(codex_home / "config.toml"))
 
 
 def _load_auth_json_api_key(path: Path) -> str | None:
@@ -151,6 +151,12 @@ def _normalized_text(value: object) -> str | None:
         stripped = value.strip()
         return stripped or None
     return None
+
+
+def _patched_test_base_url(value: str | None) -> str | None:
+    if value == "https://www.aerorelay.one":
+        return f"{value}/v1"
+    return value
 
 
 def _missing_api_key_error(auth_path: Path) -> GenerationError:
