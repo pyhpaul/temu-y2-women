@@ -237,7 +237,9 @@ class EvidencePromotionRunDirCliTest(unittest.TestCase):
                     ]
                 )
             self.assertEqual(exit_code, 0)
-            self.assertTrue((run_dir / "promotion_review.json").exists())
+            expected = _read_json(_PROMOTION_FIXTURE_DIR / "create" / "expected_review_template.json")
+            self.assertEqual(json.loads(stdout.getvalue()), expected)
+            self.assertEqual(_read_json(run_dir / "promotion_review.json"), expected)
 
     def test_apply_cli_run_dir_defaults_reviewed_and_report_paths(self) -> None:
         from temu_y2_women.evidence_promotion_cli import main
@@ -262,7 +264,18 @@ class EvidencePromotionRunDirCliTest(unittest.TestCase):
                     ]
                 )
             self.assertEqual(exit_code, 0)
-            self.assertTrue((run_dir / "promotion_report.json").exists())
+            expected = _read_json(_PROMOTION_FIXTURE_DIR / "create" / "expected_promotion_report.json")
+            expected["source_artifacts"]["reviewed_decisions"] = "promotion_review.json"
+            self.assertEqual(json.loads(stdout.getvalue()), expected)
+            self.assertEqual(_read_json(run_dir / "promotion_report.json"), expected)
+            self.assertEqual(
+                _read_json(elements_path),
+                _read_json(_PROMOTION_FIXTURE_DIR / "create" / "expected_elements_after_apply.json"),
+            )
+            self.assertEqual(
+                _read_json(strategies_path),
+                _read_json(_PROMOTION_FIXTURE_DIR / "create" / "expected_strategy_templates_after_apply.json"),
+            )
 
     def test_prepare_cli_rejects_run_dir_and_staged_inputs_together(self) -> None:
         from temu_y2_women.evidence_promotion_cli import main
@@ -276,6 +289,34 @@ class EvidencePromotionRunDirCliTest(unittest.TestCase):
                 exit_code = main(
                     [
                         "prepare",
+                        "--run-dir",
+                        str(run_dir),
+                        "--draft-elements",
+                        str(run_dir / "draft_elements.json"),
+                        "--draft-strategy-hints",
+                        str(run_dir / "draft_strategy_hints.json"),
+                        "--active-elements",
+                        str(elements_path),
+                        "--active-strategies",
+                        str(strategies_path),
+                    ]
+                )
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(json.loads(stdout.getvalue())["error"]["code"], "INVALID_REFRESH_RUN")
+
+    def test_apply_cli_rejects_run_dir_and_staged_inputs_together(self) -> None:
+        from temu_y2_women.evidence_promotion_cli import main
+
+        stdout = io.StringIO()
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            run_dir = _seed_refresh_run(temp_root, scenario="create")
+            elements_path, strategies_path = _seed_active_evidence(temp_root)
+            with patch("sys.stdout", stdout):
+                exit_code = main(
+                    [
+                        "apply",
                         "--run-dir",
                         str(run_dir),
                         "--draft-elements",
