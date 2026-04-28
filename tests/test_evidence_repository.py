@@ -881,7 +881,12 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
         self.assertEqual(strategies[0]["status"], "inactive")
 
     def test_runtime_dress_evidence_includes_objective_slots(self) -> None:
-        from temu_y2_women.evidence_repository import load_elements, load_strategy_templates
+        from temu_y2_women.evidence_repository import (
+            load_elements,
+            load_strategy_templates,
+            retrieve_candidates,
+        )
+        from temu_y2_women.models import NormalizedRequest
 
         taxonomy_path = Path("data/mvp/dress/evidence_taxonomy.json")
         elements_path = Path("data/mvp/dress/elements.json")
@@ -913,6 +918,56 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
         self.assertEqual(vacation["slot_preferences"]["dress_length"], ["mini", "midi"])
         self.assertEqual(vacation["slot_preferences"]["waistline"], ["drop waist"])
         self.assertEqual(vacation["slot_preferences"]["color_family"], ["white", "red"])
+
+        request = NormalizedRequest(
+            category="dress",
+            target_market="US",
+            target_launch_date=date(2026, 6, 15),
+            mode="A",
+            price_band="mid",
+            occasion_tags=("vacation",),
+            must_have_tags=(),
+            avoid_tags=(),
+        )
+        selected = self._to_selected_strategy(vacation, "objective slot runtime test")
+
+        grouped, warnings = retrieve_candidates(request, elements, (selected,))
+
+        self.assertEqual(warnings, ())
+        self.assertEqual(
+            {item["value"] for item in grouped["dress_length"]},
+            {"mini", "midi"},
+        )
+        self.assertEqual(
+            {item["value"] for item in grouped["waistline"]},
+            {"natural waist", "drop waist"},
+        )
+        self.assertEqual(
+            {item["value"] for item in grouped["color_family"]},
+            {"white", "red"},
+        )
+        self.assertEqual(
+            {item["value"] for item in grouped["print_scale"]},
+            {"micro print", "oversized print"},
+        )
+        self.assertEqual(
+            {item["value"] for item in grouped["opacity_level"]},
+            {"opaque", "sheer"},
+        )
+        self.assertGreater(
+            next(item for item in grouped["dress_length"] if item["value"] == "mini")["effective_score"],
+            next(item for item in elements if item["slot"] == "dress_length" and item["value"] == "mini")[
+                "base_score"
+            ],
+        )
+        self.assertGreater(
+            next(item for item in grouped["waistline"] if item["value"] == "drop waist")[
+                "effective_score"
+            ],
+            next(item for item in elements if item["slot"] == "waistline" and item["value"] == "drop waist")[
+                "base_score"
+            ],
+        )
 
     def test_reject_invalid_strategy_slot_preference_fixture(self) -> None:
         from temu_y2_women.errors import GenerationError
