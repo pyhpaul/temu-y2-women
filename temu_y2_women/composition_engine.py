@@ -12,8 +12,15 @@ from temu_y2_women.errors import GenerationError
 from temu_y2_women.models import CandidateElement, ComposedConcept, ComposedElement, NormalizedRequest
 
 _REQUIRED_SLOTS = ("silhouette", "fabric")
-_STANDARD_OPTIONAL_SLOTS = ("neckline", "sleeve")
-_PATTERN_DETAIL_TOP_K = 3
+_STANDARD_OPTIONAL_SLOTS = (
+    "neckline",
+    "sleeve",
+    "dress_length",
+    "waistline",
+    "color_family",
+    "opacity_level",
+)
+_SURFACE_TOP_K = 3
 
 
 def compose_concept(
@@ -27,10 +34,11 @@ def compose_concept(
     }
     rules = tuple(compatibility_rules) if compatibility_rules is not None else tuple(load_compatibility_rules())
     selected = _select_required_slots(parsed_candidates)
-    selected.update(_select_standard_optional_slots(parsed_candidates))
-    pattern_detail_selected, evaluation = _select_pattern_detail_pair(parsed_candidates, rules)
-    selected.update(pattern_detail_selected)
-    constraint_notes = [*_must_have_notes(request, selected), *evaluation.compatibility_notes]
+    optional_selected, optional_notes = _select_standard_optional_slots(parsed_candidates, selected)
+    selected.update(optional_selected)
+    surface_selected, evaluation = _select_surface_group(parsed_candidates, rules)
+    selected.update(surface_selected)
+    constraint_notes = [*_must_have_notes(request, selected), *optional_notes, *evaluation.compatibility_notes]
     concept_score = _concept_score(selected, evaluation)
     return ComposedConcept(
         category=request.category,
@@ -80,16 +88,33 @@ def _select_required_slots(
 
 def _select_standard_optional_slots(
     parsed_candidates: dict[str, list[CandidateElement]],
-) -> dict[str, CandidateElement]:
-    return {
-        slot: _top_candidate(candidates)
-        for slot in _STANDARD_OPTIONAL_SLOTS
-        for candidates in [parsed_candidates.get(slot, [])]
-        if candidates
-    }
+    required_selected: dict[str, CandidateElement],
+) -> tuple[dict[str, CandidateElement], tuple[str, ...]]:
+    selected: dict[str, CandidateElement] = {}
+    notes: list[str] = []
+    for slot in _STANDARD_OPTIONAL_SLOTS:
+        ranked = _top_candidates(parsed_candidates.get(slot, []), limit=3)
+        chosen = _first_eligible_optional(slot, ranked, {**required_selected, **selected}, notes)
+        if chosen is not None:
+            selected[slot] = chosen
+    return selected, tuple(notes)
 
 
-def _select_pattern_detail_pair(
+def _first_eligible_optional(
+    slot: str,
+    ranked: list[CandidateElement],
+    selected: dict[str, CandidateElement],
+    notes: list[str],
+) -> CandidateElement | None:
+    for candidate in ranked:
+        if slot == "waistline" and _selected_value(selected, "silhouette") == "bodycon" and candidate.value == "drop waist":
+            notes.append("structural conflict avoided: bodycon + drop waist")
+            continue
+        return candidate
+    return None
+
+
+def _select_surface_group(
     parsed_candidates: dict[str, list[CandidateElement]],
     rules: tuple[CompatibilityRule, ...],
 ) -> tuple[dict[str, CandidateElement], CompatibilityEvaluation]:
@@ -97,18 +122,23 @@ def _select_pattern_detail_pair(
     best_evaluation = CompatibilityEvaluation((), (), 0.0, ())
     best_rank = _selection_rank(best_selected, best_evaluation)
     skipped_conflicts: list[tuple[dict[str, CandidateElement], CompatibilityEvaluation]] = []
-    pattern_options = [None, *_top_candidates(parsed_candidates.get("pattern", []))]
-    detail_options = [None, *_top_candidates(parsed_candidates.get("detail", []))]
+    pattern_options = [None, *_top_candidates(parsed_candidates.get("pattern", []), limit=_SURFACE_TOP_K)]
+    detail_options = [None, *_top_candidates(parsed_candidates.get("detail", []), limit=_SURFACE_TOP_K)]
     for pattern in pattern_options:
-        for detail in detail_options:
-            current = _selected_pattern_detail(pattern, detail)
-            evaluation = evaluate_selection_compatibility(current, rules)
-            if evaluation.hard_conflicts:
-                skipped_conflicts.append((current, evaluation))
-                continue
-            rank = _selection_rank(current, evaluation)
-            if rank > best_rank:
-                best_selected, best_evaluation, best_rank = current, evaluation, rank
+        print_scale_options = [None] if pattern is None else [
+            None,
+            *_top_candidates(parsed_candidates.get("print_scale", []), limit=_SURFACE_TOP_K),
+        ]
+        for print_scale in print_scale_options:
+            for detail in detail_options:
+                current = _selected_surface(pattern, print_scale, detail)
+                evaluation = evaluate_selection_compatibility(current, rules)
+                if evaluation.hard_conflicts:
+                    skipped_conflicts.append((current, evaluation))
+                    continue
+                rank = _selection_rank(current, evaluation)
+                if rank > best_rank:
+                    best_selected, best_evaluation, best_rank = current, evaluation, rank
     return best_selected, _merge_avoided_conflict_notes(best_selected, best_evaluation, skipped_conflicts)
 
 
@@ -147,7 +177,7 @@ def _is_omitted_subset(
 
 def _top_candidates(
     candidates: list[CandidateElement],
-    limit: int = _PATTERN_DETAIL_TOP_K,
+    limit: int = _SURFACE_TOP_K,
 ) -> list[CandidateElement]:
     ranked = sorted(
         candidates,
@@ -174,22 +204,26 @@ def _concept_score(
 def _selection_rank(
     selected: dict[str, CandidateElement],
     evaluation: CompatibilityEvaluation,
-) -> tuple[float, int, str, str]:
+) -> tuple[float, int, str, str, str]:
     return (
         _selection_score(selected, evaluation),
         len(selected),
         _selected_element_id(selected, "pattern"),
+        _selected_element_id(selected, "print_scale"),
         _selected_element_id(selected, "detail"),
     )
 
 
-def _selected_pattern_detail(
+def _selected_surface(
     pattern: CandidateElement | None,
+    print_scale: CandidateElement | None,
     detail: CandidateElement | None,
 ) -> dict[str, CandidateElement]:
     selected: dict[str, CandidateElement] = {}
     if pattern is not None:
         selected["pattern"] = pattern
+    if print_scale is not None:
+        selected["print_scale"] = print_scale
     if detail is not None:
         selected["detail"] = detail
     return selected
@@ -201,6 +235,14 @@ def _selected_element_id(
 ) -> str:
     candidate = selected.get(slot)
     return "" if candidate is None else candidate.element_id
+
+
+def _selected_value(
+    selected: dict[str, CandidateElement],
+    slot: str,
+) -> str:
+    candidate = selected.get(slot)
+    return "" if candidate is None else candidate.value
 
 
 def _must_have_notes(
