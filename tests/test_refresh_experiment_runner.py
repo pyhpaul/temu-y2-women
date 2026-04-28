@@ -49,6 +49,56 @@ class RefreshExperimentPrepareValidationTest(unittest.TestCase):
         self.assertEqual(result["error"]["code"], "INVALID_REFRESH_EXPERIMENT_INPUT")
         self.assertEqual(result["error"]["details"]["field"], "request_id")
 
+    def test_prepare_rejects_workspace_name_outside_experiment_root(self) -> None:
+        from temu_y2_women.refresh_experiment_runner import (
+            RefreshExperimentSourcePaths,
+            prepare_refresh_experiment,
+        )
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            request_set_path = _write_request_set(
+                temp_root,
+                [("summer-vacation-a", _SUMMER_REQUEST_FIXTURE_PATH)],
+            )
+            result = prepare_refresh_experiment(
+                run_dir=_seed_refresh_run(temp_root, scenario="create"),
+                request_set_path=request_set_path,
+                experiment_root=temp_root / "experiments",
+                workspace_name="../escape",
+                source_paths=RefreshExperimentSourcePaths(
+                    evidence_paths=_seed_experiment_source_bundle(temp_root),
+                ),
+            )
+
+        self.assertEqual(result["error"]["code"], "INVALID_REFRESH_EXPERIMENT_INPUT")
+        self.assertEqual(result["error"]["details"]["field"], "workspace_name")
+
+    def test_prepare_rejects_absolute_workspace_name(self) -> None:
+        from temu_y2_women.refresh_experiment_runner import (
+            RefreshExperimentSourcePaths,
+            prepare_refresh_experiment,
+        )
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            request_set_path = _write_request_set(
+                temp_root,
+                [("summer-vacation-a", _SUMMER_REQUEST_FIXTURE_PATH)],
+            )
+            result = prepare_refresh_experiment(
+                run_dir=_seed_refresh_run(temp_root, scenario="create"),
+                request_set_path=request_set_path,
+                experiment_root=temp_root / "experiments",
+                workspace_name=str(temp_root / "absolute-escape"),
+                source_paths=RefreshExperimentSourcePaths(
+                    evidence_paths=_seed_experiment_source_bundle(temp_root),
+                ),
+            )
+
+        self.assertEqual(result["error"]["code"], "INVALID_REFRESH_EXPERIMENT_INPUT")
+        self.assertEqual(result["error"]["details"]["field"], "workspace_name")
+
 
 class RefreshExperimentPrepareTest(unittest.TestCase):
     def test_prepare_creates_workspace_manifest_review_and_baselines(self) -> None:
@@ -231,6 +281,30 @@ class RefreshExperimentApplyTest(unittest.TestCase):
         self.assertEqual(result["error"]["code"], "INVALID_REFRESH_EXPERIMENT_INPUT")
         self.assertEqual(result["error"]["details"]["field"], "active_elements_path")
 
+    def test_apply_rejects_request_payload_drift_after_prepare(self) -> None:
+        from temu_y2_women.refresh_experiment_runner import apply_refresh_experiment
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            mutable_request = temp_root / "mutable-request.json"
+            mutable_request.write_text(_SUMMER_REQUEST_FIXTURE_PATH.read_text(encoding="utf-8"), encoding="utf-8")
+            prepared = _prepare_experiment(
+                temp_root=temp_root,
+                scenario="create",
+                request_entries=[("summer-vacation-a", mutable_request)],
+                source_paths=_seed_experiment_source_bundle(temp_root),
+            )
+            review_path = Path(prepared["promotion_review_path"])
+            _write_json(review_path, _read_json(_PROMOTION_FIXTURE_DIR / "create" / "reviewed_decisions.json"))
+            payload = _read_json(mutable_request)
+            payload["target_launch_date"] = "2026-07-01"
+            _write_json(mutable_request, payload)
+
+            result = apply_refresh_experiment(manifest_path=Path(prepared["manifest_path"]))
+
+        self.assertEqual(result["error"]["code"], "INVALID_REFRESH_EXPERIMENT_INPUT")
+        self.assertEqual(result["error"]["details"]["field"], "request_fingerprint")
+
     def test_apply_cleans_partial_outputs_when_compare_write_fails(self) -> None:
         from temu_y2_women.refresh_experiment_runner import apply_refresh_experiment
 
@@ -255,6 +329,38 @@ class RefreshExperimentApplyTest(unittest.TestCase):
                 _write_json(path, payload)
 
             with patch(module_write_json, side_effect=flaky_write):
+                result = apply_refresh_experiment(manifest_path=Path(prepared["manifest_path"]))
+
+            self.assertEqual(result["error"]["code"], "REFRESH_EXPERIMENT_FAILED")
+            self.assertFalse((Path(prepared["workspace_root"]) / "compare").exists())
+            self.assertFalse((Path(prepared["workspace_root"]) / "post_apply").exists())
+            self.assertFalse((Path(prepared["workspace_root"]) / "experiment_report.json").exists())
+
+    def test_apply_cleans_outputs_when_publish_replace_fails(self) -> None:
+        from temu_y2_women.refresh_experiment_runner import apply_refresh_experiment
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            prepared = _prepare_experiment(
+                temp_root=temp_root,
+                scenario="create",
+                request_entries=[("summer-vacation-a", _SUMMER_REQUEST_FIXTURE_PATH)],
+                source_paths=_seed_experiment_source_bundle(temp_root),
+            )
+            review_path = Path(prepared["promotion_review_path"])
+            _write_json(review_path, _read_json(_PROMOTION_FIXTURE_DIR / "create" / "reviewed_decisions.json"))
+            call_count = 0
+            original_replace = None
+
+            def flaky_replace(destination: Path, source: Path) -> None:
+                nonlocal call_count
+                call_count += 1
+                if call_count == 2:
+                    raise OSError("simulated publish failure")
+                original_replace(destination, source)
+
+            original_replace = _load_replace_path()
+            with patch("temu_y2_women.refresh_experiment_runner._replace_path", side_effect=flaky_replace):
                 result = apply_refresh_experiment(manifest_path=Path(prepared["manifest_path"]))
 
             self.assertEqual(result["error"]["code"], "REFRESH_EXPERIMENT_FAILED")
@@ -355,6 +461,12 @@ def _read_json(path: Path) -> dict[str, object]:
 
 def _write_json(path: Path, payload: dict[str, object]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _load_replace_path():
+    from temu_y2_women import refresh_experiment_runner
+
+    return refresh_experiment_runner._replace_path
 
 
 @contextmanager

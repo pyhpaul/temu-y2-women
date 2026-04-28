@@ -139,7 +139,10 @@ def _resolve_request_entries(request_set_path: Path, entries: list[dict[str, Any
 
 
 def _resolve_workspace_root(experiment_root: Path, workspace_name: str | None, experiment_id: str) -> Path:
-    workspace_root = (experiment_root / (workspace_name or experiment_id)).resolve()
+    base_root = experiment_root.resolve()
+    workspace_root = (base_root / (workspace_name or experiment_id)).resolve()
+    if not _path_is_within(workspace_root, base_root):
+        raise _experiment_input_error(base_root, "workspace_name", "workspace_name must stay within experiment_root")
     workspace_root.mkdir(parents=True, exist_ok=False)
     return workspace_root
 
@@ -253,6 +256,7 @@ def _build_compare_records(
     for entry in requests:
         baseline = _load_json_object(Path(entry["baseline_result_path"]), "INVALID_REFRESH_EXPERIMENT_INPUT")
         request_payload = _load_json_object(Path(entry["request_path"]), "INVALID_REFRESH_EXPERIMENT_INPUT")
+        _validate_request_fingerprint(entry, request_payload)
         rerun = generate_dress_concept(request_payload, evidence_paths=evidence_paths)
         _raise_on_generation_error(rerun, entry["request_id"], "post_apply")
         records.append(
@@ -311,6 +315,9 @@ def _write_apply_outputs(
         _replace_path(final_paths["experiment_report_path"], staging["experiment_report_path"])
         return final_paths
     except OSError:
+        _cleanup_path(final_paths["post_apply_dir"])
+        _cleanup_path(final_paths["compare_dir"])
+        _cleanup_path(final_paths["experiment_report_path"])
         _cleanup_path(staging["post_apply_dir"])
         _cleanup_path(staging["compare_dir"])
         _cleanup_path(staging["experiment_report_path"])
@@ -559,6 +566,7 @@ def _validated_manifest_requests(
                 "request_id": request_id,
                 "request_path": _absolute_record_path(record, manifest_path, "request_path"),
                 "baseline_result_path": _workspace_record_path(record, manifest_path, workspace_root, "baseline_result_path"),
+                "request_fingerprint": _request_fingerprint_value(record, manifest_path),
             }
         )
     return records
@@ -596,6 +604,20 @@ def _workspace_record_path(record: dict[str, Any], manifest_path: Path, workspac
     if _path_is_within(path, workspace_root):
         return path
     raise _experiment_input_error(manifest_path, field, "manifest request path must stay within workspace_root")
+
+
+def _request_fingerprint_value(record: dict[str, Any], manifest_path: Path) -> str:
+    value = record.get("request_fingerprint")
+    if isinstance(value, str) and value:
+        return value
+    raise _experiment_input_error(manifest_path, "request_fingerprint", "manifest request fingerprint must be a non-empty string")
+
+
+def _validate_request_fingerprint(entry: dict[str, Any], request_payload: dict[str, Any]) -> None:
+    current = _request_fingerprint(request_payload)
+    if current == entry["request_fingerprint"]:
+        return
+    raise _experiment_input_error(Path(entry["request_path"]), "request_fingerprint", "request payload changed since prepare")
 
 
 def _path_is_within(path: Path, root: Path) -> bool:
