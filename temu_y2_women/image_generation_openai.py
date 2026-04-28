@@ -33,6 +33,11 @@ class OpenAIImageProvider:
         self._client = client_factory(**_client_kwargs(config))
 
     def render(self, render_input: object) -> ImageProviderResult:
+        if _is_edit_request(render_input):
+            return self._render_edit(render_input)
+        return self._render_generate(render_input)
+
+    def _render_generate(self, render_input: object) -> ImageProviderResult:
         response = self._client.images.generate(
             prompt=getattr(render_input, "prompt"),
             model=self._config.model,
@@ -43,20 +48,21 @@ class OpenAIImageProvider:
             response_format="b64_json",
             output_format="png",
         )
-        image_data = (response.data or [None])[0]
-        if image_data is None or not image_data.b64_json:
-            raise GenerationError(
-                code="IMAGE_PROVIDER_FAILED",
-                message="OpenAI image provider returned no image payload",
-                details={"provider": "openai"},
-            )
-        return ImageProviderResult(
-            image_bytes=b64decode(image_data.b64_json),
-            mime_type="image/png",
-            provider_name="openai",
+        return _provider_result_from_response(response, self._config)
+
+    def _render_edit(self, render_input: object) -> ImageProviderResult:
+        response = self._client.images.edit(
+            image=("reference.png", _required_reference_image_bytes(render_input), "image/png"),
+            prompt=getattr(render_input, "prompt"),
             model=self._config.model,
-            base_url=self._config.base_url,
+            size=self._config.size,
+            quality=self._config.quality,
+            background=self._config.background,
+            input_fidelity="high",
+            response_format="b64_json",
+            output_format="png",
         )
+        return _provider_result_from_response(response, self._config)
 
 
 class RoutedOpenAIImageProvider:
@@ -131,4 +137,41 @@ def _client_kwargs(config: OpenAIImageProviderConfig) -> dict[str, str]:
 
 
 def _uses_expansion_route(render_input: object) -> bool:
+    if _is_edit_request(render_input):
+        return True
     return getattr(render_input, "prompt_id", "") != "hero_front"
+
+
+def _provider_result_from_response(
+    response: object,
+    config: OpenAIImageProviderConfig,
+) -> ImageProviderResult:
+    image_data = (getattr(response, "data", None) or [None])[0]
+    if image_data is None or not getattr(image_data, "b64_json", ""):
+        raise GenerationError(
+            code="IMAGE_PROVIDER_FAILED",
+            message="OpenAI image provider returned no image payload",
+            details={"provider": "openai"},
+        )
+    return ImageProviderResult(
+        image_bytes=b64decode(image_data.b64_json),
+        mime_type="image/png",
+        provider_name="openai",
+        model=config.model,
+        base_url=config.base_url,
+    )
+
+
+def _is_edit_request(render_input: object) -> bool:
+    return getattr(render_input, "render_strategy", "generate") == "edit"
+
+
+def _required_reference_image_bytes(render_input: object) -> bytes:
+    value = getattr(render_input, "reference_image_bytes", None)
+    if isinstance(value, bytes) and value:
+        return value
+    raise GenerationError(
+        code="IMAGE_PROVIDER_FAILED",
+        message="OpenAI image edit requires reference image bytes",
+        details={"provider": "openai", "field": "reference_image_bytes"},
+    )

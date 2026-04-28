@@ -26,7 +26,7 @@ def render_prompt_bundle(
     bundle: dict[str, object] = {
         "mode": request.mode,
         "prompt": render_jobs[0]["prompt"],
-        "template_version": "visual-prompt-v1",
+        "template_version": "visual-prompt-v2",
         "render_notes": _render_notes(request.mode),
         "render_jobs": render_jobs,
         "detail_prompts": _detail_prompts(render_jobs),
@@ -146,9 +146,23 @@ def _hero_jobs(
                     development_notes,
                     _hero_shot_line(request, angle),
                 ),
+                "render_strategy": _hero_render_strategy(prompt_id),
+                "reference_prompt_id": _hero_reference_prompt_id(prompt_id),
             }
         )
     return jobs
+
+
+def _hero_render_strategy(prompt_id: str) -> str:
+    if prompt_id == "hero_front":
+        return "generate"
+    return "edit"
+
+
+def _hero_reference_prompt_id(prompt_id: str) -> str | None:
+    if prompt_id == "hero_front":
+        return None
+    return "hero_front"
 
 
 def _hero_shot_line(request: NormalizedRequest, angle: str) -> str:
@@ -209,6 +223,8 @@ def _detail_jobs(concept: ComposedConcept) -> list[dict[str, str]]:
                 "group": "detail",
                 "output_name": output_name,
                 "prompt": prompts[prompt_id],
+                "render_strategy": "edit",
+                "reference_prompt_id": "hero_front",
             }
         )
     return jobs
@@ -219,6 +235,8 @@ def _detail_prompts(render_jobs: list[dict[str, str]]) -> list[dict[str, str]]:
         {
             "prompt_id": item["prompt_id"],
             "prompt": item["prompt"],
+            "render_strategy": item["render_strategy"],
+            "reference_prompt_id": item["reference_prompt_id"],
         }
         for item in render_jobs
         if item["group"] == "detail"

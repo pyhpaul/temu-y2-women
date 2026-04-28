@@ -31,6 +31,10 @@ class ImageRenderWorkflowTest(unittest.TestCase):
             self.assertEqual(len(result["images"]), 6)
             self.assertEqual(result["images"][0]["prompt_id"], "hero_front")
             self.assertEqual(result["images"][0]["output_name"], "hero_front.png")
+            self.assertEqual(result["images"][0]["render_strategy"], "generate")
+            self.assertIsNone(result["images"][0]["reference_prompt_id"])
+            self.assertEqual(result["images"][1]["render_strategy"], "edit")
+            self.assertEqual(result["images"][1]["reference_prompt_id"], "hero_front")
             self.assertTrue((output_dir / "hero_front.png").exists())
             self.assertTrue((output_dir / "hero_three_quarter.png").exists())
             self.assertTrue((output_dir / "hero_back.png").exists())
@@ -46,6 +50,31 @@ class ImageRenderWorkflowTest(unittest.TestCase):
                 _read_json(output_dir / "image_render_report.json"),
                 result,
             )
+
+    def test_render_dress_concept_image_passes_anchor_bytes_to_edit_jobs(self) -> None:
+        from temu_y2_women.image_generation_workflow import render_dress_concept_image
+
+        with TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "render-output"
+            result_path = Path(temp_dir) / "bundle-result.json"
+            _write_json(result_path, _two_job_result_payload())
+            provider = _RecordingWorkflowProvider()
+
+            result = render_dress_concept_image(
+                result_path=result_path,
+                output_dir=output_dir,
+                provider=provider,
+            )
+
+        self.assertEqual(
+            provider.calls,
+            [
+                ("hero_front", "generate", None),
+                ("hero_back", "edit", b"hero_front-bytes"),
+            ],
+        )
+        self.assertEqual(result["images"][1]["render_strategy"], "edit")
+        self.assertEqual(result["images"][1]["reference_prompt_id"], "hero_front")
 
     def test_render_dress_concept_image_falls_back_to_legacy_single_image(self) -> None:
         from temu_y2_women.image_generation_output import FakeImageProvider
@@ -67,6 +96,8 @@ class ImageRenderWorkflowTest(unittest.TestCase):
                     "prompt_id": "hero_front",
                     "group": "hero",
                     "output_name": "rendered_image.png",
+                    "render_strategy": "generate",
+                    "reference_prompt_id": None,
                     "prompt_fingerprint": result["images"][0]["prompt_fingerprint"],
                     "image_path": str(output_dir / "rendered_image.png"),
                 }
@@ -90,6 +121,50 @@ class ImageRenderWorkflowTest(unittest.TestCase):
             self.assertFalse((output_dir / "hero_front.png").exists())
             self.assertFalse((output_dir / "hero_three_quarter.png").exists())
             self.assertFalse((output_dir / "image_render_report.json").exists())
+
+    def test_render_dress_concept_image_fails_when_reference_prompt_is_missing(self) -> None:
+        from temu_y2_women.image_generation_workflow import render_dress_concept_image
+
+        with TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "render-output"
+            result_path = Path(temp_dir) / "bundle-result.json"
+            _write_json(result_path, _missing_reference_result_payload())
+            provider = _RecordingWorkflowProvider()
+
+            result = render_dress_concept_image(
+                result_path=result_path,
+                output_dir=output_dir,
+                provider=provider,
+            )
+
+            self.assertEqual(result["error"]["code"], "IMAGE_PROVIDER_FAILED")
+            self.assertEqual(result["error"]["details"]["field"], "reference_prompt_id")
+            self.assertFalse((output_dir / "hero_back.png").exists())
+
+    def test_render_dress_concept_image_surfaces_edit_failure_without_generate_fallback(self) -> None:
+        from temu_y2_women.image_generation_workflow import render_dress_concept_image
+
+        with TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "render-output"
+            result_path = Path(temp_dir) / "bundle-result.json"
+            _write_json(result_path, _two_job_result_payload())
+            provider = _FailOnEditProvider()
+
+            result = render_dress_concept_image(
+                result_path=result_path,
+                output_dir=output_dir,
+                provider=provider,
+            )
+
+            self.assertEqual(result["error"]["code"], "IMAGE_PROVIDER_FAILED")
+            self.assertEqual(
+                provider.calls,
+                [
+                    ("hero_front", "generate", None),
+                    ("hero_back", "edit", b"hero_front-bytes"),
+                ],
+            )
+            self.assertFalse((output_dir / "hero_back.png").exists())
 
     def test_render_dress_concept_image_rolls_back_when_output_publication_fails(self) -> None:
         from temu_y2_women.image_generation_output import FakeImageProvider
@@ -121,6 +196,40 @@ class _FailingOnPromptProvider:
         return _provider_result()
 
 
+class _RecordingWorkflowProvider:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str, bytes | None]] = []
+
+    def render(self, render_input: object) -> object:
+        self.calls.append(
+            (
+                getattr(render_input, "prompt_id"),
+                getattr(render_input, "render_strategy"),
+                getattr(render_input, "reference_image_bytes"),
+            )
+        )
+        if getattr(render_input, "prompt_id") == "hero_front":
+            return _provider_result(b"hero_front-bytes")
+        return _provider_result(b"hero_back-bytes")
+
+
+class _FailOnEditProvider:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str, bytes | None]] = []
+
+    def render(self, render_input: object) -> object:
+        self.calls.append(
+            (
+                getattr(render_input, "prompt_id"),
+                getattr(render_input, "render_strategy"),
+                getattr(render_input, "reference_image_bytes"),
+            )
+        )
+        if getattr(render_input, "prompt_id") == "hero_front":
+            return _provider_result(b"hero_front-bytes")
+        raise RuntimeError("edit endpoint unavailable")
+
+
 def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -137,46 +246,96 @@ def _bundle_result_payload() -> dict[str, object]:
             "group": "hero",
             "output_name": "hero_front.png",
             "prompt": "hero front prompt",
+            "render_strategy": "generate",
+            "reference_prompt_id": None,
         },
         {
             "prompt_id": "hero_three_quarter",
             "group": "hero",
             "output_name": "hero_three_quarter.png",
             "prompt": "hero three quarter prompt",
+            "render_strategy": "edit",
+            "reference_prompt_id": "hero_front",
         },
         {
             "prompt_id": "hero_back",
             "group": "hero",
             "output_name": "hero_back.png",
             "prompt": "hero back prompt",
+            "render_strategy": "edit",
+            "reference_prompt_id": "hero_front",
         },
         {
             "prompt_id": "construction_closeup",
             "group": "detail",
             "output_name": "construction_closeup.png",
             "prompt": "construction prompt",
+            "render_strategy": "edit",
+            "reference_prompt_id": "hero_front",
         },
         {
             "prompt_id": "fabric_print_closeup",
             "group": "detail",
             "output_name": "fabric_print_closeup.png",
             "prompt": "fabric prompt",
+            "render_strategy": "edit",
+            "reference_prompt_id": "hero_front",
         },
         {
             "prompt_id": "hem_and_drape_closeup",
             "group": "detail",
             "output_name": "hem_and_drape_closeup.png",
             "prompt": "hem prompt",
+            "render_strategy": "edit",
+            "reference_prompt_id": "hero_front",
         },
     ]
     return payload
 
 
-def _provider_result() -> object:
+def _two_job_result_payload() -> dict[str, object]:
+    payload = _read_json(_RESULT_FIXTURE_PATH)
+    payload["prompt_bundle"]["render_jobs"] = [
+        {
+            "prompt_id": "hero_front",
+            "group": "hero",
+            "output_name": "hero_front.png",
+            "prompt": "hero front prompt",
+            "render_strategy": "generate",
+            "reference_prompt_id": None,
+        },
+        {
+            "prompt_id": "hero_back",
+            "group": "hero",
+            "output_name": "hero_back.png",
+            "prompt": "hero back prompt",
+            "render_strategy": "edit",
+            "reference_prompt_id": "hero_front",
+        },
+    ]
+    return payload
+
+
+def _missing_reference_result_payload() -> dict[str, object]:
+    payload = _read_json(_RESULT_FIXTURE_PATH)
+    payload["prompt_bundle"]["render_jobs"] = [
+        {
+            "prompt_id": "hero_back",
+            "group": "hero",
+            "output_name": "hero_back.png",
+            "prompt": "hero back prompt",
+            "render_strategy": "edit",
+            "reference_prompt_id": "missing-anchor",
+        }
+    ]
+    return payload
+
+
+def _provider_result(image_bytes: bytes = b"fake-image-provider-output") -> object:
     from temu_y2_women.image_generation_output import ImageProviderResult
 
     return ImageProviderResult(
-        image_bytes=b"fake-image-provider-output",
+        image_bytes=image_bytes,
         mime_type="image/png",
         provider_name="fake",
         model="fake-image-v1",

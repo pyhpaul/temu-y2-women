@@ -25,7 +25,7 @@ class PromptRendererTest(unittest.TestCase):
         )
 
         self.assertEqual(bundle["mode"], "A")
-        self.assertEqual(bundle["template_version"], "visual-prompt-v1")
+        self.assertEqual(bundle["template_version"], "visual-prompt-v2")
         self.assert_prompt_has_required_blocks(bundle["prompt"])
         self.assertIn("product-first presentation", bundle["prompt"])
         self.assertIn("on-model ecommerce hero image", bundle["prompt"])
@@ -46,7 +46,7 @@ class PromptRendererTest(unittest.TestCase):
         )
 
         self.assertEqual(bundle["mode"], "B")
-        self.assertEqual(bundle["template_version"], "visual-prompt-v1")
+        self.assertEqual(bundle["template_version"], "visual-prompt-v2")
         self.assert_prompt_has_required_blocks(bundle["prompt"])
         self.assertIn("development reference image", bundle["prompt"])
         self.assertIn("construction review clarity", " ".join(bundle["render_notes"]))
@@ -77,6 +77,8 @@ class PromptRendererTest(unittest.TestCase):
         for item in detail_prompts:
             self.assertIn("prompt", item)
             self.assertTrue(item["prompt"].strip())
+            self.assertEqual(item["render_strategy"], "edit")
+            self.assertEqual(item["reference_prompt_id"], "hero_front")
 
     def assert_render_jobs(self, bundle: dict[str, object]) -> None:
         render_jobs = bundle["render_jobs"]
@@ -94,8 +96,14 @@ class PromptRendererTest(unittest.TestCase):
         )
         self.assertEqual(bundle["prompt"], render_jobs[0]["prompt"])
         detail_prompts = {item["prompt_id"]: item["prompt"] for item in bundle["detail_prompts"]}
-        for item in render_jobs:
+        for index, item in enumerate(render_jobs):
             self.assertTrue(item["prompt"].strip())
+            if index == 0:
+                self.assertEqual(item["render_strategy"], "generate")
+                self.assertIsNone(item["reference_prompt_id"])
+            else:
+                self.assertEqual(item["render_strategy"], "edit")
+                self.assertEqual(item["reference_prompt_id"], "hero_front")
             if item["group"] == "detail":
                 self.assertEqual(detail_prompts[item["prompt_id"]], item["prompt"])
 
