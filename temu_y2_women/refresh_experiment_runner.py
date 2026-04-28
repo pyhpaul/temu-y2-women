@@ -70,13 +70,15 @@ def apply_refresh_experiment(
     reviewed_path: Path | None = None,
 ) -> dict[str, Any]:
     try:
-        manifest = _load_json_object(manifest_path, "INVALID_REFRESH_EXPERIMENT_INPUT")
-        workspace_root = Path(manifest["workspace_root"])
-        workspace_paths = _manifest_workspace_paths(manifest)
-        resolved_reviewed_path = reviewed_path or Path(manifest["promotion_review_path"])
+        manifest_file = manifest_path.resolve()
+        manifest = _load_json_object(manifest_file, "INVALID_REFRESH_EXPERIMENT_INPUT")
+        context = _validated_manifest_context(manifest, manifest_file)
+        workspace_root = context["workspace_root"]
+        workspace_paths = context["evidence_paths"]
+        resolved_reviewed_path = reviewed_path or context["promotion_review_path"]
         promotion_report_path = workspace_root / "promotion_report.json"
         apply_report = apply_reviewed_dress_promotion_from_refresh_run(
-            run_dir=Path(manifest["run_dir"]),
+            run_dir=context["run_dir"],
             active_elements_path=workspace_paths.elements_path,
             active_strategies_path=workspace_paths.strategies_path,
             reviewed_path=resolved_reviewed_path,
@@ -84,10 +86,10 @@ def apply_refresh_experiment(
             taxonomy_path=workspace_paths.taxonomy_path,
         )
         _raise_on_error_payload(apply_report)
-        compare_records = _build_compare_records(manifest["requests"], workspace_paths, _accepted_evidence_summary(apply_report))
-        output_paths = _write_apply_outputs(workspace_root, compare_records)
-        experiment_report_path = workspace_root / "experiment_report.json"
-        _write_json(experiment_report_path, _build_experiment_report(manifest, compare_records, apply_report))
+        compare_records = _build_compare_records(context["requests"], workspace_paths, _accepted_evidence_summary(apply_report))
+        experiment_report = _build_experiment_report(manifest, compare_records, apply_report)
+        output_paths = _write_apply_outputs(workspace_root, compare_records, experiment_report)
+        experiment_report_path = output_paths["experiment_report_path"]
         return _apply_result(manifest, promotion_report_path, experiment_report_path, output_paths)
     except GenerationError as error:
         return error.to_dict()
@@ -137,7 +139,7 @@ def _resolve_request_entries(request_set_path: Path, entries: list[dict[str, Any
 
 
 def _resolve_workspace_root(experiment_root: Path, workspace_name: str | None, experiment_id: str) -> Path:
-    workspace_root = experiment_root / (workspace_name or experiment_id)
+    workspace_root = (experiment_root / (workspace_name or experiment_id)).resolve()
     workspace_root.mkdir(parents=True, exist_ok=False)
     return workspace_root
 
@@ -194,9 +196,9 @@ def _request_record(
 ) -> dict[str, Any]:
     return {
         "request_id": request_id,
-        "request_path": str(request_path),
+        "request_path": str(request_path.resolve()),
         "request_fingerprint": _request_fingerprint(request_payload),
-        "baseline_result_path": str(baseline_result_path),
+        "baseline_result_path": str(baseline_result_path.resolve()),
     }
 
 
@@ -215,12 +217,12 @@ def _manifest_payload(
         "category": request_set["category"],
         "request_set_schema_version": request_set["schema_version"],
         "request_count": len(request_records),
-        "run_dir": str(run_dir),
-        "workspace_root": str(workspace_root),
-        "promotion_review_path": str(review_path),
-        "active_elements_path": str(evidence_paths.elements_path),
-        "active_strategies_path": str(evidence_paths.strategies_path),
-        "taxonomy_path": str(evidence_paths.taxonomy_path),
+        "run_dir": str(run_dir.resolve()),
+        "workspace_root": str(workspace_root.resolve()),
+        "promotion_review_path": str(review_path.resolve()),
+        "active_elements_path": str(evidence_paths.elements_path.resolve()),
+        "active_strategies_path": str(evidence_paths.strategies_path.resolve()),
+        "taxonomy_path": str(evidence_paths.taxonomy_path.resolve()),
         "requests": request_records,
         "created_at": _current_timestamp(),
     }
@@ -235,10 +237,10 @@ def _prepare_result(
 ) -> dict[str, Any]:
     return {
         "experiment_id": experiment_id,
-        "workspace_root": str(workspace_root),
-        "manifest_path": str(manifest_path),
-        "promotion_review_path": str(review_path),
-        "baseline_dir": str(baseline_dir),
+        "workspace_root": str(workspace_root.resolve()),
+        "manifest_path": str(manifest_path.resolve()),
+        "promotion_review_path": str(review_path.resolve()),
+        "baseline_dir": str(baseline_dir.resolve()),
     }
 
 
@@ -289,16 +291,30 @@ def _compare_payload(
     }
 
 
-def _write_apply_outputs(workspace_root: Path, compare_records: list[dict[str, Any]]) -> dict[str, Path]:
-    post_apply_dir = workspace_root / "post_apply"
-    compare_dir = workspace_root / "compare"
-    post_apply_dir.mkdir(parents=True, exist_ok=False)
-    compare_dir.mkdir(parents=True, exist_ok=False)
-    for record in compare_records:
-        request_id = record["request_id"]
-        _write_json(post_apply_dir / f"{request_id}.json", record["rerun"])
-        _write_json(compare_dir / f"{request_id}.json", record["compare"])
-    return {"post_apply_dir": post_apply_dir, "compare_dir": compare_dir}
+def _write_apply_outputs(
+    workspace_root: Path,
+    compare_records: list[dict[str, Any]],
+    experiment_report: dict[str, Any],
+) -> dict[str, Path]:
+    staging = _staging_apply_paths(workspace_root)
+    final_paths = _final_apply_paths(workspace_root)
+    try:
+        staging["post_apply_dir"].mkdir(parents=True, exist_ok=False)
+        staging["compare_dir"].mkdir(parents=True, exist_ok=False)
+        for record in compare_records:
+            request_id = record["request_id"]
+            _write_json(staging["post_apply_dir"] / f"{request_id}.json", record["rerun"])
+            _write_json(staging["compare_dir"] / f"{request_id}.json", record["compare"])
+        _write_json(staging["experiment_report_path"], experiment_report)
+        _replace_path(final_paths["post_apply_dir"], staging["post_apply_dir"])
+        _replace_path(final_paths["compare_dir"], staging["compare_dir"])
+        _replace_path(final_paths["experiment_report_path"], staging["experiment_report_path"])
+        return final_paths
+    except OSError:
+        _cleanup_path(staging["post_apply_dir"])
+        _cleanup_path(staging["compare_dir"])
+        _cleanup_path(staging["experiment_report_path"])
+        raise
 
 
 def _build_experiment_report(
@@ -503,6 +519,120 @@ def _load_json_object(path: Path, error_code: str) -> dict[str, Any]:
         message="input root must be an object",
         details={"path": str(path)},
     )
+
+
+def _validated_manifest_context(manifest: dict[str, Any], manifest_path: Path) -> dict[str, Any]:
+    if manifest.get("schema_version") != _MANIFEST_SCHEMA_VERSION:
+        raise _experiment_input_error(manifest_path, "schema_version", "unsupported refresh experiment manifest schema version")
+    workspace_root = _absolute_manifest_path(manifest, manifest_path, "workspace_root")
+    context = {
+        "workspace_root": workspace_root,
+        "run_dir": _absolute_manifest_path(manifest, manifest_path, "run_dir"),
+        "promotion_review_path": _workspace_manifest_path(manifest, manifest_path, workspace_root, "promotion_review_path"),
+        "evidence_paths": EvidencePaths(
+            elements_path=_workspace_manifest_path(manifest, manifest_path, workspace_root, "active_elements_path"),
+            strategies_path=_workspace_manifest_path(manifest, manifest_path, workspace_root, "active_strategies_path"),
+            taxonomy_path=_workspace_manifest_path(manifest, manifest_path, workspace_root, "taxonomy_path"),
+        ),
+    }
+    context["requests"] = _validated_manifest_requests(manifest, manifest_path, workspace_root)
+    return context
+
+
+def _validated_manifest_requests(
+    manifest: dict[str, Any],
+    manifest_path: Path,
+    workspace_root: Path,
+) -> list[dict[str, Any]]:
+    requests = manifest.get("requests")
+    if not isinstance(requests, list) or not requests:
+        raise _experiment_input_error(manifest_path, "requests", "manifest must contain at least one request record")
+    records: list[dict[str, Any]] = []
+    for record in requests:
+        if not isinstance(record, dict):
+            raise _experiment_input_error(manifest_path, "requests", "manifest request record must be an object")
+        request_id = record.get("request_id")
+        if not isinstance(request_id, str) or not request_id:
+            raise _experiment_input_error(manifest_path, "request_id", "manifest request_id must be a non-empty string")
+        records.append(
+            {
+                "request_id": request_id,
+                "request_path": _absolute_record_path(record, manifest_path, "request_path"),
+                "baseline_result_path": _workspace_record_path(record, manifest_path, workspace_root, "baseline_result_path"),
+            }
+        )
+    return records
+
+
+def _absolute_manifest_path(manifest: dict[str, Any], manifest_path: Path, field: str) -> Path:
+    value = manifest.get(field)
+    if not isinstance(value, str) or not value:
+        raise _experiment_input_error(manifest_path, field, "manifest field must be a non-empty path string")
+    path = Path(value)
+    if not path.is_absolute():
+        raise _experiment_input_error(manifest_path, field, "manifest path must be absolute")
+    return path
+
+
+def _workspace_manifest_path(manifest: dict[str, Any], manifest_path: Path, workspace_root: Path, field: str) -> Path:
+    path = _absolute_manifest_path(manifest, manifest_path, field)
+    if _path_is_within(path, workspace_root):
+        return path
+    raise _experiment_input_error(manifest_path, field, "manifest path must stay within workspace_root")
+
+
+def _absolute_record_path(record: dict[str, Any], manifest_path: Path, field: str) -> Path:
+    value = record.get(field)
+    if not isinstance(value, str) or not value:
+        raise _experiment_input_error(manifest_path, field, "manifest request field must be a non-empty path string")
+    path = Path(value)
+    if path.is_absolute():
+        return path
+    raise _experiment_input_error(manifest_path, field, "manifest request path must be absolute")
+
+
+def _workspace_record_path(record: dict[str, Any], manifest_path: Path, workspace_root: Path, field: str) -> Path:
+    path = _absolute_record_path(record, manifest_path, field)
+    if _path_is_within(path, workspace_root):
+        return path
+    raise _experiment_input_error(manifest_path, field, "manifest request path must stay within workspace_root")
+
+
+def _path_is_within(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+    except ValueError:
+        return False
+    return True
+
+
+def _staging_apply_paths(workspace_root: Path) -> dict[str, Path]:
+    return {
+        "post_apply_dir": workspace_root / ".post_apply.staging",
+        "compare_dir": workspace_root / ".compare.staging",
+        "experiment_report_path": workspace_root / ".experiment_report.staging.json",
+    }
+
+
+def _final_apply_paths(workspace_root: Path) -> dict[str, Path]:
+    return {
+        "post_apply_dir": workspace_root / "post_apply",
+        "compare_dir": workspace_root / "compare",
+        "experiment_report_path": workspace_root / "experiment_report.json",
+    }
+
+
+def _replace_path(destination: Path, source: Path) -> None:
+    _cleanup_path(destination)
+    source.replace(destination)
+
+
+def _cleanup_path(path: Path) -> None:
+    if path.is_dir():
+        shutil.rmtree(path)
+        return
+    if path.exists():
+        path.unlink()
 
 
 def _raise_on_error_payload(payload: dict[str, Any]) -> None:
