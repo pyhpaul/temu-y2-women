@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Callable, Sequence
 
 from temu_y2_women.generate_and_render_workflow import generate_and_render_dress_concept
-from temu_y2_women.image_generation_openai import build_openai_image_provider
+from temu_y2_women.image_generation_openai import build_routed_openai_image_provider
 from temu_y2_women.image_generation_output import FakeImageProvider, ImageProvider
-from temu_y2_women.image_provider_config import ProviderCliOptions, resolve_openai_provider_config
+from temu_y2_women.image_provider_config import ProviderCliOptions, resolve_openai_provider_configs
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -36,11 +36,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _provider_factory_from_args(args: argparse.Namespace) -> Callable[[], ImageProvider]:
     if args.provider == "fake":
         return FakeImageProvider
-    return lambda: build_openai_image_provider(_openai_cli_options(args))
+    return lambda: build_routed_openai_image_provider(_openai_cli_options(args))
 
 
 def _openai_cli_options(args: argparse.Namespace) -> object:
-    return resolve_openai_provider_config(
+    return resolve_openai_provider_configs(
         ProviderCliOptions(
             api_key=args.api_key,
             base_url=args.base_url,

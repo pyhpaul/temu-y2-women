@@ -60,7 +60,7 @@ class GenerateAndRenderCliTest(unittest.TestCase):
             _write_config_toml(codex_home / "config.toml", "https://file.test")
             with patch.dict(os.environ, {"CODEX_HOME": str(codex_home)}, clear=True):
                 with patch(
-                    "temu_y2_women.generate_and_render_cli.build_openai_image_provider",
+                    "temu_y2_women.generate_and_render_cli.build_routed_openai_image_provider",
                     side_effect=_capture_provider_factory(captured),
                 ):
                     with patch("sys.stdout", stdout):
@@ -76,7 +76,7 @@ class GenerateAndRenderCliTest(unittest.TestCase):
                         )
 
         payload = json.loads(stdout.getvalue())
-        config = captured[0]
+        config = captured[0].default_config
         self.assertEqual(exit_code, 0)
         self.assertEqual(config.api_key, "file-key")
         self.assertEqual(config.base_url, "https://file.test")
@@ -97,7 +97,7 @@ class GenerateAndRenderCliTest(unittest.TestCase):
             _write_config_toml(codex_home / "config.toml", "https://file.test")
             with patch.dict(os.environ, {"CODEX_HOME": str(codex_home)}, clear=True):
                 with patch(
-                    "temu_y2_women.generate_and_render_cli.build_openai_image_provider",
+                    "temu_y2_women.generate_and_render_cli.build_routed_openai_image_provider",
                     side_effect=_capture_provider_factory(captured),
                 ):
                     with patch("sys.stdout", stdout):
@@ -119,7 +119,7 @@ class GenerateAndRenderCliTest(unittest.TestCase):
                         )
 
         payload = json.loads(stdout.getvalue())
-        config = captured[0]
+        config = captured[0].default_config
         self.assertEqual(exit_code, 0)
         self.assertEqual(config.api_key, "cli-key")
         self.assertEqual(config.base_url, "https://cli.test")
@@ -188,9 +188,13 @@ class GenerateAndRenderCliTest(unittest.TestCase):
 
 
 def _capture_provider_factory(captured: list[object]) -> object:
-    def build_provider(config: object) -> object:
-        captured.append(config)
-        return _OpenAICompatibleFakeProvider(getattr(config, "model"), getattr(config, "base_url"))
+    def build_provider(configs: object) -> object:
+        captured.append(configs)
+        default_config = getattr(configs, "default_config")
+        return _OpenAICompatibleFakeProvider(
+            getattr(default_config, "model"),
+            getattr(default_config, "base_url"),
+        )
 
     return build_provider
 
