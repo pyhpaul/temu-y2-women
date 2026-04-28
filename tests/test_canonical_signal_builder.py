@@ -49,6 +49,9 @@ class CanonicalSignalBuilderTest(unittest.TestCase):
             [
                 "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001",
                 "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002",
+                "whowhatwear-summer-2025-dress-trends-all-things-polka-dots-003",
+                "whowhatwear-summer-2025-dress-trends-the-exaggerated-drop-waist-004",
+                "whowhatwear-summer-2025-dress-trends-sheer-printed-midis-005",
             ],
         )
 
@@ -182,6 +185,11 @@ class CanonicalSignalBuilderTest(unittest.TestCase):
 
         self.assertIn("fairy sleeves", by_value["flutter sleeve"]["phrases"])
         self.assertIn("smocked bodices", by_value["smocked bodice"]["phrases"])
+        self.assertIn("minis", by_value["mini"]["phrases"])
+        self.assertIn("drop-waist", by_value["drop waist"]["phrases"])
+        self.assertIn("white dresses", by_value["white"]["phrases"])
+        self.assertIn("micro-dot", by_value["micro print"]["phrases"])
+        self.assertIn("sheer", by_value["sheer"]["phrases"])
 
     def test_normalizes_source_tag_case_and_whitespace(self) -> None:
         from temu_y2_women.canonical_signal_builder import build_canonical_signals

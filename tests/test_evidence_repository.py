@@ -125,6 +125,57 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
             reason=reason,
         )
 
+    @staticmethod
+    def _runtime_request():
+        from temu_y2_women.models import NormalizedRequest
+
+        return NormalizedRequest(
+            category="dress",
+            target_market="US",
+            target_launch_date=date(2026, 6, 15),
+            mode="A",
+            price_band="mid",
+            occasion_tags=("vacation",),
+            must_have_tags=(),
+            avoid_tags=(),
+        )
+
+    @staticmethod
+    def _active_values_by_slot(elements: list[dict[str, object]]) -> dict[str, set[str]]:
+        active_by_slot: dict[str, set[str]] = {}
+        for element in elements:
+            if element["status"] != "active":
+                continue
+            active_by_slot.setdefault(str(element["slot"]), set()).add(str(element["value"]))
+        return active_by_slot
+
+    def _assert_objective_slot_values(
+        self,
+        values_by_slot: dict[str, set[str]],
+        expected_values: dict[str, set[str]],
+    ) -> None:
+        for slot, expected in expected_values.items():
+            self.assertEqual(values_by_slot[slot], expected)
+
+    def _assert_objective_slot_preferences(self, strategy_record: dict[str, object]) -> None:
+        slot_preferences = strategy_record["slot_preferences"]
+        self.assertEqual(slot_preferences["dress_length"], ["mini", "midi"])
+        self.assertEqual(slot_preferences["waistline"], ["drop waist"])
+        self.assertEqual(slot_preferences["color_family"], ["white", "red"])
+
+    def _assert_runtime_candidate_boost(
+        self,
+        grouped: dict[str, list[dict[str, object]]],
+        elements: list[dict[str, object]],
+        slot: str,
+        value: str,
+    ) -> None:
+        grouped_score = next(item for item in grouped[slot] if item["value"] == value)["effective_score"]
+        base_score = next(
+            item for item in elements if item["slot"] == slot and item["value"] == value
+        )["base_score"]
+        self.assertGreater(grouped_score, base_score)
+
     def test_reject_missing_elements_wrapper(self) -> None:
         from temu_y2_women.errors import GenerationError
         from temu_y2_women.evidence_repository import load_elements
@@ -879,6 +930,62 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
 
         self.assertEqual(len(strategies), 1)
         self.assertEqual(strategies[0]["status"], "inactive")
+
+    def test_runtime_dress_evidence_includes_objective_slots(self) -> None:
+        from temu_y2_women.evidence_repository import (
+            load_elements,
+            load_strategy_templates,
+            retrieve_candidates,
+        )
+
+        taxonomy_path = Path("data/mvp/dress/evidence_taxonomy.json")
+        elements_path = Path("data/mvp/dress/elements.json")
+        strategies_path = Path("data/mvp/dress/strategy_templates.json")
+
+        elements = load_elements(elements_path, taxonomy_path=taxonomy_path)
+        active_by_slot = self._active_values_by_slot(elements)
+        self._assert_objective_slot_values(
+            active_by_slot,
+            {
+                "dress_length": {"mini", "midi"},
+                "waistline": {"natural waist", "drop waist"},
+                "color_family": {"white", "red"},
+                "print_scale": {"micro print", "oversized print"},
+                "opacity_level": {"opaque", "sheer"},
+            },
+        )
+        self.assertIn("polka dot", active_by_slot["pattern"])
+        self.assertIn("neck scarf", active_by_slot["detail"])
+
+        strategies = load_strategy_templates(
+            strategies_path,
+            taxonomy_path=taxonomy_path,
+            elements_path=elements_path,
+        )
+        vacation = next(
+            item for item in strategies if item["strategy_id"] == "dress-us-summer-vacation"
+        )
+        self._assert_objective_slot_preferences(vacation)
+        selected = self._to_selected_strategy(vacation, "objective slot runtime test")
+
+        grouped, warnings = retrieve_candidates(self._runtime_request(), elements, (selected,))
+
+        self.assertEqual(warnings, ())
+        self._assert_objective_slot_values(
+            {
+                slot: {str(item["value"]) for item in grouped[slot]}
+                for slot in ("dress_length", "waistline", "color_family", "print_scale", "opacity_level")
+            },
+            {
+                "dress_length": {"mini", "midi"},
+                "waistline": {"natural waist", "drop waist"},
+                "color_family": {"white", "red"},
+                "print_scale": {"micro print", "oversized print"},
+                "opacity_level": {"opaque", "sheer"},
+            },
+        )
+        self._assert_runtime_candidate_boost(grouped, elements, "dress_length", "mini")
+        self._assert_runtime_candidate_boost(grouped, elements, "waistline", "drop waist")
 
     def test_reject_invalid_strategy_slot_preference_fixture(self) -> None:
         from temu_y2_women.errors import GenerationError

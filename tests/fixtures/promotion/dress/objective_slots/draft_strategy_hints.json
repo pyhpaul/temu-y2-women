@@ -1,0 +1,37 @@
+{
+  "schema_version": "signal-ingestion-v1",
+  "strategy_hints": [
+    {
+      "hint_id": "draft-strategy-us-summer-vacation-objective-slots",
+      "category": "dress",
+      "target_market": "US",
+      "season_tags": ["summer"],
+      "occasion_tags": ["vacation"],
+      "boost_tags": ["romantic"],
+      "slot_preferences": {
+        "dress_length": ["maxi"],
+        "waistline": ["empire waist"]
+      },
+      "priority_signal": 3,
+      "source_signal_ids": ["dress-signal-301", "dress-signal-302", "dress-signal-303"],
+      "reason_summary": "Aggregated signals indicate objective fit slots are shifting toward longer proportions and raised waist placement.",
+      "extraction_provenance": {
+        "kind": "draft-element-aggregation",
+        "source_draft_ids": ["draft-dress-length-maxi", "draft-waistline-empire"],
+        "slot_value_identities": [
+          {
+            "draft_id": "draft-dress-length-maxi",
+            "slot": "dress_length",
+            "value": "maxi"
+          },
+          {
+            "draft_id": "draft-waistline-empire",
+            "slot": "waistline",
+            "value": "empire waist"
+          }
+        ]
+      },
+      "status": "draft"
+    }
+  ]
+}
