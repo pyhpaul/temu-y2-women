@@ -52,7 +52,8 @@ def _validate_refresh_run_dir(run_dir: Path) -> None:
     if not run_dir.is_dir():
         raise _refresh_run_error(run_dir, "run_dir", "refresh run directory does not exist")
     for filename in _REQUIRED_REFRESH_RUN_FILES:
-        if (run_dir / filename).exists():
+        candidate = run_dir / filename
+        if candidate.is_file():
             continue
         raise _refresh_run_error(run_dir, filename, "refresh run directory is missing a required artifact")
 

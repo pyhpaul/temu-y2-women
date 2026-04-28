@@ -24,8 +24,12 @@ class RefreshRunPromotionPrepareTest(unittest.TestCase):
                 active_strategies_path=strategies_path,
             )
 
-            self.assertEqual(result["schema_version"], "promotion-review-v1")
-            self.assertTrue((run_dir / "promotion_review.json").exists())
+            written_payload = _read_json(run_dir / "promotion_review.json")
+            expected_payload = _read_json(_PROMOTION_FIXTURE_DIR / "create" / "expected_review_template.json")
+
+            self.assertEqual(result, expected_payload)
+            self.assertEqual(written_payload, result)
+            self.assertEqual(written_payload, expected_payload)
 
     def test_prepare_from_refresh_run_rejects_missing_required_artifacts(self) -> None:
         from temu_y2_women.refresh_run_promotion import prepare_dress_promotion_from_refresh_run
@@ -44,6 +48,25 @@ class RefreshRunPromotionPrepareTest(unittest.TestCase):
 
             self.assertEqual(result["error"]["code"], "INVALID_REFRESH_RUN")
             self.assertEqual(result["error"]["details"]["field"], "refresh_report.json")
+
+    def test_prepare_from_refresh_run_rejects_directory_artifacts(self) -> None:
+        from temu_y2_women.refresh_run_promotion import prepare_dress_promotion_from_refresh_run
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            run_dir = _seed_refresh_run(temp_root, scenario="create")
+            (run_dir / "draft_elements.json").unlink()
+            (run_dir / "draft_elements.json").mkdir()
+            elements_path, strategies_path = _seed_active_evidence(temp_root)
+
+            result = prepare_dress_promotion_from_refresh_run(
+                run_dir=run_dir,
+                active_elements_path=elements_path,
+                active_strategies_path=strategies_path,
+            )
+
+            self.assertEqual(result["error"]["code"], "INVALID_REFRESH_RUN")
+            self.assertEqual(result["error"]["details"]["field"], "draft_elements.json")
 
 
 def _seed_refresh_run(temp_root: Path, scenario: str) -> Path:
@@ -77,3 +100,7 @@ def _seed_active_evidence(temp_root: Path) -> tuple[Path, Path]:
         encoding="utf-8",
     )
     return elements_path, strategies_path
+
+
+def _read_json(path: Path) -> dict[str, object]:
+    return json.loads(path.read_text(encoding="utf-8"))
