@@ -7,11 +7,12 @@ from typing import Any
 from temu_y2_women.errors import GenerationError
 
 
-_SUPPORTED_SOURCE_TYPES = {"public_editorial_web"}
+_SUPPORTED_SOURCE_TYPES = {"public_editorial_web", "public_roundup_web"}
 _SUPPORTED_MARKETS = {"US"}
 _SUPPORTED_CATEGORIES = {"dress"}
 _SUPPORTED_FETCH_MODES = {"html"}
 _SUPPORTED_PRICE_BANDS = {"low", "mid", "high"}
+_SUPPORTED_PIPELINE_MODES = {"editorial_text", "roundup_image_cards"}
 
 
 def load_public_source_registry(path: Path) -> list[dict[str, Any]]:
@@ -83,11 +84,13 @@ def _validate_source_record(path: Path, index: int, source: Any, seen_ids: set[s
     _require_allowed(path, index, source, "category", _SUPPORTED_CATEGORIES)
     _require_allowed(path, index, source, "fetch_mode", _SUPPORTED_FETCH_MODES)
     _require_allowed(path, index, source, "default_price_band", _SUPPORTED_PRICE_BANDS)
+    _require_allowed(path, index, source, "pipeline_mode", _SUPPORTED_PIPELINE_MODES)
     _require_string(path, index, source, "adapter_id")
     _require_positive_int(path, index, source, "priority")
     _require_positive_number(path, index, source, "weight")
     if not isinstance(source["enabled"], bool):
         raise _registry_error(path, "enabled", "enabled must be a boolean", index)
+    _require_roundup_fields(path, index, source)
     return dict(source)
 
 
@@ -101,10 +104,19 @@ def _required_fields() -> set[str]:
         "fetch_mode",
         "adapter_id",
         "default_price_band",
+        "pipeline_mode",
         "priority",
         "weight",
         "enabled",
     }
+
+
+def _require_roundup_fields(path: Path, index: int, source: dict[str, Any]) -> None:
+    if source["pipeline_mode"] != "roundup_image_cards":
+        return
+    _require_positive_int(path, index, source, "card_limit")
+    _require_positive_int(path, index, source, "aggregation_threshold")
+    _require_string(path, index, source, "observation_model")
 
 
 def _require_string(path: Path, index: int, source: dict[str, Any], field: str) -> str:

@@ -1,0 +1,49 @@
+{
+  "schema_version": "public-roundup-source-snapshot-v1",
+  "source_id": "whowhatwear-best-summer-dresses-2025",
+  "source_type": "public_roundup_web",
+  "source_url": "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025",
+  "captured_at": "2025-06-20",
+  "fetched_at": "2026-04-28T00:00:00Z",
+  "target_market": "US",
+  "category": "dress",
+  "page_title": "Best Summer Dresses 2025",
+  "page_context_tags": [
+    "summer",
+    "shopping",
+    "dress"
+  ],
+  "cards": [
+    {
+      "card_id": "whowhatwear-best-summer-dresses-2025-card-001",
+      "rank": 1,
+      "title": "White Mini Dress",
+      "image_url": "https://images.example.com/white-mini-dress.jpg",
+      "source_url": "https://shop.example.com/products/white-mini-dress",
+      "price_text": "",
+      "brand_text": "Example Brand",
+      "badges": []
+    },
+    {
+      "card_id": "whowhatwear-best-summer-dresses-2025-card-002",
+      "rank": 2,
+      "title": "Polka-Dot Mini Dress",
+      "image_url": "https://images.example.com/polka-dot-mini-dress.jpg",
+      "source_url": "https://shop.example.com/products/polka-dot-mini-dress",
+      "price_text": "",
+      "brand_text": "Example Brand",
+      "badges": []
+    },
+    {
+      "card_id": "whowhatwear-best-summer-dresses-2025-card-003",
+      "rank": 3,
+      "title": "Drop-Waist Midi Dress",
+      "image_url": "https://images.example.com/drop-waist-midi-dress.jpg",
+      "source_url": "https://shop.example.com/products/drop-waist-midi-dress",
+      "price_text": "",
+      "brand_text": "Another Brand",
+      "badges": []
+    }
+  ],
+  "warnings": []
+}

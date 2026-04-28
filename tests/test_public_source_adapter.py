@@ -11,6 +11,12 @@ _FIXTURE_DIR = Path("tests/fixtures/public_sources/dress")
 
 
 class PublicSourceAdapterTest(unittest.TestCase):
+    def test_resolve_public_source_adapter_returns_roundup_parser(self) -> None:
+        from temu_y2_women.public_source_adapter import resolve_public_source_adapter
+        from temu_y2_women.public_source_adapters.whowhatwear_roundup import parse_whowhatwear_roundup_html
+
+        self.assertIs(resolve_public_source_adapter("whowhatwear_roundup_v1"), parse_whowhatwear_roundup_html)
+
     def test_resolve_public_source_adapter_returns_whowhatwear_parser(self) -> None:
         from temu_y2_women.public_source_adapter import resolve_public_source_adapter
         from temu_y2_women.public_source_adapters.whowhatwear_editorial import parse_whowhatwear_editorial_html
@@ -88,6 +94,27 @@ class PublicSourceAdapterTest(unittest.TestCase):
         result = parse_marieclaire_editorial_html(source=source, html=html, fetched_at="2026-04-28T00:00:00Z")
 
         expected = json.loads((_FIXTURE_DIR / "expected-marieclaire-raw-source-snapshot.json").read_text(encoding="utf-8"))
+        self.assertEqual(result, expected)
+
+    def test_parse_whowhatwear_roundup_html_returns_expected_snapshot(self) -> None:
+        from temu_y2_women.public_source_adapters.whowhatwear_roundup import parse_whowhatwear_roundup_html
+
+        html = (_FIXTURE_DIR / "whowhatwear-best-summer-dresses-2025.html").read_text(encoding="utf-8")
+        source = {
+            "source_id": "whowhatwear-best-summer-dresses-2025",
+            "source_type": "public_roundup_web",
+            "source_url": "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025",
+            "target_market": "US",
+            "category": "dress",
+        }
+
+        result = parse_whowhatwear_roundup_html(source=source, html=html, fetched_at="2026-04-28T00:00:00Z")
+
+        expected = json.loads(
+            (_FIXTURE_DIR / "expected-whowhatwear-best-summer-dresses-2025-raw-source-snapshot.json").read_text(
+                encoding="utf-8"
+            )
+        )
         self.assertEqual(result, expected)
 
     def test_parse_whowhatwear_editorial_html_rejects_missing_sections(self) -> None:
