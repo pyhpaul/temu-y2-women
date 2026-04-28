@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3 standard library, `unittest`, JSON fixtures, existing `GenerationError`, existing `public_signal_refresh` / `canonical_signal_builder` / `signal_ingestion` modules, OpenAI Python SDK for the live observer.
 
-**Execution Note:** This plan implements image observation only. It does not add any `gpt-image-2` render fallback. Project-level policy is now strict edit-only: use `/v1/images/edits` for reference-image edit/expansion work, and if edits are unavailable or fail, return the error directly instead of switching to `/v1/images/generations`.
+**Execution Note:** This plan implements image observation only. It does not add any `gpt-image-2` render fallback. Project-level policy is: anchor hero image may use `generate`, but reference-image derived views/details must use `/v1/images/edits`; if edits are unavailable or fail, return the error directly instead of switching to `/v1/images/generations`.
 
 ---
 
@@ -944,8 +944,9 @@ Implementation note for this task:
 - The live card observer is an **analysis** path that reads a card image and returns structured slot observations.
 - Do **not** switch this task to `gpt-image-2` edit/generation endpoints.
 - If later work in this repository touches reference-image rendering, the rule stays:
-  1. `/v1/images/edits`
-  2. if edits fail or are unavailable, stop and surface the error directly
+  1. anchor hero image may use `generate`
+  2. derived views/details use `/v1/images/edits`
+  3. if edits fail or are unavailable, stop and surface the error directly
 
 - [ ] **Step 4: Run the targeted test to verify it passes**
 

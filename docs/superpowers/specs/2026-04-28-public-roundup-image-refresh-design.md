@@ -159,17 +159,18 @@ canonical 层只保留页面级重复出现、达阈值的 slot/value。
 - 单元测试使用 fake / recorded observer
 - 联网 `gpt-image-2` 或兼容网关只作为手动 smoke 验证
 
-### 3.9 项目级 `gpt-image-2` 策略改为 strict edit-only
+### 3.9 项目级 `gpt-image-2` 策略改为“anchor generate + derived edit-only”
 
 这次 change 的主线是**图片观察**，不是图片编辑或重绘。  
 因此本方案不改变图片观察主链，但要明确收紧项目级真实图片验证规则：
 
-- 参考图编辑 / 扩图场景，默认优先走 `/v1/images/edits`
-- 不再允许 `/v1/images/generations` 作为任何自动或手动降级路径
+- anchor 主图允许继续使用 `generate`
+- 基于 anchor 的派生图、扩图、细节图默认走 `/v1/images/edits`
+- 不再允许把 `/v1/images/generations` 当作 `edit` 失败后的自动或手动降级路径
 - 如果 `/v1/images/edits` 不可达、返回 upstream error、或返回空图像 payload，必须直接报错并停止
-- 真实图片验证要等待 `images/edits` 节点恢复可用后再继续推进
+- 真实多图一致性验证要等待 `images/edits` 节点恢复可用后再继续推进
 
-这样可以避免不同 agent 在后续实现中把 `generations` 误当作兜底主路径，也避免用低一致性的重建图污染判断。
+这样可以避免不同 agent 混淆 anchor 与派生图的职责，也避免用低一致性的重建图污染判断。
 
 ## 4. 架构
 
@@ -520,4 +521,4 @@ active evidence 只通过现有 review-gated workflow 进入主链。
 - 不把图片模型联网调用耦死在单元测试中
 - 不把商品图片聚合逻辑塞进现有 `canonical_signal_builder.py`
 - 不在第一版引入生产级元数据推断
-- 不允许把 `/v1/images/generations` 当作 `gpt-image-2` 的降级路径；`/v1/images/edits` 不可达时直接报错
+- anchor 主图允许 `generate`；但不允许把 `/v1/images/generations` 当作派生 edit 的降级路径，`/v1/images/edits` 不可达时直接报错
