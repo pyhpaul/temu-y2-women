@@ -80,6 +80,59 @@ class PromptRendererTest(unittest.TestCase):
         self.assertIn("micro print scale", detail_prompts["fabric_print_closeup"])
         self.assertIn("mini proportion", detail_prompts["hem_and_drape_closeup"])
 
+    def test_render_mode_a_uses_visual_surface_language_for_opaque(self) -> None:
+        from temu_y2_women.prompt_renderer import render_prompt_bundle
+
+        bundle = render_prompt_bundle(
+            request=_request(mode="A"),
+            concept=_concept_with(
+                opacity_level=ComposedElement("dress-opacity-opaque-001", "opaque"),
+            ),
+            selected_strategies=(_strategy(),),
+            warnings=(),
+        )
+
+        prompt = bundle["prompt"]
+        self.assertNotIn("opaque", prompt)
+
+        detail_prompts = {item["prompt_id"]: item["prompt"] for item in bundle["detail_prompts"]}
+        self.assertIn("full-opacity coverage", detail_prompts["fabric_print_closeup"])
+        self.assertNotIn("opaque behavior", detail_prompts["fabric_print_closeup"])
+
+    def test_construction_closeup_does_not_treat_silhouette_as_waistline(self) -> None:
+        from temu_y2_women.prompt_renderer import render_prompt_bundle
+
+        bundle = render_prompt_bundle(
+            request=_request(mode="A"),
+            concept=_concept_without("waistline"),
+            selected_strategies=(_strategy(),),
+            warnings=(),
+        )
+
+        construction_prompt = {item["prompt_id"]: item["prompt"] for item in bundle["detail_prompts"]}[
+            "construction_closeup"
+        ]
+        self.assertIn("waistline placement", construction_prompt)
+        self.assertIn("sleeve opening", construction_prompt)
+        self.assertNotIn("a-line, seam lines", construction_prompt)
+        self.assertNotIn("clearly show a-line", construction_prompt)
+
+    def test_surface_fallback_copy_remains_coherent_when_surface_slots_are_missing(self) -> None:
+        from temu_y2_women.prompt_renderer import render_prompt_bundle
+
+        bundle = render_prompt_bundle(
+            request=_request(mode="A"),
+            concept=_concept_without("pattern", "print_scale", "opacity_level"),
+            selected_strategies=(_strategy(),),
+            warnings=(),
+        )
+
+        detail_prompts = {item["prompt_id"]: item["prompt"] for item in bundle["detail_prompts"]}
+        self.assertIn("solid-color surface", detail_prompts["fabric_print_closeup"])
+        self.assertIn("commercial print scale", detail_prompts["fabric_print_closeup"])
+        self.assertIn("full-opacity coverage", detail_prompts["fabric_print_closeup"])
+        self.assertIn("solid-color surface continuity", detail_prompts["hem_and_drape_closeup"])
+
     def assert_prompt_has_required_blocks(self, prompt: str) -> None:
         self.assertIn("[商品主体]", prompt)
         self.assertIn("[核心结构]", prompt)
@@ -162,6 +215,19 @@ def _concept() -> ComposedConcept:
         style_summary=("summer-ready", "vacation-oriented", "feminine silhouette"),
         constraint_notes=("must_have_tags satisfied: floral",),
     )
+
+
+def _concept_with(**overrides: ComposedElement) -> ComposedConcept:
+    concept = _concept()
+    concept.selected_elements.update(overrides)
+    return concept
+
+
+def _concept_without(*keys: str) -> ComposedConcept:
+    concept = _concept()
+    for key in keys:
+        concept.selected_elements.pop(key, None)
+    return concept
 
 
 def _strategy() -> SelectedStrategy:
