@@ -880,6 +880,40 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
         self.assertEqual(len(strategies), 1)
         self.assertEqual(strategies[0]["status"], "inactive")
 
+    def test_runtime_dress_evidence_includes_objective_slots(self) -> None:
+        from temu_y2_women.evidence_repository import load_elements, load_strategy_templates
+
+        taxonomy_path = Path("data/mvp/dress/evidence_taxonomy.json")
+        elements_path = Path("data/mvp/dress/elements.json")
+        strategies_path = Path("data/mvp/dress/strategy_templates.json")
+
+        elements = load_elements(elements_path, taxonomy_path=taxonomy_path)
+        active_by_slot: dict[str, set[str]] = {}
+        for element in elements:
+            if element["status"] != "active":
+                continue
+            active_by_slot.setdefault(element["slot"], set()).add(element["value"])
+
+        self.assertEqual(active_by_slot["dress_length"], {"mini", "midi"})
+        self.assertEqual(active_by_slot["waistline"], {"natural waist", "drop waist"})
+        self.assertEqual(active_by_slot["color_family"], {"white", "red"})
+        self.assertEqual(active_by_slot["print_scale"], {"micro print", "oversized print"})
+        self.assertEqual(active_by_slot["opacity_level"], {"opaque", "sheer"})
+        self.assertIn("polka dot", active_by_slot["pattern"])
+        self.assertIn("neck scarf", active_by_slot["detail"])
+
+        strategies = load_strategy_templates(
+            strategies_path,
+            taxonomy_path=taxonomy_path,
+            elements_path=elements_path,
+        )
+        vacation = next(
+            item for item in strategies if item["strategy_id"] == "dress-us-summer-vacation"
+        )
+        self.assertEqual(vacation["slot_preferences"]["dress_length"], ["mini", "midi"])
+        self.assertEqual(vacation["slot_preferences"]["waistline"], ["drop waist"])
+        self.assertEqual(vacation["slot_preferences"]["color_family"], ["white", "red"])
+
     def test_reject_invalid_strategy_slot_preference_fixture(self) -> None:
         from temu_y2_women.errors import GenerationError
         from temu_y2_women.evidence_repository import load_strategy_templates
