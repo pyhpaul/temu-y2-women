@@ -259,6 +259,53 @@ class SignalIngestionTest(unittest.TestCase):
         self.assertIn("rule_matches", fabric["extraction_provenance"])
         self.assertIn("structured_matches", fabric["extraction_provenance"])
 
+    def test_ingest_dress_signals_accepts_product_image_structured_candidates(self) -> None:
+        from temu_y2_women.signal_ingestion import ingest_dress_signals
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            input_path = temp_root / "signals.json"
+            input_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "signal-bundle-v1",
+                        "signals": [
+                            {
+                                "signal_id": "product-image-dress-product-001",
+                                "source_type": "product_image_input",
+                                "source_url": "https://example.com/products/dress-product-001",
+                                "captured_at": "2026-04-29T00:00:00Z",
+                                "target_market": "US",
+                                "category": "dress",
+                                "title": "Product image observation for dress-product-001",
+                                "summary": "Structured candidates aggregated from 2 submitted product images.",
+                                "observed_price_band": "mid",
+                                "observed_occasion_tags": ["vacation"],
+                                "observed_season_tags": ["summer"],
+                                "manual_tags": ["vacation"],
+                                "status": "active",
+                                "structured_candidates": [
+                                    {
+                                        "slot": "neckline",
+                                        "value": "square neckline",
+                                        "candidate_source": "product_image_view_aggregation",
+                                        "supporting_card_ids": ["dress-product-001-front"],
+                                        "supporting_card_count": 1,
+                                        "aggregation_threshold": 1,
+                                        "observation_model": "fake-product-image-observer",
+                                        "evidence_summary": "Observed neckline=square neckline across 1 product images.",
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            report = ingest_dress_signals(input_path=input_path, output_dir=temp_root / "staged")
+
+        self.assertNotIn("error", report)
+
 
 def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))

@@ -1,0 +1,74 @@
+{
+  "schema_version": "signal-bundle-v1",
+  "signals": [
+    {
+      "signal_id": "product-image-dress-product-001",
+      "source_type": "product_image_input",
+      "source_url": "https://example.com/products/dress-product-001",
+      "captured_at": "2026-04-29T00:00:00Z",
+      "target_market": "US",
+      "category": "dress",
+      "title": "Product image observation for dress-product-001",
+      "summary": "Structured candidates aggregated from 2 submitted product images.",
+      "observed_price_band": "mid",
+      "observed_occasion_tags": [
+        "vacation"
+      ],
+      "observed_season_tags": [
+        "summer"
+      ],
+      "manual_tags": [
+        "summer",
+        "vacation"
+      ],
+      "status": "active",
+      "structured_candidates": [
+        {
+          "slot": "detail",
+          "value": "smocked bodice",
+          "candidate_source": "product_image_view_aggregation",
+          "supporting_card_ids": [
+            "dress-product-001-back"
+          ],
+          "supporting_card_count": 1,
+          "aggregation_threshold": 1,
+          "observation_model": "fake-product-image-observer",
+          "evidence_summary": "Observed detail=smocked bodice across 1 product images."
+        },
+        {
+          "slot": "dress_length",
+          "value": "mini",
+          "candidate_source": "product_image_view_aggregation",
+          "supporting_card_ids": [
+            "dress-product-001-front"
+          ],
+          "supporting_card_count": 1,
+          "aggregation_threshold": 1,
+          "observation_model": "fake-product-image-observer",
+          "evidence_summary": "Observed dress_length=mini across 1 product images."
+        },
+        {
+          "slot": "neckline",
+          "value": "square neckline",
+          "candidate_source": "product_image_view_aggregation",
+          "supporting_card_ids": [
+            "dress-product-001-front"
+          ],
+          "supporting_card_count": 1,
+          "aggregation_threshold": 1,
+          "observation_model": "fake-product-image-observer",
+          "evidence_summary": "Observed neckline=square neckline across 1 product images."
+        }
+      ],
+      "extraction_provenance": {
+        "kind": "product-image-aggregation",
+        "product_id": "dress-product-001",
+        "image_ids": [
+          "dress-product-001-back",
+          "dress-product-001-front"
+        ],
+        "observation_model": "fake-product-image-observer"
+      }
+    }
+  ]
+}

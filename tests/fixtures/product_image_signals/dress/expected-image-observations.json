@@ -1,0 +1,54 @@
+{
+  "schema_version": "product-image-observations-v1",
+  "observation_model": "fake-product-image-observer",
+  "products": [
+    {
+      "product_id": "dress-product-001",
+      "category": "dress",
+      "target_market": "US",
+      "source_url": "https://example.com/products/dress-product-001",
+      "product_title": "reference only for image observer context",
+      "images": [
+        {
+          "image_id": "dress-product-001-front",
+          "image_path": "front.jpg",
+          "view_label": "front",
+          "observed_slots": [
+            {
+              "slot": "neckline",
+              "value": "square neckline",
+              "evidence_summary": "front view shows a flat squared neck opening"
+            },
+            {
+              "slot": "dress_length",
+              "value": "mini",
+              "evidence_summary": "hemline sits above the knee"
+            }
+          ],
+          "abstained_slots": [
+            "opacity_level"
+          ],
+          "warnings": []
+        },
+        {
+          "image_id": "dress-product-001-back",
+          "image_path": "back.jpg",
+          "view_label": "back",
+          "observed_slots": [
+            {
+              "slot": "detail",
+              "value": "smocked bodice",
+              "evidence_summary": "back panel shows dense elastic smocking"
+            }
+          ],
+          "abstained_slots": [
+            "neckline"
+          ],
+          "warnings": [
+            "sleeve not visible in back view"
+          ]
+        }
+      ]
+    }
+  ]
+}

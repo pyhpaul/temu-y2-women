@@ -1,0 +1,17 @@
+{
+  "schema_version": "product-image-run-report-v1",
+  "run_id": "2026-04-29T00-00-00Z-1products-7529b1",
+  "input_product_count": 1,
+  "input_image_count": 2,
+  "observed_product_count": 1,
+  "signal_bundle_count": 1,
+  "structured_candidate_count": 3,
+  "coverage": {
+    "matched_signals": 1,
+    "unmatched_signal_ids": []
+  },
+  "warnings": [
+    "sleeve not visible in back view"
+  ],
+  "errors": []
+}

@@ -34,7 +34,10 @@ _STRUCTURED_CANDIDATE_REQUIRED_FIELDS = {
     "observation_model",
     "evidence_summary",
 }
-_ALLOWED_STRUCTURED_CANDIDATE_SOURCES = {"roundup_card_image_aggregation"}
+_ALLOWED_STRUCTURED_CANDIDATE_SOURCES = {
+    "roundup_card_image_aggregation",
+    "product_image_view_aggregation",
+}
 
 
 def ingest_dress_signals(
