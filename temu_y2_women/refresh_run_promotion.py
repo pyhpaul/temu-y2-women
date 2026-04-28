@@ -88,7 +88,7 @@ def resolve_apply_refresh_run_paths(
     return {
         "draft_elements_path": run_dir / "draft_elements.json",
         "draft_strategy_hints_path": run_dir / "draft_strategy_hints.json",
-        "reviewed_path": reviewed_path or _default_reviewed_path(run_dir),
+        "reviewed_path": _resolve_reviewed_path(run_dir, reviewed_path),
         "report_path": report_path or (run_dir / "promotion_report.json"),
     }
 
@@ -105,6 +105,14 @@ def _validate_refresh_run_dir(run_dir: Path) -> None:
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _resolve_reviewed_path(run_dir: Path, reviewed_path: Path | None) -> Path:
+    if reviewed_path is not None:
+        if reviewed_path.is_file():
+            return reviewed_path
+        raise _refresh_run_error(run_dir, "reviewed", "refresh run directory does not contain a reviewed promotion artifact")
+    return _default_reviewed_path(run_dir)
 
 
 def _default_reviewed_path(run_dir: Path) -> Path:
@@ -139,3 +147,4 @@ def _refresh_run_io_error(error: OSError) -> GenerationError:
         message="failed to write promotion review output",
         details={"path": str(getattr(error, "filename", ""))},
     )
+

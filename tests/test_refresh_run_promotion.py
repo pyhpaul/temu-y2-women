@@ -124,6 +124,24 @@ class RefreshRunPromotionApplyTest(unittest.TestCase):
             self.assertEqual(result["error"]["code"], "INVALID_REFRESH_RUN")
             self.assertEqual(result["error"]["details"]["field"], "reviewed")
 
+    def test_apply_from_refresh_run_rejects_missing_explicit_reviewed_path(self) -> None:
+        from temu_y2_women.refresh_run_promotion import apply_reviewed_dress_promotion_from_refresh_run
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            run_dir = _seed_refresh_run(temp_root, scenario="create")
+            elements_path, strategies_path = _seed_active_evidence(temp_root)
+
+            result = apply_reviewed_dress_promotion_from_refresh_run(
+                run_dir=run_dir,
+                active_elements_path=elements_path,
+                active_strategies_path=strategies_path,
+                reviewed_path=temp_root / "missing-review.json",
+            )
+
+            self.assertEqual(result["error"]["code"], "INVALID_REFRESH_RUN")
+            self.assertEqual(result["error"]["details"]["field"], "reviewed")
+
 
 def _seed_refresh_run(temp_root: Path, scenario: str) -> Path:
     run_dir = temp_root / "refresh-run"
@@ -164,3 +182,4 @@ def _read_json(path: Path) -> dict[str, object]:
 
 def _write_json(path: Path, payload: dict[str, object]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
