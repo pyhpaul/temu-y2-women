@@ -441,6 +441,33 @@ class EvidencePromotionApplyTest(unittest.TestCase):
             self.assertEqual(strategies_path.read_text(encoding="utf-8"), before_strategies)
             self.assertFalse(report_path.exists())
 
+    def test_apply_reviewed_dress_promotion_accepts_objective_slots(self) -> None:
+        from temu_y2_women.evidence_promotion import apply_reviewed_dress_promotion
+
+        with TemporaryDirectory() as temp_dir:
+            scenario_dir = _PROMOTION_FIXTURE_DIR / "objective_slots"
+            temp_root = Path(temp_dir)
+            elements_path, strategies_path = _seed_active_evidence(temp_root)
+            report_path = temp_root / "promotion_report.json"
+
+            result = apply_reviewed_dress_promotion(
+                reviewed_path=scenario_dir / "reviewed_decisions.json",
+                draft_elements_path=scenario_dir / "draft_elements.json",
+                draft_strategy_hints_path=scenario_dir / "draft_strategy_hints.json",
+                active_elements_path=elements_path,
+                active_strategies_path=strategies_path,
+                report_path=report_path,
+            )
+
+            self.assertEqual(result, _read_json(scenario_dir / "expected_promotion_report.json"))
+            self.assertEqual(_read_json(elements_path), _read_json(scenario_dir / "expected_elements_after_apply.json"))
+            self.assertEqual(
+                _read_json(strategies_path),
+                _read_json(scenario_dir / "expected_strategy_templates_after_apply.json"),
+            )
+            self.assertEqual(result["summary"]["elements"]["accepted"], 2)
+            self.assertEqual(result["summary"]["strategy_hints"]["accepted"], 1)
+
 
 def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))

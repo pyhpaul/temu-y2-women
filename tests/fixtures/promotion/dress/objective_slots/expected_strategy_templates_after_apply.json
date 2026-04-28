@@ -1,0 +1,53 @@
+{
+  "schema_version": "mvp-v1",
+  "strategy_templates": [
+    {
+      "strategy_id": "dress-us-summer-vacation",
+      "category": "dress",
+      "target_market": "US",
+      "priority": 8,
+      "date_window": {
+        "start": "05-15",
+        "end": "08-31"
+      },
+      "occasion_tags": ["resort", "vacation"],
+      "boost_tags": ["airy", "breathable", "floral", "summer"],
+      "suppress_tags": ["bodycon", "holiday"],
+      "slot_preferences": {
+        "silhouette": ["a-line"],
+        "fabric": ["cotton poplin"],
+        "neckline": ["square neckline"],
+        "sleeve": ["flutter sleeve"],
+        "pattern": ["floral print"],
+        "detail": ["smocked bodice"]
+      },
+      "score_boost": 0.09,
+      "score_cap": 0.15,
+      "prompt_hints": ["breathable summer dress assortment", "easy feminine vacation styling"],
+      "reason_template": "summer vacation timing favors breathable feminine dress cues with broad seasonal reuse",
+      "status": "active"
+    },
+    {
+      "strategy_id": "dress-us-summer-vacation-objective-slots",
+      "category": "dress",
+      "target_market": "US",
+      "priority": 3,
+      "date_window": {
+        "start": "01-01",
+        "end": "12-31"
+      },
+      "occasion_tags": ["vacation"],
+      "boost_tags": ["romantic"],
+      "suppress_tags": [],
+      "slot_preferences": {
+        "dress_length": ["maxi"],
+        "waistline": ["empire waist"]
+      },
+      "score_boost": 0.0,
+      "score_cap": 0.0,
+      "prompt_hints": ["Aggregated signals indicate objective fit slots are shifting toward longer proportions and raised waist placement."],
+      "reason_template": "Aggregated signals indicate objective fit slots are shifting toward longer proportions and raised waist placement.",
+      "status": "active"
+    }
+  ]
+}

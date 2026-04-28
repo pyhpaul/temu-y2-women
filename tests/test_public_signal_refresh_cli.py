@@ -113,6 +113,7 @@ class PublicSignalRefreshCliTest(unittest.TestCase):
                     "fetch_mode": "html",
                     "adapter_id": "whowhatwear_editorial_v1",
                     "default_price_band": "mid",
+                    "pipeline_mode": "editorial_text",
                     "priority": 100,
                     "weight": 1.0,
                     "enabled": True,

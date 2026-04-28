@@ -1,0 +1,57 @@
+{
+  "schema_version": "public-card-observations-v1",
+  "source_id": "whowhatwear-best-summer-dresses-2025",
+  "source_url": "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025",
+  "fetched_at": "2026-04-28T00:00:00Z",
+  "observation_model": "fake-roundup-observer",
+  "card_limit": 2,
+  "cards": [
+    {
+      "card_id": "whowhatwear-best-summer-dresses-2025-card-001",
+      "rank": 1,
+      "title": "White Mini Dress",
+      "image_url": "https://images.example.com/white-mini-dress.jpg",
+      "source_url": "https://shop.example.com/products/white-mini-dress",
+      "observed_slots": [
+        {
+          "slot": "dress_length",
+          "value": "mini",
+          "evidence_summary": "hemline ends above knee"
+        },
+        {
+          "slot": "color_family",
+          "value": "white",
+          "evidence_summary": "dress reads bright white"
+        }
+      ],
+      "abstained_slots": [
+        "waistline",
+        "opacity_level"
+      ],
+      "warnings": []
+    },
+    {
+      "card_id": "whowhatwear-best-summer-dresses-2025-card-002",
+      "rank": 2,
+      "title": "Polka-Dot Mini Dress",
+      "image_url": "https://images.example.com/polka-dot-mini-dress.jpg",
+      "source_url": "https://shop.example.com/products/polka-dot-mini-dress",
+      "observed_slots": [
+        {
+          "slot": "dress_length",
+          "value": "mini",
+          "evidence_summary": "hemline ends above knee"
+        },
+        {
+          "slot": "pattern",
+          "value": "polka dot",
+          "evidence_summary": "repeating dotted print"
+        }
+      ],
+      "abstained_slots": [
+        "opacity_level"
+      ],
+      "warnings": []
+    }
+  ]
+}
