@@ -59,7 +59,7 @@ def _build_prompt(
         (
             f"[商品主体] {_subject_line(request, concept)}",
             f"[核心结构] {_structure_line(request, concept)}",
-            f"[生产与细节展示要求] {_detail_requirements_line(request, selected_strategies, development_notes)}",
+            f"[生产与细节展示要求] {_detail_requirements_line(request, concept, selected_strategies, development_notes)}",
             f"[镜头与构图] {shot_line}",
             f"[面料与工艺表现] {_material_line(concept)}",
             f"[场景与光线] {_scene_line(request)}",
@@ -119,11 +119,15 @@ def _opacity_phrase(value: str) -> str:
 
 def _detail_requirements_line(
     request: NormalizedRequest,
+    concept: ComposedConcept,
     selected_strategies: tuple[SelectedStrategy, ...],
     development_notes: list[str],
 ) -> str:
     items = [
-        "clearly show neckline depth, bodice construction, sleeve opening, waist seam position, skirt volume, hem finish, floral print scale, and fabric texture",
+        (
+            "clearly show neckline depth, bodice construction, sleeve opening, waist seam position, "
+            f"skirt volume, hem finish, {_surface_detail_focus(concept)}, and fabric texture"
+        ),
         "keep the garment visually realistic and feasible for factory production",
     ]
     if request.mode == "B":
@@ -131,6 +135,12 @@ def _detail_requirements_line(
     elif selected_strategies:
         items.append(f"seasonal direction: {selected_strategies[0].reason}")
     return "; ".join(items)
+
+
+def _surface_detail_focus(concept: ComposedConcept) -> str:
+    if concept.selected_elements.get("pattern"):
+        return "surface pattern scale"
+    return "surface treatment"
 
 
 def _render_jobs(

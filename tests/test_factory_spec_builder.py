@@ -197,6 +197,31 @@ class FactorySpecBuilderTest(unittest.TestCase):
             inferred["visible_construction_checks"],
         )
 
+    def test_visible_construction_checks_do_not_hardcode_a_line_for_other_silhouettes(self) -> None:
+        from temu_y2_women.factory_spec_builder import build_factory_spec
+
+        request, concept, selected_strategies = _build_success_inputs(
+            "success-summer-vacation-mode-a.json"
+        )
+        concept = _override_concept_slots(concept, silhouette="column")
+
+        factory_spec = build_factory_spec(
+            request=request,
+            concept=concept,
+            selected_strategies=selected_strategies,
+        )
+
+        checks = factory_spec["inferred"]["visible_construction_checks"]
+        self.assertNotIn(
+            "visible check: confirm waist seam placement supports balanced a-line proportion",
+            checks,
+        )
+        self.assertIn(
+            "visible check: confirm waist seam placement supports balanced column proportion",
+            checks,
+        )
+        self.assertNotIn("a-line", " ".join(checks))
+
     def _assert_success_review_watchpoints(self, inferred: dict[str, list[str]]) -> None:
         self.assertEqual(
             inferred["sample_review_watchpoints"],

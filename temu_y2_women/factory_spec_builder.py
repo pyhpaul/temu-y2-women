@@ -262,8 +262,9 @@ def _visible_construction_checks(concept: ComposedConcept) -> list[str]:
     sleeve = _selected_value(concept, "sleeve")
     if sleeve:
         checks.append(f"visible check: confirm {sleeve} openings keep soft volume with clean finishing")
-    if _selected_value(concept, "silhouette"):
-        checks.append("visible check: confirm waist seam placement supports balanced a-line proportion")
+    silhouette = _selected_value(concept, "silhouette")
+    if silhouette:
+        checks.append(_silhouette_visible_check(silhouette))
     checks.append("visible check: confirm hem finish hangs cleanly without torque")
     pattern = _selected_value(concept, "pattern")
     if pattern:
@@ -306,6 +307,12 @@ def _detail_visible_label(detail: str) -> str:
     if detail == "smocked bodice":
         return "smocked detail"
     return detail or "detail"
+
+
+def _silhouette_visible_check(silhouette: str) -> str:
+    if silhouette == "a-line":
+        return "visible check: confirm waist seam placement supports balanced a-line proportion"
+    return f"visible check: confirm waist seam placement supports balanced {silhouette} proportion"
 
 
 def _join_values(values: list[str]) -> str:

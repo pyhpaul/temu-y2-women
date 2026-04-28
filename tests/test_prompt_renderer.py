@@ -133,6 +133,25 @@ class PromptRendererTest(unittest.TestCase):
         self.assertIn("full-opacity coverage", detail_prompts["fabric_print_closeup"])
         self.assertIn("solid-color surface continuity", detail_prompts["hem_and_drape_closeup"])
 
+    def test_hero_prompt_detail_requirements_do_not_hardcode_floral_print_scale(self) -> None:
+        from temu_y2_women.prompt_renderer import render_prompt_bundle
+
+        polka_bundle = render_prompt_bundle(
+            request=_request(mode="A"),
+            concept=_concept_with(pattern=ComposedElement("dress-pattern-polka-dot-001", "polka dot")),
+            selected_strategies=(_strategy(),),
+            warnings=(),
+        )
+        fallback_bundle = render_prompt_bundle(
+            request=_request(mode="A"),
+            concept=_concept_without("pattern", "print_scale"),
+            selected_strategies=(_strategy(),),
+            warnings=(),
+        )
+
+        self.assertNotIn("floral print scale", polka_bundle["prompt"])
+        self.assertNotIn("floral print scale", fallback_bundle["prompt"])
+
     def assert_prompt_has_required_blocks(self, prompt: str) -> None:
         self.assertIn("[商品主体]", prompt)
         self.assertIn("[核心结构]", prompt)
