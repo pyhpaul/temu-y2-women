@@ -94,56 +94,8 @@ class FactorySpecBuilderTest(unittest.TestCase):
         )
 
         inferred = factory_spec["inferred"]
-        self.assertEqual(
-            inferred["sample_review_watchpoints"],
-            [
-                "sample review: confirm cotton poplin keeps crisp opacity and breathable structure in the finished dress",
-                "sample review: verify square neckline, neck scarf, and flutter sleeve read clearly in the first sample",
-                "sample review: check floral print continuity and placement across bodice, waist seam, and skirt panels",
-                "sample review: confirm a-line shape stays easy and non-bodycon through waist-to-hem movement",
-            ],
-        )
-        self.assertEqual(
-            inferred["qa_review_notes"],
-            [
-                "qa review: check square neckline edge finish for symmetry and clean top-line shape",
-                "qa review: check visible detail attachment stays secure, even, and repeatable",
-                "qa review: check flutter sleeve openings and hem finish for clean turnback and stable shape",
-                "qa review: check floral print alignment and continuity across visible seams",
-            ],
-        )
-        self.assertIn(
-            "fit cue: protect non-bodycon ease through bust, waist, and skirt sweep",
-            inferred["fit_review_cues"],
-        )
-        self.assertIn(
-            "fit cue: keep a-line volume easy and mobile instead of collapsing into a narrow shape",
-            inferred["fit_review_cues"],
-        )
-        self.assertIn(
-            "fit cue: verify mini length keeps intended coverage in motion and while seated",
-            inferred["fit_review_cues"],
-        )
-        self.assertIn(
-            "fit cue: confirm drop waist seam lands low enough to read intentional without dragging the torso",
-            inferred["fit_review_cues"],
-        )
-        self.assertIn(
-            "commercial cue: seasonal review should stay anchored to launch date falls in the US summer vacation window and occasion tags align to vacation demand",
-            inferred["commercial_review_cues"],
-        )
-        self.assertIn(
-            "commercial cue: keep vacation use obvious from first-glance silhouette, fabric, and print direction",
-            inferred["commercial_review_cues"],
-        )
-        self.assertIn(
-            "commercial cue: keep visible construction commercially realistic for mid pricing",
-            inferred["commercial_review_cues"],
-        )
-        self.assertIn(
-            "commercial cue: make sure micro print still reads clearly in thumbnails and first-glance product imagery",
-            inferred["commercial_review_cues"],
-        )
+        self._assert_success_review_watchpoints(inferred)
+        self._assert_success_review_cues(inferred)
 
     def test_build_factory_spec_adds_visible_checks_and_open_questions(self) -> None:
         from temu_y2_women.factory_spec_builder import build_factory_spec
@@ -244,6 +196,44 @@ class FactorySpecBuilderTest(unittest.TestCase):
             "visible check: confirm opaque coverage stays consistent in bright light",
             inferred["visible_construction_checks"],
         )
+
+    def _assert_success_review_watchpoints(self, inferred: dict[str, list[str]]) -> None:
+        self.assertEqual(
+            inferred["sample_review_watchpoints"],
+            [
+                "sample review: confirm cotton poplin keeps crisp opacity and breathable structure in the finished dress",
+                "sample review: verify square neckline, neck scarf, and flutter sleeve read clearly in the first sample",
+                "sample review: check floral print continuity and placement across bodice, waist seam, and skirt panels",
+                "sample review: confirm a-line shape stays easy and non-bodycon through waist-to-hem movement",
+            ],
+        )
+        self.assertEqual(
+            inferred["qa_review_notes"],
+            [
+                "qa review: check square neckline edge finish for symmetry and clean top-line shape",
+                "qa review: check visible detail attachment stays secure, even, and repeatable",
+                "qa review: check flutter sleeve openings and hem finish for clean turnback and stable shape",
+                "qa review: check floral print alignment and continuity across visible seams",
+            ],
+        )
+
+    def _assert_success_review_cues(self, inferred: dict[str, list[str]]) -> None:
+        fit_cues = (
+            "fit cue: protect non-bodycon ease through bust, waist, and skirt sweep",
+            "fit cue: keep a-line volume easy and mobile instead of collapsing into a narrow shape",
+            "fit cue: verify mini length keeps intended coverage in motion and while seated",
+            "fit cue: confirm drop waist seam lands low enough to read intentional without dragging the torso",
+        )
+        commercial_cues = (
+            "commercial cue: seasonal review should stay anchored to launch date falls in the US summer vacation window and occasion tags align to vacation demand",
+            "commercial cue: keep vacation use obvious from first-glance silhouette, fabric, and print direction",
+            "commercial cue: keep visible construction commercially realistic for mid pricing",
+            "commercial cue: make sure micro print still reads clearly in thumbnails and first-glance product imagery",
+        )
+        for cue in fit_cues:
+            self.assertIn(cue, inferred["fit_review_cues"])
+        for cue in commercial_cues:
+            self.assertIn(cue, inferred["commercial_review_cues"])
 
 
 def _build_success_inputs(
