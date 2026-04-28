@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Callable
 import unittest
 
 
@@ -89,6 +90,49 @@ class EvidencePromotionPrepareTest(unittest.TestCase):
         self.assertIn("merge_rationale", element)
         self.assertIn("canonical_identity", strategy)
         self.assertIn("merge_rationale", strategy)
+
+    def test_prepare_dress_promotion_review_surfaces_structured_review_context(self) -> None:
+        from temu_y2_women.evidence_promotion import prepare_dress_promotion_review
+        from temu_y2_women.public_signal_refresh import run_public_signal_refresh
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            registry_path = temp_root / "registry.json"
+            registry_path.write_text(json.dumps(_mixed_source_registry()), encoding="utf-8")
+            refresh_result = run_public_signal_refresh(
+                registry_path=registry_path,
+                output_root=temp_root,
+                fetched_at="2026-04-29T00:00:00Z",
+                fetcher=_mixed_registry_fetcher(),
+                card_image_observer=_fake_card_observer_with_new_value,
+            )
+            run_dir = temp_root / refresh_result["run_id"]
+            result = prepare_dress_promotion_review(
+                draft_elements_path=run_dir / "draft_elements.json",
+                draft_strategy_hints_path=run_dir / "draft_strategy_hints.json",
+                active_elements_path=_PROMOTION_FIXTURE_DIR / "baseline" / "elements.json",
+                active_strategies_path=_PROMOTION_FIXTURE_DIR / "baseline" / "strategy_templates.json",
+            )
+
+        gingham = next(item for item in result["elements"] if item["draft_id"] == "draft-pattern-gingham-check")
+        self.assertEqual(gingham["review_context"]["matched_channels"], ["structured_candidate"])
+        self.assertEqual(len(gingham["review_context"]["structured_matches"]), 1)
+        match = gingham["review_context"]["structured_matches"][0]
+        self.assertEqual(match["signal_id"], "whowhatwear-best-summer-dresses-2025-pattern-gingham-check-001")
+        self.assertEqual(match["slot"], "pattern")
+        self.assertEqual(match["value"], "gingham check")
+        self.assertEqual(match["candidate_source"], "roundup_card_image_aggregation")
+        self.assertEqual(
+            match["supporting_card_ids"],
+            [
+                "whowhatwear-best-summer-dresses-2025-card-001",
+                "whowhatwear-best-summer-dresses-2025-card-002",
+            ],
+        )
+        self.assertEqual(match["supporting_card_count"], 2)
+        self.assertEqual(match["aggregation_threshold"], 2)
+        self.assertEqual(match["observation_model"], "fake-card-observer-with-new-value")
+        self.assertIn("pattern=gingham check", match["evidence_summary"])
 
 
 class EvidencePromotionValidationTest(unittest.TestCase):
@@ -475,6 +519,83 @@ def _read_json(path: Path) -> dict[str, object]:
 
 def _write_json(path: Path, payload: dict[str, object]) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _mixed_source_registry() -> dict[str, object]:
+    return {
+        "schema_version": "public-source-registry-v1",
+        "sources": [
+            {
+                "source_id": "whowhatwear-summer-2025-dress-trends",
+                "source_type": "public_editorial_web",
+                "source_url": "https://www.whowhatwear.com/fashion/summer/summer-2025-dress-trends",
+                "target_market": "US",
+                "category": "dress",
+                "fetch_mode": "html",
+                "adapter_id": "whowhatwear_editorial_v1",
+                "default_price_band": "mid",
+                "pipeline_mode": "editorial_text",
+                "priority": 100,
+                "weight": 1.0,
+                "enabled": True,
+            },
+            {
+                "source_id": "whowhatwear-best-summer-dresses-2025",
+                "source_type": "public_roundup_web",
+                "source_url": "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025",
+                "target_market": "US",
+                "category": "dress",
+                "fetch_mode": "html",
+                "adapter_id": "whowhatwear_roundup_v1",
+                "default_price_band": "mid",
+                "pipeline_mode": "roundup_image_cards",
+                "card_limit": 12,
+                "aggregation_threshold": 2,
+                "observation_model": "gpt-4.1-mini",
+                "priority": 70,
+                "weight": 0.7,
+                "enabled": True,
+            },
+        ],
+    }
+
+
+def _mixed_registry_fetcher() -> Callable[[str], str]:
+    html_by_url = {
+        "https://www.whowhatwear.com/fashion/summer/summer-2025-dress-trends": (
+            Path("tests/fixtures/public_sources/dress/whowhatwear-summer-2025-dress-trends.html")
+        ).read_text(encoding="utf-8"),
+        "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025": (
+            Path("tests/fixtures/public_sources/dress/whowhatwear-best-summer-dresses-2025.html")
+        ).read_text(encoding="utf-8"),
+    }
+
+    def fetcher(url: str) -> str:
+        return html_by_url[url]
+
+    return fetcher
+
+
+def _fake_card_observer_with_new_value(card: dict[str, object]) -> dict[str, object]:
+    if str(card["card_id"]).endswith(("001", "002")):
+        return {
+            "observed_slots": [
+                {
+                    "slot": "pattern",
+                    "value": "gingham check",
+                    "evidence_summary": "small two-tone checks repeat across the dress",
+                },
+            ],
+            "abstained_slots": ["opacity_level"],
+            "warnings": [],
+        }
+    return {
+        "observed_slots": [
+            {"slot": "waistline", "value": "drop waist", "evidence_summary": "seam sits below natural waist"},
+        ],
+        "abstained_slots": ["opacity_level"],
+        "warnings": [],
+    }
 
 
 def _combined_payload(filename: str, field: str) -> dict[str, object]:

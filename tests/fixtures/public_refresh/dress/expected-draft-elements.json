@@ -27,6 +27,9 @@
       ],
       "extraction_provenance": {
         "kind": "signal-rule-match",
+        "matched_channels": [
+          "text_rule"
+        ],
         "rule_matches": [
           {
             "signal_id": "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001",
@@ -73,6 +76,9 @@
       ],
       "extraction_provenance": {
         "kind": "signal-rule-match",
+        "matched_channels": [
+          "text_rule"
+        ],
         "rule_matches": [
           {
             "signal_id": "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002",
@@ -131,6 +137,9 @@
       ],
       "extraction_provenance": {
         "kind": "signal-rule-match",
+        "matched_channels": [
+          "text_rule"
+        ],
         "rule_matches": [
           {
             "signal_id": "whowhatwear-summer-2025-dress-trends-sheer-printed-midis-005",
@@ -174,6 +183,9 @@
       ],
       "extraction_provenance": {
         "kind": "signal-rule-match",
+        "matched_channels": [
+          "text_rule"
+        ],
         "rule_matches": [
           {
             "signal_id": "whowhatwear-summer-2025-dress-trends-all-things-polka-dots-003",
@@ -217,6 +229,9 @@
       ],
       "extraction_provenance": {
         "kind": "signal-rule-match",
+        "matched_channels": [
+          "text_rule"
+        ],
         "rule_matches": [
           {
             "signal_id": "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002",
@@ -260,6 +275,9 @@
       ],
       "extraction_provenance": {
         "kind": "signal-rule-match",
+        "matched_channels": [
+          "text_rule"
+        ],
         "rule_matches": [
           {
             "signal_id": "whowhatwear-summer-2025-dress-trends-the-exaggerated-drop-waist-004",

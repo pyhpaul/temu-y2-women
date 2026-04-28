@@ -5,6 +5,7 @@ from typing import Any
 
 
 _SEASON_TAGS = {"spring", "summer", "fall", "winter"}
+_STRUCTURED_CANDIDATE_SOURCE = "roundup_card_image_aggregation"
 
 
 def build_roundup_canonical_signals(
@@ -75,6 +76,7 @@ def _build_signal(
         "observed_occasion_tags": [],
         "observed_season_tags": _observed_season_tags(snapshot),
         "manual_tags": list(snapshot["page_context_tags"]),
+        "structured_candidates": [_structured_candidate(slot, value, cards, aggregation_threshold, observations)],
         "observed_price_band": default_price_band,
         "price_band_resolution": "source_default",
         "status": "active",
@@ -109,6 +111,40 @@ def _provenance(
         "observation_model": observations["observation_model"],
         "warnings": _supporting_warnings(cards),
     }
+
+
+def _structured_candidate(
+    slot: str,
+    value: str,
+    cards: list[dict[str, Any]],
+    aggregation_threshold: int,
+    observations: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "slot": slot,
+        "value": value,
+        "candidate_source": _STRUCTURED_CANDIDATE_SOURCE,
+        "supporting_card_ids": [card["card_id"] for card in cards],
+        "supporting_card_count": len(cards),
+        "aggregation_threshold": aggregation_threshold,
+        "observation_model": observations["observation_model"],
+        "evidence_summary": _candidate_evidence_summary(slot, value, cards),
+    }
+
+
+def _candidate_evidence_summary(slot: str, value: str, cards: list[dict[str, Any]]) -> str:
+    snippets = [_card_evidence_fragment(card, slot, value) for card in cards]
+    joined = "; ".join(snippet for snippet in snippets if snippet)
+    return f"{len(cards)} cards agree on {slot}={value}: {joined}."
+
+
+def _card_evidence_fragment(card: dict[str, Any], slot: str, value: str) -> str:
+    for observed in card.get("observed_slots", []):
+        if observed.get("slot") == slot and observed.get("value") == value:
+            summary = str(observed.get("evidence_summary", "")).strip()
+            if summary:
+                return f"{card['title']} ({summary})"
+    return str(card["title"])
 
 
 def _supporting_warnings(cards: list[dict[str, Any]]) -> list[str]:
