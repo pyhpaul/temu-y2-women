@@ -59,7 +59,7 @@
           "end": "08-31"
         },
         "occasion_tags": ["resort", "vacation"],
-        "boost_tags": ["airy", "breathable", "floral", "summer", "feminine", "lightweight", "vacation"],
+        "boost_tags": ["airy", "breathable", "floral", "summer"],
         "suppress_tags": ["bodycon", "holiday"],
         "slot_preferences": {
           "detail": ["smocked bodice"],
