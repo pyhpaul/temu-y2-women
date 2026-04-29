@@ -46,7 +46,7 @@
       },
       "occasion_tags": ["vacation", "resort"],
       "boost_tags": ["summer", "vacation", "lightweight", "floral", "airy"],
-      "suppress_tags": ["bodycon", "heavy", "holiday"],
+      "suppress_tags": ["heavy", "holiday"],
       "slot_preferences": {
         "silhouette": ["a-line"],
         "fabric": ["cotton poplin"],

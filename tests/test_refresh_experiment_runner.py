@@ -221,7 +221,8 @@ class RefreshExperimentApplyTest(unittest.TestCase):
             workspace_after = _read_json(workspace_elements_path)
 
             self.assertEqual(report["request_count"], 2)
-            self.assertEqual(report["change_summary"]["retrieval_changed_only"], 2)
+            self.assertEqual(report["change_summary"]["retrieval_changed_only"], 1)
+            self.assertEqual(report["change_summary"]["no_observable_change"], 1)
             self.assertEqual(compare["change_type"], "retrieval_changed_only")
             self.assertEqual(compare["diff"]["selected_element_changes"], {})
             self.assertIn("dress-us-summer-waist-tie-vacation", compare["post_apply_summary"]["factory_spec"]["selected_strategy_ids"])

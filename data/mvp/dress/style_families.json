@@ -1,0 +1,116 @@
+{
+  "schema_version": "style-family-v1",
+  "style_families": [
+    {
+      "style_family_id": "vacation-romantic",
+      "status": "active",
+      "fallback_reason": "vacation or resort request defaults to the airy romantic route",
+      "hard_slot_values": {
+        "silhouette": ["a-line"],
+        "fabric": ["cotton poplin", "cotton voile"],
+        "color_family": ["white"]
+      },
+      "soft_slot_values": {
+        "pattern": ["floral print"],
+        "detail": ["neck scarf"],
+        "opacity_level": ["sheer"]
+      },
+      "blocked_slot_values": {
+        "silhouette": ["bodycon"],
+        "detail": ["tailored seam panel", "ruched side seam"]
+      },
+      "prompt_shell": {
+        "subject_hint": "airy romantic resort dress with soft feminine movement",
+        "scene_hint": "sunlit resort-inspired set with warm ivory and sand tones",
+        "lighting_hint": "soft directional daylight with gentle shadow falloff",
+        "styling_hint": "relaxed feminine movement with clean commercial resort styling",
+        "constraint_hints": ["avoid nightlife mood", "avoid heavy urban tailoring"]
+      }
+    },
+    {
+      "style_family_id": "clean-minimal",
+      "status": "active",
+      "fallback_reason": "transitional or non-vacation casual demand defaults to the clean minimal route",
+      "hard_slot_values": {
+        "silhouette": ["shift"],
+        "fabric": ["compact poplin"],
+        "dress_length": ["midi"],
+        "neckline": ["jewel neckline"],
+        "waistline": ["natural waist"],
+        "color_family": ["stone"],
+        "opacity_level": ["opaque"]
+      },
+      "soft_slot_values": {
+        "sleeve": ["cap sleeve"]
+      },
+      "blocked_slot_values": {
+        "pattern": ["*"],
+        "detail": ["*"]
+      },
+      "prompt_shell": {
+        "subject_hint": "clean minimal dress with quiet seam language and low-noise surface",
+        "scene_hint": "pared-back tonal studio with uncluttered product-first framing",
+        "lighting_hint": "even softbox lighting that keeps color and seams easy to read",
+        "styling_hint": "low-noise product styling with controlled pose and no editorial exaggeration",
+        "constraint_hints": ["avoid visible print noise", "avoid resort props"]
+      }
+    },
+    {
+      "style_family_id": "city-polished",
+      "status": "active",
+      "fallback_reason": "default route for requests without stronger vacation, casual-minimal, or party signals",
+      "hard_slot_values": {
+        "silhouette": ["sheath"],
+        "fabric": ["matte crepe"],
+        "dress_length": ["midi"],
+        "neckline": ["square neckline"],
+        "waistline": ["natural waist"],
+        "color_family": ["navy", "black"],
+        "opacity_level": ["opaque"],
+        "detail": ["tailored seam panel"]
+      },
+      "soft_slot_values": {
+        "sleeve": ["cap sleeve"]
+      },
+      "blocked_slot_values": {
+        "pattern": ["floral print", "polka dot"],
+        "detail": ["smocked bodice", "neck scarf", "ruched side seam"]
+      },
+      "prompt_shell": {
+        "subject_hint": "structured polished city dress with sharper commuter-friendly proportion",
+        "scene_hint": "urban showroom backdrop with clean architectural restraint",
+        "lighting_hint": "clean directional commercial light that sharpens seam placement",
+        "styling_hint": "sharp commuter-ready styling with composed posture and polished restraint",
+        "constraint_hints": ["avoid beach props", "avoid overly sweet romantic mood"]
+      }
+    },
+    {
+      "style_family_id": "party-fitted",
+      "status": "active",
+      "fallback_reason": "party demand defaults to the fitted evening route",
+      "hard_slot_values": {
+        "silhouette": ["bodycon"],
+        "fabric": ["stretch jersey"],
+        "dress_length": ["mini"],
+        "color_family": ["black", "red"],
+        "opacity_level": ["opaque"]
+      },
+      "soft_slot_values": {
+        "neckline": ["sweetheart neckline"],
+        "sleeve": ["sleeveless"],
+        "detail": ["ruched side seam"]
+      },
+      "blocked_slot_values": {
+        "pattern": ["floral print", "polka dot"],
+        "detail": ["smocked bodice", "neck scarf", "tailored seam panel"]
+      },
+      "prompt_shell": {
+        "subject_hint": "sleek fitted evening dress with stronger after-dark line emphasis",
+        "scene_hint": "nightlife-inspired dark studio with clean reflective restraint",
+        "lighting_hint": "high-contrast evening light that keeps the fitted shape crisp",
+        "styling_hint": "confident after-dark pose with sharper attitude but clean ecommerce readability",
+        "constraint_hints": ["avoid resort softness", "avoid daytime casual props"]
+      }
+    }
+  ]
+}

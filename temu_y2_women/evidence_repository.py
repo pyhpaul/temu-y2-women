@@ -5,7 +5,12 @@ from pathlib import Path
 from typing import Any
 
 from temu_y2_women.errors import GenerationError
-from temu_y2_women.models import CandidateElement, NormalizedRequest, SelectedStrategy
+from temu_y2_women.models import (
+    CandidateElement,
+    NormalizedRequest,
+    SelectedStrategy,
+    SelectedStyleFamily,
+)
 
 _DEFAULT_ELEMENTS_PATH = Path("data/mvp/dress/elements.json")
 _DEFAULT_STRATEGIES_PATH = Path("data/mvp/dress/strategy_templates.json")
@@ -173,6 +178,7 @@ def retrieve_candidates(
     request: NormalizedRequest,
     elements: list[dict[str, Any]],
     selected_strategies: tuple[SelectedStrategy, ...],
+    selected_style_family: SelectedStyleFamily | None = None,
 ) -> tuple[dict[str, list[dict[str, Any]]], tuple[str, ...]]:
     strategy_suppress_tags = _collect_strategy_suppress_tags(selected_strategies)
     grouped: dict[str, list[dict[str, Any]]] = {}
@@ -183,6 +189,7 @@ def retrieve_candidates(
             request=request,
             element=element,
             strategy_suppress_tags=strategy_suppress_tags,
+            selected_style_family=selected_style_family,
         )
         if matched_avoid_tags:
             avoid_filtered_count += 1
@@ -193,6 +200,7 @@ def retrieve_candidates(
             request=request,
             element=element,
             selected_strategies=selected_strategies,
+            selected_style_family=selected_style_family,
         )
         grouped.setdefault(str(element["slot"]), []).append(candidate)
     _raise_if_no_candidates(request=request, grouped=grouped)
@@ -467,6 +475,7 @@ def _is_candidate_element_eligible(
     request: NormalizedRequest,
     element: dict[str, Any],
     strategy_suppress_tags: set[str],
+    selected_style_family: SelectedStyleFamily | None,
 ) -> tuple[bool, set[str]]:
     if element.get("status") != "active" or element.get("category") != request.category:
         return False, set()
@@ -478,6 +487,10 @@ def _is_candidate_element_eligible(
         return False, matched_avoid_tags
     if strategy_suppress_tags and tags.intersection(strategy_suppress_tags):
         return False, set()
+    if _style_family_blocks_element(element, selected_style_family):
+        return False, set()
+    if not _style_family_allows_element(element, selected_style_family):
+        return False, set()
     return True, set()
 
 
@@ -485,6 +498,7 @@ def _build_scored_candidate(
     request: NormalizedRequest,
     element: dict[str, Any],
     selected_strategies: tuple[SelectedStrategy, ...],
+    selected_style_family: SelectedStyleFamily | None,
 ) -> dict[str, Any]:
     candidate = dict(element)
     candidate["effective_score"] = round(
@@ -492,6 +506,7 @@ def _build_scored_candidate(
             request=request,
             element=element,
             selected_strategies=selected_strategies,
+            selected_style_family=selected_style_family,
         ),
         4,
     )
@@ -502,6 +517,7 @@ def _calculate_effective_score(
     request: NormalizedRequest,
     element: dict[str, Any],
     selected_strategies: tuple[SelectedStrategy, ...],
+    selected_style_family: SelectedStyleFamily | None,
 ) -> float:
     effective_score = float(element["base_score"])
     tags = set(element.get("tags", []))
@@ -513,7 +529,43 @@ def _calculate_effective_score(
         )
     if request.must_have_tags and tags.intersection(request.must_have_tags):
         effective_score += 0.02
+    if _style_family_soft_match(element, selected_style_family):
+        effective_score += 0.05
     return effective_score
+
+
+def _style_family_blocks_element(
+    element: dict[str, Any],
+    selected_style_family: SelectedStyleFamily | None,
+) -> bool:
+    if selected_style_family is None:
+        return False
+    values = selected_style_family.profile.blocked_slot_values.get(str(element.get("slot")), ())
+    if "*" in values:
+        return True
+    return _canonicalize_value(str(element.get("value"))) in {_canonicalize_value(item) for item in values}
+
+
+def _style_family_allows_element(
+    element: dict[str, Any],
+    selected_style_family: SelectedStyleFamily | None,
+) -> bool:
+    if selected_style_family is None:
+        return True
+    values = selected_style_family.profile.hard_slot_values.get(str(element.get("slot")))
+    if not values:
+        return True
+    return _canonicalize_value(str(element.get("value"))) in {_canonicalize_value(item) for item in values}
+
+
+def _style_family_soft_match(
+    element: dict[str, Any],
+    selected_style_family: SelectedStyleFamily | None,
+) -> bool:
+    if selected_style_family is None:
+        return False
+    values = selected_style_family.profile.soft_slot_values.get(str(element.get("slot")), ())
+    return _canonicalize_value(str(element.get("value"))) in {_canonicalize_value(item) for item in values}
 
 
 def _matching_strategies_for_element(

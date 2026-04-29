@@ -4,12 +4,18 @@ from dataclasses import asdict, is_dataclass
 from datetime import date
 from typing import Any
 
-from temu_y2_women.models import ComposedConcept, NormalizedRequest, SelectedStrategy
+from temu_y2_women.models import (
+    ComposedConcept,
+    NormalizedRequest,
+    SelectedStrategy,
+    SelectedStyleFamily,
+)
 
 
 def package_success_result(
     request: NormalizedRequest,
     selected_strategies: tuple[SelectedStrategy, ...],
+    selected_style_family: SelectedStyleFamily | None,
     retrieved_elements: list[dict[str, Any]],
     composed_concept: ComposedConcept,
     prompt_bundle: dict[str, Any],
@@ -18,6 +24,7 @@ def package_success_result(
 ) -> dict[str, Any]:
     return {
         "request_normalized": _request_to_dict(request),
+        "selected_style_family": _style_family_to_dict(selected_style_family),
         "selected_strategies": [
             {
                 "strategy_id": item.strategy.strategy_id,
@@ -44,6 +51,7 @@ def _request_to_dict(request: NormalizedRequest) -> dict[str, Any]:
         "occasion_tags": list(request.occasion_tags),
         "must_have_tags": list(request.must_have_tags),
         "avoid_tags": list(request.avoid_tags),
+        "style_family": request.style_family,
     }
 
 
@@ -57,4 +65,14 @@ def _concept_to_dict(concept: ComposedConcept) -> dict[str, Any]:
         },
         "style_summary": list(concept.style_summary),
         "constraint_notes": list(concept.constraint_notes),
+    }
+
+
+def _style_family_to_dict(selected_style_family: SelectedStyleFamily | None) -> dict[str, Any] | None:
+    if selected_style_family is None:
+        return None
+    return {
+        "style_family_id": selected_style_family.profile.style_family_id,
+        "selection_mode": selected_style_family.selection_mode,
+        "reason": selected_style_family.reason,
     }
