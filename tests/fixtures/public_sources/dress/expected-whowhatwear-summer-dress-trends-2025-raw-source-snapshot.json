@@ -5,80 +5,72 @@
   "source_type": "public_editorial_web",
   "target_market": "US",
   "category": "dress",
-  "captured_at": "2025-05-13",
+  "captured_at": "2025-06-03",
   "fetched_at": "2026-04-28T00:00:00Z",
   "page_title": "I Want to Look Chic Without Trying Too Hard-8 Summer Dress Trends I'm Relying On",
   "sections": [
     {
       "section_id": "shirred-bodices",
       "heading": "Shirred Bodices",
-      "text": "Shirred bodices and square necklines are an easy way to make summer dresses feel romantic but still wearable.",
+      "text": "Style Notes: Proving that less is more is the perennially covetable shirred dress trend. Whilst we most commonly see shirring in smocked bodices, the act of gathering and elasticating fabric to create a stretchy texture has now extended to dresses. The result is a fit-and-flare effect that's sweet, slightly Parisian and perfect for park picnics and frolicking around the city (preferably with a takeaway Aperol Spritz in hand!). This season, look to Australian labels like Matteau and Dissh or beloved independent brand Damson Madder.",
       "tags": [
         "summer"
-      ],
-      "adapter_version": "whowhatwear_editorial_v1",
-      "confidence": 0.77,
-      "excerpt_anchor": "Shirred bodices",
-      "matched_keywords": [
-        "smocked bodices",
-        "square neckline"
       ]
     },
     {
-      "section_id": "drop-waist-dresses",
-      "heading": "Drop-Waist Dresses",
-      "text": "Drop-waist dresses keep showing up with volume through the skirt and a cleaner, more directional shape.",
+      "section_id": "drop-waist",
+      "heading": "Drop-Waist",
+      "text": "Style Notes: The waistlines of dresses are a hot topic in fashion, and none is currently more popular than the drop-waist dress trend. With these dresses, the skirt portion is positioned lower down the hip to achieve a lengthened effect through the body, but it can be mocked up in many ways. Most commonly, we see it in tank styles that feature a tight ribbed top before billowing into a wider skirt, but I actually love a strapless drop-waist dress with a bodice that ends at the top of the thigh and features a sheer skirt. Of the dress's appeal, Lane says, \"Drop-waists create a beautifully elongated silhouette that feels effortlessly chic. It's the kind of style that makes a statement on its own. Just slip it on and go.\"",
       "tags": [
         "summer"
-      ],
-      "adapter_version": "whowhatwear_editorial_v1",
-      "confidence": 0.72,
-      "excerpt_anchor": "drop-waist dresses",
-      "matched_keywords": [
-        "drop-waist dresses"
-      ]
-    },
-    {
-      "section_id": "romantic-sleeves",
-      "heading": "Romantic Sleeves",
-      "text": "Romantic sleeves, fairy sleeves, and flutter sleeves soften the whole silhouette without trying too hard.",
-      "tags": [
-        "summer"
-      ],
-      "adapter_version": "whowhatwear_editorial_v1",
-      "confidence": 0.76,
-      "excerpt_anchor": "fairy sleeves",
-      "matched_keywords": [
-        "fairy sleeves",
-        "flutter sleeves"
       ]
     },
     {
       "section_id": "elegant-bandeaus",
       "heading": "Elegant Bandeaus",
-      "text": "Elegant bandeau dresses are being styled with floral prints and easy sandals instead of feeling too polished.",
+      "text": "Style Notes: Another small but effective design element defining the top summer dresses of 2025 is the absence of straps. Indeed, bustiers are getting more attention than ever, from the intricate beading featured on some of Paris Georgia's new-season styles to the ruching on Nobody's Child's Felicity Dress. The thought of a bandeau dress might feel a little Y2K at first, but when it's expertly crafted with considered draping or embroidery, it will make you feel and look all the more premium.",
       "tags": [
         "summer"
-      ],
-      "adapter_version": "whowhatwear_editorial_v1",
-      "confidence": 0.7,
-      "excerpt_anchor": "floral prints",
-      "matched_keywords": [
-        "floral"
       ]
     },
     {
-      "section_id": "boudoir-inspired-dressing",
-      "heading": "Boudoir-Inspired Dressing",
-      "text": "Boudoir-inspired dressing leans on lace slips and sheer layers for a dressed-up summer evening mood.",
+      "section_id": "chic-stripes",
+      "heading": "Chic Stripes",
+      "text": "Style Notes: It could be the result of gingham and polka-dot fatigue, or a knock-on effect from the pinstripes that dominated the 2025 Met Gala red carpet, but stripes have rightfully earned their place back in fashion's lexicon this summer. Meghan Markle and Katie Holmes might have kickstarted this revival in 2023 with Posse's striped dress, however, the styles to note now are more demure than maximalist. Think soft stripes rendered in Neapolitan ice cream hues like rich chocolates, warm buttery vanillas and chic strawberries, or very thin and discrete lines.",
       "tags": [
         "summer"
-      ],
-      "adapter_version": "whowhatwear_editorial_v1",
-      "confidence": 0.66,
-      "excerpt_anchor": "lace slips",
-      "matched_keywords": [
-        "lace slips"
+      ]
+    },
+    {
+      "section_id": "romantic-sleeves",
+      "heading": "Romantic Sleeves",
+      "text": "Style Notes: Since we've associated the return of boho with Chlo\u00e9's more festival-ready styles courtesy of creative director Chemena Kamali, we may have overlooked the more romantic, dreamy takes on this trend. Slightly more rustic in shape, one of the hallmarks of this trend is the cloud-like puff sleeves seen on everything from D\u00f4en's Ischia dress (see above) to Damson Madder's multi-way detachable-sleeve styles. \"There has definitely been a rise in boho,\" Francois notes. \"Consider a throw-on dress with a much looser fit but [with] lots of detailing like broderie anglaise and lace.\"",
+      "tags": [
+        "summer"
+      ]
+    },
+    {
+      "section_id": "bubble-hems",
+      "heading": "Bubble Hems",
+      "text": "Style Notes: What do pop stars like Sabrina Carpenter, young Hollywood actors like Zendaya and Californian It girls like Kylie Jenner have in common? They're all supporters of the bubble-hem trend. After simmering up last season, the trend has remained a firm favourite to wear during scorching temperatures.",
+      "tags": [
+        "summer"
+      ]
+    },
+    {
+      "section_id": "lingerie-slips",
+      "heading": "Lingerie Slips",
+      "text": "Style Notes: If the '90s fashion wasn't convincing enough, perhaps this year will be the time we collectively realise that slip dresses will never go out of style. In 2025, however, they're being elevated by simple styling tricks like adding a tougher element through leather loafers or pairing with a flannel shirt. This is something Francois has observed, too. Slip dresses make the best base for an outfit, and the stylist recommends layering additional pieces on top as \"a great way to refresh your dresses for the summer season. Think slip dresses with flip-flops or an open button-down shirt thrown over the top to give it that fresher summer aesthetic. Mixing textures and adding casual elements can instantly make a look feel more current.\"",
+      "tags": [
+        "summer"
+      ]
+    },
+    {
+      "section_id": "halterneck-dresses",
+      "heading": "Halterneck Dresses",
+      "text": "Style Notes: Who doesn't love a comeback? For the summer of 2025, the halter neck trend has crawled its way out of early 2000s fashion purgatory to become one of the most in-demand trends of the season. Everyone from Kaia Gerber to Olivia Rodrigo has worn one, but it's not just the chicest members of Gen Z who have co-signed its return. Both Hailey Bieber and Dakota Johnson have also recently sported this trend, meaning that if you kept an original piece from the early 2000s, it might be high time to dig it up from the back of your wardrobe...",
+      "tags": [
+        "summer"
       ]
     }
   ],

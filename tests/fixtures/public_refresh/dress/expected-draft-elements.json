@@ -34,6 +34,7 @@
           {
             "signal_id": "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001",
             "matched_phrases": [
+              "smocked bodice",
               "smocked bodices"
             ],
             "rule_slot": "detail",
@@ -97,6 +98,7 @@
           {
             "signal_id": "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001",
             "matched_phrases": [
+              "mini",
               "minis"
             ],
             "rule_slot": "dress_length",

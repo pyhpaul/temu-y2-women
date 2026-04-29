@@ -8,38 +8,26 @@ from typing import Any
 from temu_y2_women.errors import GenerationError
 
 
-def _rule(
-    section_id: str,
-    heading: str,
-    tags: list[str],
-    confidence: float,
-    excerpt_anchor: str,
-    matched_keywords: list[str],
-) -> dict[str, Any]:
-    return {
-        "section_id": section_id,
-        "heading": heading,
-        "tags": tags,
-        "adapter_version": "marieclaire_editorial_v1",
-        "confidence": confidence,
-        "excerpt_anchor": excerpt_anchor,
-        "matched_keywords": matched_keywords,
-    }
-
-
 _SECTION_RULES = (
-    _rule("smocked-dresses", "Smocked Dresses", ["summer"], 0.79, "smocked dresses", ["smocked bodices", "cotton poplin"]),
-    _rule("polka-dot-dresses", "Polka Dot Dresses", ["summer"], 0.68, "polka dot dresses", ["polka dots"]),
-    _rule("boho-dresses", "Boho Dresses", ["summer"], 0.73, "flutter sleeves", ["flutter sleeves", "floral"]),
-    _rule("gingham-dresses", "Gingham Dresses", ["summer"], 0.71, "a-line", ["a-line", "cotton poplin"]),
-    _rule("babydoll-dresses", "Babydoll Dresses", ["summer"], 0.67, "square neckline", ["square neckline"]),
+    ("linen-dresses-3", "linen-dresses", "Linen Dresses", ("summer",)),
+    ("smocked-dresses-3", "smocked-dresses", "Smocked Dresses", ("summer",)),
+    ("chocolate-brown-dresses-3", "chocolate-brown-dresses", "Chocolate Brown Dresses", ("summer",)),
+    ("polka-dot-dresses-3", "polka-dot-dresses", "Polka Dot Dresses", ("summer",)),
+    ("gingham-dresses-3", "gingham-dresses", "Gingham Dresses", ("summer",)),
+    ("boho-dresses-3", "boho-dresses", "Boho Dresses", ("summer",)),
+    ("babydoll-dresses-3", "babydoll-dresses", "Babydoll Dresses", ("summer",)),
 )
+_HTML_SECTION_IDS = {html_id: section_id for html_id, section_id, _, _ in _SECTION_RULES}
 
 
 def parse_marieclaire_editorial_html(source: dict[str, Any], html: str, fetched_at: str) -> dict[str, Any]:
-    parser = _MarieClaireHtmlParser(_section_ids())
+    parser = _MarieClaireHtmlParser()
     parser.feed(html)
     parser.close()
+    sections = [
+        _build_section_record(parser, section_id, heading, tags)
+        for _, section_id, heading, tags in _SECTION_RULES
+    ]
     return {
         "schema_version": "public-source-snapshot-v1",
         "source_id": source["source_id"],
@@ -50,30 +38,37 @@ def parse_marieclaire_editorial_html(source: dict[str, Any], html: str, fetched_
         "captured_at": parser.captured_at(),
         "fetched_at": fetched_at,
         "page_title": parser.page_title(),
-        "sections": [_build_section_record(parser, rule) for rule in _SECTION_RULES],
+        "sections": sections,
         "warnings": [],
     }
 
 
-def _section_ids() -> set[str]:
-    return {str(rule["section_id"]) for rule in _SECTION_RULES}
-
-
-def _build_section_record(parser: "_MarieClaireHtmlParser", rule: dict[str, Any]) -> dict[str, Any]:
+def _build_section_record(
+    parser: "_MarieClaireHtmlParser",
+    section_id: str,
+    heading: str,
+    tags: tuple[str, ...],
+) -> dict[str, Any]:
     return {
-        "section_id": rule["section_id"],
-        "heading": rule["heading"],
-        "text": parser.section_text(str(rule["section_id"])),
-        "tags": list(rule["tags"]),
-        "adapter_version": rule["adapter_version"],
-        "confidence": rule["confidence"],
-        "excerpt_anchor": rule["excerpt_anchor"],
-        "matched_keywords": list(rule["matched_keywords"]),
+        "section_id": section_id,
+        "heading": heading,
+        "text": parser.section_text(section_id),
+        "tags": list(tags),
     }
 
 
 def _clean_html_text(value: str) -> str:
     text = unescape(value)
+    replacements = {
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201c": '"',
+        "\u201d": '"',
+        "\u2013": "-",
+        "\u2014": "-",
+    }
+    for source, target in replacements.items():
+        text = text.replace(source, target)
     return re.sub(r"\s+", " ", text).strip()
 
 
@@ -82,17 +77,16 @@ def _adapter_error(message: str, **details: Any) -> GenerationError:
 
 
 class _MarieClaireHtmlParser(HTMLParser):
-    def __init__(self, section_ids: set[str]) -> None:
+    def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self._section_ids = section_ids
         self._title_parts: list[str] = []
         self._h1_parts: list[str] = []
-        self._section_text_parts: dict[str, list[str]] = {}
-        self._captured_at: str | None = None
         self._in_title = False
         self._in_h1 = False
         self._active_section: str | None = None
         self._current_paragraph_section: str | None = None
+        self._captured_at: str | None = None
+        self._section_text_parts: dict[str, list[str]] = {}
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         attr_map = {key: value or "" for key, value in attrs}
@@ -103,16 +97,18 @@ class _MarieClaireHtmlParser(HTMLParser):
         elif tag == "meta":
             self._capture_published_date(attr_map)
         elif tag == "h2":
-            self._active_section = _section_id_from_html_id(attr_map.get("id", ""), self._section_ids)
+            self._active_section = _HTML_SECTION_IDS.get(attr_map.get("id", ""))
         elif tag == "p":
-            self._start_section_paragraph()
+            self._start_section_paragraph(attr_map)
 
     def handle_endtag(self, tag: str) -> None:
         if tag == "title":
             self._in_title = False
         elif tag == "h1":
             self._in_h1 = False
-        elif tag == "p":
+        elif tag == "h2":
+            return
+        elif tag == "p" and self._current_paragraph_section:
             self._active_section = None
             self._current_paragraph_section = None
 
@@ -140,7 +136,11 @@ class _MarieClaireHtmlParser(HTMLParser):
         cleaned = _clean_html_text("".join(self._section_text_parts.get(section_id, [])))
         if cleaned:
             return cleaned
-        raise _adapter_error("required seasonal sections missing", field="sections", missing_section=section_id)
+        raise _adapter_error(
+            "required seasonal sections missing",
+            field="sections",
+            missing_section=section_id,
+        )
 
     def _capture_published_date(self, attrs: dict[str, str]) -> None:
         if attrs.get("property") != "article:published_time":
@@ -149,16 +149,9 @@ class _MarieClaireHtmlParser(HTMLParser):
         if re.match(r"\d{4}-\d{2}-\d{2}", content):
             self._captured_at = content[:10]
 
-    def _start_section_paragraph(self) -> None:
-        if not self._active_section or self._active_section in self._section_text_parts:
+    def _start_section_paragraph(self, attrs: dict[str, str]) -> None:
+        if not self._active_section or not attrs.get("id"):
+            return
+        if self._active_section in self._section_text_parts:
             return
         self._current_paragraph_section = self._active_section
-
-
-def _section_id_from_html_id(value: str, section_ids: set[str]) -> str | None:
-    if value in section_ids:
-        return value
-    for section_id in section_ids:
-        if value.endswith(section_id):
-            return section_id
-    return None

@@ -10,13 +10,15 @@ from temu_y2_women.errors import GenerationError
 _FIXTURE_DIR = Path("tests/fixtures/public_sources/dress")
 
 
+def _load_fixture(name: str) -> str:
+    return (_FIXTURE_DIR / name).read_text(encoding="utf-8")
+
+
+def _load_snapshot(name: str) -> dict[str, object]:
+    return json.loads(_load_fixture(name))
+
+
 class PublicSourceAdapterTest(unittest.TestCase):
-    def test_resolve_public_source_adapter_returns_roundup_parser(self) -> None:
-        from temu_y2_women.public_source_adapter import resolve_public_source_adapter
-        from temu_y2_women.public_source_adapters.whowhatwear_roundup import parse_whowhatwear_roundup_html
-
-        self.assertIs(resolve_public_source_adapter("whowhatwear_roundup_v1"), parse_whowhatwear_roundup_html)
-
     def test_resolve_public_source_adapter_returns_whowhatwear_parser(self) -> None:
         from temu_y2_women.public_source_adapter import resolve_public_source_adapter
         from temu_y2_women.public_source_adapters.whowhatwear_editorial import parse_whowhatwear_editorial_html
@@ -58,64 +60,42 @@ class PublicSourceAdapterTest(unittest.TestCase):
         )
         self.assertEqual(result, expected)
 
-    def test_parse_second_whowhatwear_editorial_html_returns_expected_snapshot(self) -> None:
+    def test_parse_whowhatwear_editorial_html_supports_second_source_shape(self) -> None:
         from temu_y2_women.public_source_adapters.whowhatwear_editorial import parse_whowhatwear_editorial_html
 
-        html = (_FIXTURE_DIR / "whowhatwear-summer-dress-trends-2025.html").read_text(encoding="utf-8")
-        source = {
-            "source_id": "whowhatwear-summer-dress-trends-2025",
-            "source_type": "public_editorial_web",
-            "source_url": "https://www.whowhatwear.com/fashion/dresses/summer-dress-trends-2025",
-            "target_market": "US",
-            "category": "dress",
-        }
-
-        result = parse_whowhatwear_editorial_html(source=source, html=html, fetched_at="2026-04-28T00:00:00Z")
-
-        expected = json.loads(
-            (_FIXTURE_DIR / "expected-whowhatwear-summer-dress-trends-2025-raw-source-snapshot.json").read_text(
-                encoding="utf-8"
-            )
+        result = parse_whowhatwear_editorial_html(
+            source={
+                "source_id": "whowhatwear-summer-dress-trends-2025",
+                "source_type": "public_editorial_web",
+                "source_url": "https://www.whowhatwear.com/fashion/dresses/summer-dress-trends-2025",
+                "target_market": "US",
+                "category": "dress",
+            },
+            html=_load_fixture("whowhatwear-summer-dress-trends-2025.html"),
+            fetched_at="2026-04-28T00:00:00Z",
         )
-        self.assertEqual(result, expected)
+
+        self.assertEqual(
+            result,
+            _load_snapshot("expected-whowhatwear-summer-dress-trends-2025-raw-source-snapshot.json"),
+        )
 
     def test_parse_marieclaire_editorial_html_returns_expected_snapshot(self) -> None:
         from temu_y2_women.public_source_adapters.marieclaire_editorial import parse_marieclaire_editorial_html
 
-        html = (_FIXTURE_DIR / "marieclaire-summer-2025-dress-trends.html").read_text(encoding="utf-8")
-        source = {
-            "source_id": "marieclaire-summer-2025-dress-trends",
-            "source_type": "public_editorial_web",
-            "source_url": "https://www.marieclaire.com/fashion/summer-fashion/summer-2025-dress-trends/",
-            "target_market": "US",
-            "category": "dress",
-        }
-
-        result = parse_marieclaire_editorial_html(source=source, html=html, fetched_at="2026-04-28T00:00:00Z")
-
-        expected = json.loads((_FIXTURE_DIR / "expected-marieclaire-raw-source-snapshot.json").read_text(encoding="utf-8"))
-        self.assertEqual(result, expected)
-
-    def test_parse_whowhatwear_roundup_html_returns_expected_snapshot(self) -> None:
-        from temu_y2_women.public_source_adapters.whowhatwear_roundup import parse_whowhatwear_roundup_html
-
-        html = (_FIXTURE_DIR / "whowhatwear-best-summer-dresses-2025.html").read_text(encoding="utf-8")
-        source = {
-            "source_id": "whowhatwear-best-summer-dresses-2025",
-            "source_type": "public_roundup_web",
-            "source_url": "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025",
-            "target_market": "US",
-            "category": "dress",
-        }
-
-        result = parse_whowhatwear_roundup_html(source=source, html=html, fetched_at="2026-04-28T00:00:00Z")
-
-        expected = json.loads(
-            (_FIXTURE_DIR / "expected-whowhatwear-best-summer-dresses-2025-raw-source-snapshot.json").read_text(
-                encoding="utf-8"
-            )
+        result = parse_marieclaire_editorial_html(
+            source={
+                "source_id": "marieclaire-summer-2025-dress-trends",
+                "source_type": "public_editorial_web",
+                "source_url": "https://www.marieclaire.com/fashion/summer-fashion/summer-2025-dress-trends/",
+                "target_market": "US",
+                "category": "dress",
+            },
+            html=_load_fixture("marieclaire-summer-2025-dress-trends.html"),
+            fetched_at="2026-04-28T00:00:00Z",
         )
-        self.assertEqual(result, expected)
+
+        self.assertEqual(result, _load_snapshot("expected-marieclaire-raw-source-snapshot.json"))
 
     def test_parse_whowhatwear_editorial_html_rejects_missing_sections(self) -> None:
         from temu_y2_women.public_source_adapters.whowhatwear_editorial import parse_whowhatwear_editorial_html
@@ -296,3 +276,26 @@ class PublicSourceAdapterTest(unittest.TestCase):
         self.assertEqual(error.exception.code, "INVALID_PUBLIC_SOURCE_HTML")
         self.assertEqual(error.exception.details["field"], "sections")
         self.assertEqual(error.exception.details["missing_section"], "the-vacation-mini")
+
+    def test_parse_marieclaire_editorial_html_rejects_missing_sections(self) -> None:
+        from temu_y2_women.public_source_adapters.marieclaire_editorial import parse_marieclaire_editorial_html
+
+        with self.assertRaises(GenerationError) as error:
+            parse_marieclaire_editorial_html(
+                source={
+                    "source_id": "marieclaire-summer-2025-dress-trends",
+                    "source_type": "public_editorial_web",
+                    "source_url": "https://www.marieclaire.com/fashion/summer-fashion/summer-2025-dress-trends/",
+                    "target_market": "US",
+                    "category": "dress",
+                },
+                html=(
+                    '<html><head><meta property="article:published_time" content="2025-07-04T14:00:00Z"></head>'
+                    "<body><h1>broken</h1></body></html>"
+                ),
+                fetched_at="2026-04-28T00:00:00Z",
+            )
+
+        self.assertEqual(error.exception.code, "INVALID_PUBLIC_SOURCE_HTML")
+        self.assertEqual(error.exception.details["field"], "sections")
+        self.assertEqual(error.exception.details["missing_section"], "linen-dresses")

@@ -134,14 +134,14 @@
         "rule_matches": [
           {
             "signal_id": "dress-signal-001",
-            "matched_phrases": ["square neckline"],
+            "matched_phrases": ["square neck", "square neckline"],
             "rule_slot": "neckline",
             "rule_value": "square neckline",
             "rule_tags": ["feminine", "summer", "vacation"]
           },
           {
             "signal_id": "dress-signal-002",
-            "matched_phrases": ["square neckline"],
+            "matched_phrases": ["square neck", "square neckline"],
             "rule_slot": "neckline",
             "rule_value": "square neckline",
             "rule_tags": ["feminine", "summer", "vacation"]
@@ -195,7 +195,7 @@
         "rule_matches": [
           {
             "signal_id": "dress-signal-001",
-            "matched_phrases": ["floral print"],
+            "matched_phrases": ["floral", "floral print"],
             "rule_slot": "pattern",
             "rule_value": "floral print",
             "rule_tags": ["floral", "summer", "vacation"]
@@ -283,7 +283,7 @@
         "rule_matches": [
           {
             "signal_id": "dress-signal-001",
-            "matched_phrases": ["flutter sleeves"],
+            "matched_phrases": ["flutter sleeve", "flutter sleeves"],
             "rule_slot": "sleeve",
             "rule_value": "flutter sleeve",
             "rule_tags": ["airy", "feminine", "vacation"]
