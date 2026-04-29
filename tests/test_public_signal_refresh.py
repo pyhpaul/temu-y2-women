@@ -177,7 +177,7 @@ class PublicSignalRefreshTest(unittest.TestCase):
 
         self.assertEqual(result["source_summary"], {"total": 4, "succeeded": 4, "failed": 0})
         self.assertEqual(result["canonical_signal_count"], 21)
-        self.assertEqual(result["coverage"]["matched_signals"], 9)
+        self.assertEqual(result["coverage"]["matched_signals"], 21)
         self.assertEqual(
             result["selected_source_ids"],
             [
@@ -189,7 +189,7 @@ class PublicSignalRefreshTest(unittest.TestCase):
         )
         self.assertEqual(
             [item["matched_signal_count"] for item in result["source_details"]],
-            [5, 2, 1, 1],
+            [5, 8, 7, 1],
         )
         self.assertTrue(second_whowhatwear_exists)
         self.assertTrue(marieclaire_exists)
@@ -261,7 +261,7 @@ class PublicSignalRefreshTest(unittest.TestCase):
             for item in ingestion_report["signal_outcomes"]
             if item["signal_id"] == "whowhatwear-best-summer-dresses-2025-pattern-gingham-check-001"
         )
-        self.assertEqual(gingham["tags"], [])
+        self.assertEqual(gingham["tags"], ["summer", "vacation"])
         self.assertEqual(gingham["suggested_base_score"], 0.7)
         self.assertEqual(gingham["extraction_provenance"]["kind"], "structured-signal-candidate")
         self.assertEqual(gingham["extraction_provenance"]["matched_channels"], ["structured_candidate"])

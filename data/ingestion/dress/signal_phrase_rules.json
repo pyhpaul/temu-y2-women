@@ -34,8 +34,74 @@
     {
       "slot": "detail",
       "value": "smocked bodice",
-      "phrases": ["smocked bodice", "smocked bodices"],
+      "phrases": ["smocked bodice", "smocked bodices", "smocked dresses"],
       "tags": ["feminine", "vacation"]
+    },
+    {
+      "slot": "neckline",
+      "value": "bandeau neckline",
+      "phrases": ["elegant bandeaus", "bandeau dress", "bustiers"],
+      "tags": ["feminine", "polished", "summer"]
+    },
+    {
+      "slot": "pattern",
+      "value": "stripe print",
+      "phrases": ["chic stripes", "soft stripes", "striped dress", "pinstripes"],
+      "tags": ["polished", "summer"]
+    },
+    {
+      "slot": "sleeve",
+      "value": "short puff sleeve",
+      "phrases": ["romantic sleeves", "puff sleeves", "cloud-like puff sleeves"],
+      "tags": ["feminine", "romantic", "summer"]
+    },
+    {
+      "slot": "detail",
+      "value": "bubble hem",
+      "phrases": ["bubble hems", "bubble-hem trend", "bubble hem"],
+      "tags": ["feminine", "summer"]
+    },
+    {
+      "slot": "detail",
+      "value": "slip dress",
+      "phrases": ["lingerie slips", "slip dresses", "slip dress"],
+      "tags": ["sleek", "summer"]
+    },
+    {
+      "slot": "neckline",
+      "value": "halter neckline",
+      "phrases": ["halterneck dresses", "halter neck trend", "halter neck"],
+      "tags": ["feminine", "summer", "vacation"]
+    },
+    {
+      "slot": "fabric",
+      "value": "linen blend",
+      "phrases": ["linen dresses", "linen dress"],
+      "tags": ["breathable", "lightweight", "summer"]
+    },
+    {
+      "slot": "color_family",
+      "value": "brown",
+      "phrases": ["chocolate brown dresses", "chocolate brown"],
+      "tags": ["neutral", "summer"]
+    },
+    {
+      "slot": "pattern",
+      "value": "polka dot",
+      "phrases": ["polka dot dresses", "polka dot dress", "dotty styles"],
+      "tags": ["polka-dot", "summer", "vacation"]
+    },
+    {
+      "slot": "pattern",
+      "value": "gingham check",
+      "phrases": ["gingham dresses", "gingham dress"],
+      "tags": ["summer", "vacation"]
+    },
+    {
+      "slot": "silhouette",
+      "value": "babydoll",
+      "phrases": ["babydoll dresses", "babydoll silhouette"],
+      "tags": ["feminine", "romantic", "summer"]
     },
     {
       "slot": "dress_length",
