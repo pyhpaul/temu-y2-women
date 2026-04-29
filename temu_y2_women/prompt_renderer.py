@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from temu_y2_women.models import ComposedConcept, NormalizedRequest, SelectedStrategy
+from temu_y2_women.models import (
+    ComposedConcept,
+    NormalizedRequest,
+    SelectedStrategy,
+    SelectedStyleFamily,
+)
 
 _HERO_JOB_SPECS = (
     ("hero_front", "hero_front.png", "front view"),
@@ -19,10 +24,17 @@ def render_prompt_bundle(
     request: NormalizedRequest,
     concept: ComposedConcept,
     selected_strategies: tuple[SelectedStrategy, ...],
+    selected_style_family: SelectedStyleFamily | None,
     warnings: tuple[str, ...],
 ) -> dict[str, object]:
     development_notes = list(concept.style_summary or warnings or ("dress MVP development guidance",))
-    render_jobs = _render_jobs(request, concept, selected_strategies, development_notes)
+    render_jobs = _render_jobs(
+        request,
+        concept,
+        selected_strategies,
+        selected_style_family,
+        development_notes,
+    )
     bundle: dict[str, object] = {
         "mode": request.mode,
         "prompt": render_jobs[0]["prompt"],
@@ -52,27 +64,44 @@ def _build_prompt(
     request: NormalizedRequest,
     concept: ComposedConcept,
     selected_strategies: tuple[SelectedStrategy, ...],
+    selected_style_family: SelectedStyleFamily | None,
     development_notes: list[str],
     shot_line: str,
 ) -> str:
     return "\n".join(
         (
-            f"[商品主体] {_subject_line(request, concept)}",
+            f"[商品主体] {_subject_line(request, concept, selected_style_family)}",
             f"[核心结构] {_structure_line(request, concept)}",
-            f"[生产与细节展示要求] {_detail_requirements_line(request, selected_strategies, development_notes)}",
-            f"[镜头与构图] {shot_line}",
+            f"[关键视觉差异点] {_critical_visual_line(concept, selected_style_family)}",
+            f"[生产与细节展示要求] {_detail_requirements_line(request, concept, selected_strategies, development_notes)}",
+            f"[镜头与构图] {_shot_line(shot_line, selected_style_family)}",
             f"[面料与工艺表现] {_material_line(concept)}",
-            f"[场景与光线] {_scene_line(request)}",
-            f"[约束与避免项] {_constraint_line(request)}",
+            f"[场景与光线] {_scene_line(request, selected_style_family)}",
+            f"[约束与避免项] {_constraint_line(request, selected_style_family)}",
         )
     )
 
 
-def _subject_line(request: NormalizedRequest, concept: ComposedConcept) -> str:
+def _subject_line(
+    request: NormalizedRequest,
+    concept: ComposedConcept,
+    selected_style_family: SelectedStyleFamily | None,
+) -> str:
+    family_hint = _family_hint(selected_style_family, "subject_hint")
     if request.mode == "A":
+        if family_hint:
+            return (
+                f"women's {concept.category} for the {request.target_market} market; "
+                f"{family_hint}; on-model ecommerce hero image; product-first presentation"
+            )
         return (
             f"women's {_occasion_phrase(request)} {concept.category} for the {request.target_market} market, "
             "on-model ecommerce hero image, product-first presentation"
+        )
+    if family_hint:
+        return (
+            f"women's {concept.category} development reference image for the {request.target_market} market; "
+            f"{family_hint}; production-review presentation"
         )
     return (
         f"women's {concept.category} development reference image for the {request.target_market} market, "
@@ -111,11 +140,12 @@ def _element_phrase(slot: str, value: str) -> str:
 
 def _detail_requirements_line(
     request: NormalizedRequest,
+    concept: ComposedConcept,
     selected_strategies: tuple[SelectedStrategy, ...],
     development_notes: list[str],
 ) -> str:
     items = [
-        "clearly show neckline depth, bodice construction, sleeve opening, waist seam position, skirt volume, hem finish, floral print scale, and fabric texture",
+        f"clearly show {_detail_visibility_targets(concept)}",
         "keep the garment visually realistic and feasible for factory production",
     ]
     if request.mode == "B":
@@ -125,19 +155,43 @@ def _detail_requirements_line(
     return "; ".join(items)
 
 
+def _critical_visual_line(
+    concept: ComposedConcept,
+    selected_style_family: SelectedStyleFamily | None,
+) -> str:
+    family_id = _selected_style_family_id(selected_style_family)
+    if family_id == "clean-minimal":
+        return _clean_minimal_visual_line(concept)
+    if family_id == "city-polished":
+        return _city_polished_visual_line(concept)
+    if family_id == "party-fitted":
+        return _party_fitted_visual_line(concept)
+    if family_id == "vacation-romantic":
+        return _vacation_romantic_visual_line(concept)
+    return _generic_visual_line(concept)
+
+
 def _render_jobs(
     request: NormalizedRequest,
     concept: ComposedConcept,
     selected_strategies: tuple[SelectedStrategy, ...],
+    selected_style_family: SelectedStyleFamily | None,
     development_notes: list[str],
 ) -> list[dict[str, str]]:
-    return _hero_jobs(request, concept, selected_strategies, development_notes) + _detail_jobs(concept)
+    return _hero_jobs(
+        request,
+        concept,
+        selected_strategies,
+        selected_style_family,
+        development_notes,
+    ) + _detail_jobs(concept)
 
 
 def _hero_jobs(
     request: NormalizedRequest,
     concept: ComposedConcept,
     selected_strategies: tuple[SelectedStrategy, ...],
+    selected_style_family: SelectedStyleFamily | None,
     development_notes: list[str],
 ) -> list[dict[str, str]]:
     jobs: list[dict[str, str]] = []
@@ -151,6 +205,7 @@ def _hero_jobs(
                     request,
                     concept,
                     selected_strategies,
+                    selected_style_family,
                     development_notes,
                     prompt_id,
                     angle,
@@ -166,6 +221,7 @@ def _hero_prompt(
     request: NormalizedRequest,
     concept: ComposedConcept,
     selected_strategies: tuple[SelectedStrategy, ...],
+    selected_style_family: SelectedStyleFamily | None,
     development_notes: list[str],
     prompt_id: str,
     angle: str,
@@ -175,6 +231,7 @@ def _hero_prompt(
             request,
             concept,
             selected_strategies,
+            selected_style_family,
             development_notes,
             _hero_shot_line(request, angle),
         )
@@ -207,19 +264,33 @@ def _hero_shot_line(request: NormalizedRequest, angle: str) -> str:
 
 def _material_line(concept: ComposedConcept) -> str:
     fabric_text = _selected_value(concept, "fabric", "dress fabric")
-    pattern_text = _selected_value(concept, "pattern", "surface print")
-    detail_text = _selected_value(concept, "detail", "construction detail")
     color_text = _selected_value(concept, "color_family", "commercial color")
-    print_scale_text = _element_phrase("print_scale", _selected_value(concept, "print_scale", "commercial print"))
-    opacity_text = _element_phrase("opacity_level", _selected_value(concept, "opacity_level", "opaque"))
-    return (
-        f"crisp {fabric_text} texture; visible {detail_text}; visible seam lines; clean hem finish; "
-        f"true-to-color {color_text}; visible {pattern_text}; {print_scale_text}; {opacity_text}; natural drape; "
-        "commercially realistic construction"
-    )
+    items = [f"crisp {fabric_text} texture"]
+    detail_text = _selected_optional_value(concept, "detail")
+    if detail_text:
+        items.append(f"visible {detail_text}")
+    items.extend(("visible seam lines", "clean hem finish", f"true-to-color {color_text}"))
+    pattern_text = _selected_optional_value(concept, "pattern")
+    if pattern_text:
+        items.append(f"visible {pattern_text}")
+    print_scale = _selected_optional_value(concept, "print_scale")
+    if print_scale:
+        items.append(_element_phrase("print_scale", print_scale))
+    opacity = _selected_optional_value(concept, "opacity_level")
+    if opacity:
+        items.append(_element_phrase("opacity_level", opacity))
+    items.extend(("natural drape", "commercially realistic construction"))
+    return "; ".join(items)
 
 
-def _scene_line(request: NormalizedRequest) -> str:
+def _scene_line(
+    request: NormalizedRequest,
+    selected_style_family: SelectedStyleFamily | None,
+) -> str:
+    scene_hint = _family_hint(selected_style_family, "scene_hint")
+    lighting_hint = _family_hint(selected_style_family, "lighting_hint")
+    if scene_hint or lighting_hint:
+        return "; ".join(item for item in (scene_hint, lighting_hint) if item)
     if "vacation" in request.occasion_tags:
         return "clean sunlit resort-inspired studio; soft directional daylight; warm ivory and sand background; minimal props"
     if request.mode == "B":
@@ -227,15 +298,26 @@ def _scene_line(request: NormalizedRequest) -> str:
     return "clean studio; soft commercial lighting; quiet background that supports the garment without competing"
 
 
-def _constraint_line(request: NormalizedRequest) -> str:
+def _constraint_line(
+    request: NormalizedRequest,
+    selected_style_family: SelectedStyleFamily | None,
+) -> str:
     items = ["no text", "no watermark", "no cluttered background", "no unrealistic garment construction"]
     if "bodycon" in request.avoid_tags:
         items.insert(0, "no bodycon fit")
     for tag in request.avoid_tags:
         if tag != "bodycon":
             items.append(f"avoid {tag} styling")
+    items.extend(_family_constraint_hints(selected_style_family))
     items.extend(("no jacket", "no cardigan", "no bag covering the bodice", "no exaggerated editorial pose"))
     return "; ".join(items)
+
+
+def _shot_line(shot_line: str, selected_style_family: SelectedStyleFamily | None) -> str:
+    styling_hint = _family_hint(selected_style_family, "styling_hint")
+    if not styling_hint:
+        return shot_line
+    return f"{shot_line}; styling direction: {styling_hint}"
 
 
 def _detail_jobs(concept: ComposedConcept) -> list[dict[str, str]]:
@@ -346,3 +428,104 @@ def _hem_edit_instruction(concept: ComposedConcept) -> str:
 def _selected_value(concept: ComposedConcept, slot: str, default: str) -> str:
     element = concept.selected_elements.get(slot)
     return default if element is None else element.value
+
+
+def _selected_optional_value(concept: ComposedConcept, slot: str) -> str | None:
+    element = concept.selected_elements.get(slot)
+    if element is None:
+        return None
+    return element.value
+
+
+def _selected_style_family_id(selected_style_family: SelectedStyleFamily | None) -> str:
+    if selected_style_family is None:
+        return ""
+    return selected_style_family.profile.style_family_id
+
+
+def _generic_visual_line(concept: ComposedConcept) -> str:
+    neckline = _selected_value(concept, "neckline", "selected neckline")
+    silhouette = _selected_value(concept, "silhouette", "selected silhouette")
+    detail = _selected_optional_value(concept, "detail")
+    if detail:
+        return (
+            f"keep the {neckline}, {silhouette}, and {detail} clearly readable from first glance; "
+            "do not simplify the garment into a generic commercial dress shape"
+        )
+    return (
+        f"keep the {neckline} and {silhouette} clearly readable from first glance; "
+        "do not simplify the garment into a generic commercial dress shape"
+    )
+
+
+def _clean_minimal_visual_line(concept: ComposedConcept) -> str:
+    neckline = _selected_value(concept, "neckline", "jewel neckline")
+    return (
+        f"{neckline} should read close to the base of the neck with a quiet clean edge; "
+        "the front body should stay low-noise and minimal; not a square neckline; "
+        "not a sweetheart neckline; not a boat neckline; not an off-shoulder impression"
+    )
+
+
+def _city_polished_visual_line(concept: ComposedConcept) -> str:
+    neckline = _selected_value(concept, "neckline", "square neckline")
+    detail = _selected_value(concept, "detail", "tailored seam panel")
+    return (
+        f"{neckline} with visible corner geometry should stay obvious; "
+        f"{detail} should stay obvious on the front body; "
+        "keep the torso polished and structured; not a boat neckline; not a sweetheart neckline"
+    )
+
+
+def _party_fitted_visual_line(concept: ComposedConcept) -> str:
+    neckline = _selected_value(concept, "neckline", "sweetheart neckline")
+    detail = _selected_value(concept, "detail", "ruched side seam")
+    return (
+        f"{neckline} bust curve should read clearly; {detail} should stay visible; "
+        "keep the fitted evening shape sharp; not a flat boat neckline; not a rigid square neckline"
+    )
+
+
+def _vacation_romantic_visual_line(concept: ComposedConcept) -> str:
+    neckline = _selected_value(concept, "neckline", "square neckline")
+    detail = _selected_value(concept, "detail", "neck scarf")
+    sleeve = _selected_value(concept, "sleeve", "flutter sleeve")
+    return (
+        f"{neckline}, {sleeve}, and {detail} should feel airy and soft; "
+        "keep the resort mood feminine and light; not sharp office tailoring; not an evening bodycon read"
+    )
+
+
+def _detail_visibility_targets(concept: ComposedConcept) -> str:
+    targets = [
+        "neckline depth",
+        "bodice construction",
+        "sleeve opening",
+        "waist seam position",
+        "skirt volume",
+        "hem finish",
+        "fabric texture",
+    ]
+    if "pattern" in concept.selected_elements:
+        targets.insert(-1, "print placement")
+    if "print_scale" in concept.selected_elements:
+        targets.insert(-1, "print scale")
+    return _oxford_join(targets)
+
+
+def _oxford_join(items: list[str]) -> str:
+    if len(items) == 1:
+        return items[0]
+    return f"{', '.join(items[:-1])}, and {items[-1]}"
+
+
+def _family_hint(selected_style_family: SelectedStyleFamily | None, field: str) -> str:
+    if selected_style_family is None:
+        return ""
+    return str(getattr(selected_style_family.profile, field))
+
+
+def _family_constraint_hints(selected_style_family: SelectedStyleFamily | None) -> tuple[str, ...]:
+    if selected_style_family is None:
+        return ()
+    return selected_style_family.profile.constraint_hints

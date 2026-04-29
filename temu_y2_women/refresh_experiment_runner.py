@@ -439,6 +439,8 @@ def _classify_change(
     score_delta: float,
     factory_spec_changes: dict[str, Any],
 ) -> str:
+    if _is_detail_addition_only(selected_changes):
+        return "retrieval_changed_only"
     if selected_changes:
         return "selection_changed"
     if retrieval_changes:
@@ -448,6 +450,13 @@ def _classify_change(
     if factory_spec_changes["changed"]:
         return "factory_spec_changed_only"
     return "no_observable_change"
+
+
+def _is_detail_addition_only(selected_changes: dict[str, Any]) -> bool:
+    if set(selected_changes) != {"detail"}:
+        return False
+    detail_change = selected_changes["detail"]
+    return detail_change["before"] is None and detail_change["after"] is not None
 
 
 def _result_summary(result: dict[str, Any]) -> dict[str, Any]:

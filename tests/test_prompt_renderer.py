@@ -9,6 +9,8 @@ from temu_y2_women.models import (
     DateWindow,
     NormalizedRequest,
     SelectedStrategy,
+    SelectedStyleFamily,
+    StyleFamilyProfile,
     StrategyTemplate,
 )
 
@@ -21,6 +23,7 @@ class PromptRendererTest(unittest.TestCase):
             request=_request(mode="A"),
             concept=_concept(),
             selected_strategies=(_strategy(),),
+            selected_style_family=None,
             warnings=(),
         )
 
@@ -42,6 +45,7 @@ class PromptRendererTest(unittest.TestCase):
             request=_request(mode="B"),
             concept=_concept(),
             selected_strategies=(_strategy(),),
+            selected_style_family=None,
             warnings=("keep trims production-friendly",),
         )
 
@@ -65,6 +69,7 @@ class PromptRendererTest(unittest.TestCase):
             request=_request(mode="A"),
             concept=_objective_concept(),
             selected_strategies=(_strategy(),),
+            selected_style_family=None,
             warnings=(),
         )
 
@@ -86,6 +91,7 @@ class PromptRendererTest(unittest.TestCase):
             request=_request(mode="A"),
             concept=_objective_concept(),
             selected_strategies=(_strategy(),),
+            selected_style_family=None,
             warnings=(),
         )
 
@@ -107,6 +113,7 @@ class PromptRendererTest(unittest.TestCase):
             request=_request(mode="A"),
             concept=_objective_concept(),
             selected_strategies=(_strategy(),),
+            selected_style_family=None,
             warnings=(),
         )
 
@@ -125,9 +132,79 @@ class PromptRendererTest(unittest.TestCase):
         self.assertIn("Keep the exact same dress", hem_prompt)
         self.assertIn("Zoom into the lower skirt and hem area", hem_prompt)
 
+    def test_render_prompt_uses_style_family_specific_shell(self) -> None:
+        for case in _style_family_prompt_cases():
+            prompt = _render_family_prompt(case["selected_style_family"])
+            self.assertIn(case["subject_hint"], prompt)
+            self.assertIn(case["scene_hint"], prompt)
+            self.assertIn(case["constraint_hint"], prompt)
+
+    def test_render_prompt_omits_print_language_when_concept_has_no_pattern(self) -> None:
+        from temu_y2_women.prompt_renderer import render_prompt_bundle
+
+        bundle = render_prompt_bundle(
+            request=_request(mode="A"),
+            concept=_clean_minimal_concept(),
+            selected_strategies=(_strategy(),),
+            selected_style_family=_selected_style_family(
+                "clean-minimal",
+                "quiet minimal studio dress",
+                "pared-back tonal studio",
+                "even softbox lighting",
+                "low-noise product styling",
+                ("avoid visible print noise",),
+            ),
+            warnings=(),
+        )
+
+        prompt = bundle["prompt"]
+        self.assertNotIn("floral print scale", prompt)
+        self.assertNotIn("visible surface print", prompt)
+        self.assertNotIn("commercial print scale", prompt)
+        self.assertIn("compact poplin fabric", prompt)
+
+    def test_render_prompt_adds_critical_visual_differentiation_for_clean_minimal(self) -> None:
+        prompt = _render_family_prompt_with_concept(
+            selected_style_family=_selected_style_family(
+                "clean-minimal",
+                "quiet minimal studio dress",
+                "pared-back tonal studio",
+                "even softbox lighting",
+                "low-noise product styling",
+                ("avoid visible print noise",),
+            ),
+            concept=_clean_minimal_concept(),
+        )
+
+        self.assertIn("[关键视觉差异点]", prompt)
+        self.assertIn("jewel neckline should read close to the base of the neck", prompt)
+        self.assertIn("not a boat neckline", prompt)
+        self.assertIn("not a square neckline", prompt)
+        self.assertIn("not a sweetheart neckline", prompt)
+
+    def test_render_prompt_adds_critical_visual_differentiation_for_city_polished(self) -> None:
+        prompt = _render_family_prompt_with_concept(
+            selected_style_family=_selected_style_family(
+                "city-polished",
+                "structured polished city dress",
+                "urban showroom backdrop",
+                "clean directional commercial light",
+                "sharp commuter-ready styling",
+                ("avoid beach props",),
+            ),
+            concept=_city_polished_concept(),
+        )
+
+        self.assertIn("[关键视觉差异点]", prompt)
+        self.assertIn("square neckline with visible corner geometry", prompt)
+        self.assertIn("tailored seam panel should stay obvious on the front body", prompt)
+        self.assertIn("not a boat neckline", prompt)
+        self.assertIn("not a sweetheart neckline", prompt)
+
     def assert_prompt_has_required_blocks(self, prompt: str) -> None:
         self.assertIn("[商品主体]", prompt)
         self.assertIn("[核心结构]", prompt)
+        self.assertIn("[关键视觉差异点]", prompt)
         self.assertIn("[生产与细节展示要求]", prompt)
         self.assertIn("[镜头与构图]", prompt)
         self.assertIn("[面料与工艺表现]", prompt)
@@ -185,6 +262,7 @@ def _request(mode: str) -> NormalizedRequest:
         occasion_tags=("vacation",),
         must_have_tags=("floral",),
         avoid_tags=("bodycon",),
+        style_family=None,
     )
 
 
@@ -246,3 +324,147 @@ def _strategy() -> SelectedStrategy:
         ),
         reason="matched summer vacation window",
     )
+
+
+def _clean_minimal_concept() -> ComposedConcept:
+    return ComposedConcept(
+        category="dress",
+        concept_score=0.9,
+        selected_elements={
+            "silhouette": ComposedElement("dress-silhouette-shift-001", "shift"),
+            "fabric": ComposedElement("dress-fabric-compact-poplin-001", "compact poplin"),
+            "neckline": ComposedElement("dress-neckline-jewel-001", "jewel neckline"),
+            "sleeve": ComposedElement("dress-sleeve-cap-001", "cap sleeve"),
+            "dress_length": ComposedElement("dress-length-midi-001", "midi"),
+            "color_family": ComposedElement("dress-color-stone-001", "stone"),
+            "opacity_level": ComposedElement("dress-opacity-level-opaque-001", "opaque"),
+        },
+        style_summary=("minimal", "quiet", "structured"),
+        constraint_notes=(),
+    )
+
+
+def _selected_style_family(
+    style_family_id: str,
+    subject_hint: str,
+    scene_hint: str,
+    lighting_hint: str,
+    styling_hint: str,
+    constraint_hints: tuple[str, ...],
+) -> SelectedStyleFamily:
+    return SelectedStyleFamily(
+        profile=StyleFamilyProfile(
+            style_family_id=style_family_id,
+            hard_slot_values={},
+            soft_slot_values={},
+            blocked_slot_values={},
+            subject_hint=subject_hint,
+            scene_hint=scene_hint,
+            lighting_hint=lighting_hint,
+            styling_hint=styling_hint,
+            constraint_hints=constraint_hints,
+            fallback_reason="fixture",
+            status="active",
+        ),
+        selection_mode="explicit",
+        reason="fixture",
+    )
+
+
+def _style_family_prompt_cases() -> tuple[dict[str, object], ...]:
+    return (
+        _style_family_prompt_case(
+            "vacation-romantic",
+            "airy romantic resort dress",
+            "sunlit resort veranda",
+            "soft daylight glow",
+            "relaxed feminine movement",
+            "avoid nightlife mood",
+        ),
+        _style_family_prompt_case(
+            "clean-minimal",
+            "quiet minimal studio dress",
+            "pared-back tonal studio",
+            "even softbox lighting",
+            "low-noise product styling",
+            "avoid visible print noise",
+        ),
+        _style_family_prompt_case(
+            "city-polished",
+            "structured polished city dress",
+            "urban showroom backdrop",
+            "clean directional commercial light",
+            "sharp commuter-ready styling",
+            "avoid beach props",
+        ),
+        _style_family_prompt_case(
+            "party-fitted",
+            "sleek fitted evening dress",
+            "nightlife-inspired dark studio",
+            "high-contrast evening light",
+            "confident after-dark pose",
+            "avoid resort softness",
+        ),
+    )
+
+
+def _city_polished_concept() -> ComposedConcept:
+    return ComposedConcept(
+        category="dress",
+        concept_score=0.92,
+        selected_elements={
+            "silhouette": ComposedElement("dress-silhouette-sheath-001", "sheath"),
+            "fabric": ComposedElement("dress-fabric-matte-crepe-001", "matte crepe"),
+            "neckline": ComposedElement("dress-neckline-square-001", "square neckline"),
+            "sleeve": ComposedElement("dress-sleeve-cap-001", "cap sleeve"),
+            "dress_length": ComposedElement("dress-length-midi-001", "midi"),
+            "waistline": ComposedElement("dress-waistline-natural-001", "natural waist"),
+            "color_family": ComposedElement("dress-color-family-navy-001", "navy"),
+            "opacity_level": ComposedElement("dress-opacity-level-opaque-001", "opaque"),
+            "detail": ComposedElement("dress-detail-tailored-panel-001", "tailored seam panel"),
+        },
+        style_summary=("city", "polished", "structured"),
+        constraint_notes=(),
+    )
+
+
+def _style_family_prompt_case(
+    style_family_id: str,
+    subject_hint: str,
+    scene_hint: str,
+    lighting_hint: str,
+    styling_hint: str,
+    constraint_hint: str,
+) -> dict[str, object]:
+    return {
+        "subject_hint": subject_hint,
+        "scene_hint": scene_hint,
+        "constraint_hint": constraint_hint,
+        "selected_style_family": _selected_style_family(
+            style_family_id,
+            subject_hint,
+            scene_hint,
+            lighting_hint,
+            styling_hint,
+            (constraint_hint,),
+        ),
+    }
+
+
+def _render_family_prompt(selected_style_family: SelectedStyleFamily) -> str:
+    return _render_family_prompt_with_concept(selected_style_family, _objective_concept())
+
+
+def _render_family_prompt_with_concept(
+    selected_style_family: SelectedStyleFamily,
+    concept: ComposedConcept,
+) -> str:
+    from temu_y2_women.prompt_renderer import render_prompt_bundle
+
+    return render_prompt_bundle(
+        request=_request(mode="A"),
+        concept=concept,
+        selected_strategies=(_strategy(),),
+        selected_style_family=selected_style_family,
+        warnings=(),
+    )["prompt"]

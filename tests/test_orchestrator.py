@@ -15,6 +15,7 @@ class OrchestratorTest(unittest.TestCase):
         result = generate_dress_concept(_read_request("success-summer-vacation-mode-a.json"))
 
         self.assertEqual(result["request_normalized"]["mode"], "A")
+        self.assertEqual(result["selected_style_family"]["style_family_id"], "vacation-romantic")
         self.assertEqual(result["selected_strategies"][0]["strategy_id"], "dress-us-summer-vacation")
         self.assertEqual(result["prompt_bundle"]["mode"], "A")
         self.assertEqual(result["prompt_bundle"]["template_version"], "visual-prompt-v2")
@@ -31,6 +32,7 @@ class OrchestratorTest(unittest.TestCase):
             result["factory_spec"]["known"]["selected_elements"]["dress_length"]["value"],
             "mini",
         )
+        self.assertEqual(result["factory_spec"]["known"]["selected_style_family_id"], "vacation-romantic")
         self.assertIn(
             "print continuity across seams",
             result["factory_spec"]["inferred"]["visible_construction_priorities"],
@@ -58,15 +60,50 @@ class OrchestratorTest(unittest.TestCase):
         result = generate_dress_concept(_read_request("success-baseline-transitional-mode-a.json"))
 
         self.assertEqual(result["request_normalized"]["mode"], "A")
+        self.assertEqual(result["selected_style_family"]["style_family_id"], "clean-minimal")
         self.assertEqual(result["selected_strategies"][0]["strategy_id"], "dress-us-baseline")
         self.assertEqual(result["prompt_bundle"]["mode"], "A")
         self.assertEqual(
             result["composed_concept"]["selected_elements"]["neckline"]["value"],
-            "v-neckline",
+            "jewel neckline",
+        )
+        self.assertEqual(
+            result["composed_concept"]["selected_elements"]["waistline"]["value"],
+            "natural waist",
         )
         self.assertIn(
             "must_have_tags satisfied: transitional",
             result["composed_concept"]["constraint_notes"],
+        )
+
+    def test_explicit_city_polished_flow_uses_city_specific_slots(self) -> None:
+        from temu_y2_women.orchestrator import generate_dress_concept
+
+        result = generate_dress_concept(
+            {
+                "category": "dress",
+                "target_market": "US",
+                "target_launch_date": "2026-09-15",
+                "mode": "A",
+                "price_band": "mid",
+                "occasion_tags": ["casual"],
+                "avoid_tags": ["bodycon"],
+                "style_family": "city-polished",
+            }
+        )
+
+        self.assertEqual(result["selected_style_family"]["style_family_id"], "city-polished")
+        self.assertEqual(
+            result["composed_concept"]["selected_elements"]["neckline"]["value"],
+            "square neckline",
+        )
+        self.assertEqual(
+            result["composed_concept"]["selected_elements"]["waistline"]["value"],
+            "natural waist",
+        )
+        self.assertEqual(
+            result["composed_concept"]["selected_elements"]["detail"]["value"],
+            "tailored seam panel",
         )
 
     def test_successful_mode_b_flow(self) -> None:
@@ -75,6 +112,7 @@ class OrchestratorTest(unittest.TestCase):
         result = generate_dress_concept(_read_request("success-summer-vacation-mode-b.json"))
 
         self.assertEqual(result["request_normalized"]["mode"], "B")
+        self.assertEqual(result["selected_style_family"]["style_family_id"], "vacation-romantic")
         self.assertEqual(result["prompt_bundle"]["mode"], "B")
         self.assertEqual(result["factory_spec"]["schema_version"], "factory-spec-v1")
         self.assertIn("construction review clarity", " ".join(result["prompt_bundle"]["render_notes"]))
@@ -92,6 +130,38 @@ class OrchestratorTest(unittest.TestCase):
         from temu_y2_women.orchestrator import generate_dress_concept
 
         result = generate_dress_concept(_read_request("failure-constraint-conflict-summer-vacation.json"))
+
+        self.assertEqual(result["error"]["code"], "CONSTRAINT_CONFLICT")
+
+    def test_unknown_style_family_fails_closed(self) -> None:
+        from temu_y2_women.orchestrator import generate_dress_concept
+
+        result = generate_dress_concept(
+            {
+                "category": "dress",
+                "target_market": "US",
+                "target_launch_date": "2026-06-15",
+                "mode": "A",
+                "style_family": "unknown-family",
+            }
+        )
+
+        self.assertEqual(result["error"]["code"], "INVALID_REQUEST")
+
+    def test_explicit_style_family_conflict_fails_closed(self) -> None:
+        from temu_y2_women.orchestrator import generate_dress_concept
+
+        result = generate_dress_concept(
+            {
+                "category": "dress",
+                "target_market": "US",
+                "target_launch_date": "2026-06-15",
+                "mode": "A",
+                "occasion_tags": ["party"],
+                "avoid_tags": ["bodycon"],
+                "style_family": "party-fitted",
+            }
+        )
 
         self.assertEqual(result["error"]["code"], "CONSTRAINT_CONFLICT")
 

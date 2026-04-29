@@ -64,6 +64,7 @@ def normalize_request(payload: dict[str, Any]) -> NormalizedRequest:
         occasion_tags=_string_tuple(payload.get("occasion_tags")),
         must_have_tags=_string_tuple(payload.get("must_have_tags")),
         avoid_tags=_string_tuple(payload.get("avoid_tags")),
+        style_family=_optional_string(payload.get("style_family")),
     )
 
 

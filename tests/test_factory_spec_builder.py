@@ -10,6 +10,8 @@ from temu_y2_women.models import (
     DateWindow,
     NormalizedRequest,
     SelectedStrategy,
+    SelectedStyleFamily,
+    StyleFamilyProfile,
     StrategyTemplate,
 )
 
@@ -38,6 +40,7 @@ class FactorySpecBuilderTest(unittest.TestCase):
             request=request,
             concept=concept,
             selected_strategies=selected_strategies,
+            selected_style_family=_selected_style_family("vacation-romantic"),
         )
 
         self.assertEqual(factory_spec["schema_version"], "factory-spec-v1")
@@ -79,6 +82,7 @@ class FactorySpecBuilderTest(unittest.TestCase):
             request=request,
             concept=concept,
             selected_strategies=selected_strategies,
+            selected_style_family=_selected_style_family("vacation-romantic"),
         )
 
         inferred = factory_spec["inferred"]
@@ -130,6 +134,7 @@ class FactorySpecBuilderTest(unittest.TestCase):
             request=request,
             concept=concept,
             selected_strategies=selected_strategies,
+            selected_style_family=_selected_style_family("vacation-romantic"),
         )
 
         inferred = factory_spec["inferred"]
@@ -169,6 +174,7 @@ class FactorySpecBuilderTest(unittest.TestCase):
             request=_objective_request(),
             concept=_objective_concept(),
             selected_strategies=(_objective_strategy(),),
+            selected_style_family=_selected_style_family("vacation-romantic"),
         )
 
         selected = factory_spec["known"]["selected_elements"]
@@ -190,6 +196,11 @@ class FactorySpecBuilderTest(unittest.TestCase):
             "commercial cue: keep white color direction and sheer balance commercially readable in first-glance imagery",
             inferred["commercial_review_cues"],
         )
+        self.assertEqual(factory_spec["known"]["selected_style_family_id"], "vacation-romantic")
+        self.assertIn(
+            "style family review context: vacation-romantic",
+            inferred["commercial_review_context"],
+        )
 
 
 def _build_success_inputs(
@@ -199,11 +210,21 @@ def _build_success_inputs(
     from temu_y2_women.evidence_paths import EvidencePaths
     from temu_y2_women.evidence_repository import load_elements, load_strategy_templates, retrieve_candidates
     from temu_y2_women.request_normalizer import normalize_request
+    from temu_y2_women.style_family_repository import load_style_families
+    from temu_y2_women.style_family_selector import select_style_family
     from temu_y2_women.strategy_selector import select_strategies
 
     payload = _read_request(fixture_name)
     evidence_paths = EvidencePaths.defaults()
     request = normalize_request(payload)
+    selected_style_family = select_style_family(
+        request,
+        load_style_families(
+            path=evidence_paths.style_families_path,
+            elements_path=evidence_paths.elements_path,
+            taxonomy_path=evidence_paths.taxonomy_path,
+        ),
+    )
     strategies = load_strategy_templates(
         path=evidence_paths.strategies_path,
         taxonomy_path=evidence_paths.taxonomy_path,
@@ -214,7 +235,12 @@ def _build_success_inputs(
         path=evidence_paths.elements_path,
         taxonomy_path=evidence_paths.taxonomy_path,
     )
-    grouped_candidates, _ = retrieve_candidates(request, elements, strategy_result.selected)
+    grouped_candidates, _ = retrieve_candidates(
+        request,
+        elements,
+        strategy_result.selected,
+        selected_style_family=selected_style_family,
+    )
     concept = compose_concept(request, grouped_candidates)
     return request, concept, strategy_result.selected
 
@@ -235,6 +261,7 @@ def _objective_request() -> NormalizedRequest:
         occasion_tags=("vacation",),
         must_have_tags=("floral",),
         avoid_tags=("bodycon",),
+        style_family=None,
     )
 
 
@@ -279,4 +306,24 @@ def _objective_strategy() -> SelectedStrategy:
             status="active",
         ),
         reason="matched summer vacation window",
+    )
+
+
+def _selected_style_family(style_family_id: str) -> SelectedStyleFamily:
+    return SelectedStyleFamily(
+        profile=StyleFamilyProfile(
+            style_family_id=style_family_id,
+            hard_slot_values={},
+            soft_slot_values={},
+            blocked_slot_values={},
+            subject_hint="fixture subject",
+            scene_hint="fixture scene",
+            lighting_hint="fixture lighting",
+            styling_hint="fixture styling",
+            constraint_hints=(),
+            fallback_reason="fixture",
+            status="active",
+        ),
+        selection_mode="explicit",
+        reason="fixture",
     )

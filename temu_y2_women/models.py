@@ -14,6 +14,7 @@ class NormalizedRequest:
     occasion_tags: tuple[str, ...]
     must_have_tags: tuple[str, ...]
     avoid_tags: tuple[str, ...]
+    style_family: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +51,28 @@ class SelectedStrategy:
 class StrategySelectionResult:
     selected: tuple[SelectedStrategy, ...]
     warnings: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class StyleFamilyProfile:
+    style_family_id: str
+    hard_slot_values: dict[str, tuple[str, ...]]
+    soft_slot_values: dict[str, tuple[str, ...]]
+    blocked_slot_values: dict[str, tuple[str, ...]]
+    subject_hint: str
+    scene_hint: str
+    lighting_hint: str
+    styling_hint: str
+    constraint_hints: tuple[str, ...]
+    fallback_reason: str
+    status: str
+
+
+@dataclass(frozen=True, slots=True)
+class SelectedStyleFamily:
+    profile: StyleFamilyProfile
+    selection_mode: str
+    reason: str
 
 
 @dataclass(frozen=True, slots=True)

@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from temu_y2_women.models import ComposedConcept, NormalizedRequest, SelectedStrategy
+from temu_y2_women.models import (
+    ComposedConcept,
+    NormalizedRequest,
+    SelectedStrategy,
+    SelectedStyleFamily,
+)
 
 _SCHEMA_VERSION = "factory-spec-v1"
 _UNRESOLVED_FIELDS = (
@@ -47,11 +52,12 @@ def build_factory_spec(
     request: NormalizedRequest,
     concept: ComposedConcept,
     selected_strategies: tuple[SelectedStrategy, ...],
+    selected_style_family: SelectedStyleFamily | None = None,
 ) -> dict[str, Any]:
     return {
         "schema_version": _SCHEMA_VERSION,
-        "known": _known_section(request, concept, selected_strategies),
-        "inferred": _inferred_section(request, concept, selected_strategies),
+        "known": _known_section(request, concept, selected_strategies, selected_style_family),
+        "inferred": _inferred_section(request, concept, selected_strategies, selected_style_family),
         "unresolved": list(_UNRESOLVED_FIELDS),
     }
 
@@ -60,6 +66,7 @@ def _known_section(
     request: NormalizedRequest,
     concept: ComposedConcept,
     selected_strategies: tuple[SelectedStrategy, ...],
+    selected_style_family: SelectedStyleFamily | None,
 ) -> dict[str, Any]:
     return {
         "category": concept.category,
@@ -70,6 +77,7 @@ def _known_section(
         "must_have_tags": list(request.must_have_tags),
         "avoid_tags": list(request.avoid_tags),
         "selected_strategy_ids": [item.strategy.strategy_id for item in selected_strategies],
+        "selected_style_family_id": _selected_style_family_id(selected_style_family),
         "selected_elements": {
             slot: {"element_id": element.element_id, "value": element.value}
             for slot, element in concept.selected_elements.items()
@@ -81,13 +89,18 @@ def _inferred_section(
     request: NormalizedRequest,
     concept: ComposedConcept,
     selected_strategies: tuple[SelectedStrategy, ...],
+    selected_style_family: SelectedStyleFamily | None,
 ) -> dict[str, list[str]]:
     return {
         "fit_intent": _fit_intent_notes(request, concept),
         "fabric_review_focus": _fabric_review_focus(concept),
         "detail_review_focus": _detail_review_focus(concept),
         "visible_construction_priorities": _visible_construction_priorities(concept),
-        "commercial_review_context": _commercial_review_context(request, selected_strategies),
+        "commercial_review_context": _commercial_review_context(
+            request,
+            selected_strategies,
+            selected_style_family,
+        ),
         "sample_review_watchpoints": _sample_review_watchpoints(request, concept),
         "qa_review_notes": _qa_review_notes(concept),
         "fit_review_cues": _fit_review_cues(request, concept),
@@ -151,8 +164,12 @@ def _visible_construction_priorities(concept: ComposedConcept) -> list[str]:
 def _commercial_review_context(
     request: NormalizedRequest,
     selected_strategies: tuple[SelectedStrategy, ...],
+    selected_style_family: SelectedStyleFamily | None,
 ) -> list[str]:
     context: list[str] = []
+    style_family_id = _selected_style_family_id(selected_style_family)
+    if style_family_id is not None:
+        context.append(f"style family review context: {style_family_id}")
     if selected_strategies:
         context.append(f"seasonal review context: {selected_strategies[0].reason}")
     if request.occasion_tags:
@@ -164,6 +181,12 @@ def _commercial_review_context(
             f"price-band review context: keep construction commercially realistic for {request.price_band} pricing"
         )
     return context
+
+
+def _selected_style_family_id(selected_style_family: SelectedStyleFamily | None) -> str | None:
+    if selected_style_family is None:
+        return None
+    return selected_style_family.profile.style_family_id
 
 
 def _sample_review_watchpoints(

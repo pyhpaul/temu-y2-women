@@ -138,6 +138,7 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
             occasion_tags=("vacation",),
             must_have_tags=(),
             avoid_tags=(),
+            style_family=None,
         )
 
     @staticmethod
@@ -949,7 +950,7 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
             {
                 "dress_length": {"mini", "midi"},
                 "waistline": {"natural waist", "drop waist"},
-                "color_family": {"white", "red"},
+                "color_family": {"white", "red", "black", "navy", "stone"},
                 "print_scale": {"micro print", "oversized print"},
                 "opacity_level": {"opaque", "sheer"},
             },
@@ -979,13 +980,53 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
             {
                 "dress_length": {"mini", "midi"},
                 "waistline": {"natural waist", "drop waist"},
-                "color_family": {"white", "red"},
+                "color_family": {"white", "red", "black", "navy", "stone"},
                 "print_scale": {"micro print", "oversized print"},
                 "opacity_level": {"opaque", "sheer"},
             },
         )
         self._assert_runtime_candidate_boost(grouped, elements, "dress_length", "mini")
         self._assert_runtime_candidate_boost(grouped, elements, "waistline", "drop waist")
+
+    def test_runtime_retrieve_candidates_applies_style_family_filters(self) -> None:
+        from temu_y2_women.evidence_repository import load_elements, retrieve_candidates
+        from temu_y2_women.models import NormalizedRequest
+        from temu_y2_women.style_family_repository import load_style_families
+        from temu_y2_women.style_family_selector import select_style_family
+
+        taxonomy_path = Path("data/mvp/dress/evidence_taxonomy.json")
+        elements_path = Path("data/mvp/dress/elements.json")
+        style_families_path = Path("data/mvp/dress/style_families.json")
+        request = NormalizedRequest(
+            category="dress",
+            target_market="US",
+            target_launch_date=date(2026, 6, 15),
+            mode="A",
+            price_band="mid",
+            occasion_tags=("party",),
+            must_have_tags=(),
+            avoid_tags=(),
+            style_family="party-fitted",
+        )
+        elements = load_elements(elements_path, taxonomy_path=taxonomy_path)
+        profiles = load_style_families(
+            path=style_families_path,
+            elements_path=elements_path,
+            taxonomy_path=taxonomy_path,
+        )
+        selected_family = select_style_family(request=request, profiles=profiles)
+
+        grouped, warnings = retrieve_candidates(
+            request,
+            elements,
+            (),
+            selected_style_family=selected_family,
+        )
+
+        self.assertEqual(warnings, ())
+        self.assertEqual({item["value"] for item in grouped["silhouette"]}, {"bodycon"})
+        self.assertEqual({item["value"] for item in grouped["dress_length"]}, {"mini"})
+        self.assertEqual(grouped["detail"][0]["value"], "ruched side seam")
 
     def test_reject_invalid_strategy_slot_preference_fixture(self) -> None:
         from temu_y2_women.errors import GenerationError
@@ -1055,7 +1096,7 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
         expected_slots = {
             "dress_length": {"mini", "midi"},
             "waistline": {"natural waist", "drop waist"},
-            "color_family": {"white", "red"},
+            "color_family": {"white", "red", "black", "navy", "stone"},
             "print_scale": {"micro print", "oversized print"},
             "opacity_level": {"opaque", "sheer"},
         }
