@@ -5,81 +5,64 @@
   "source_type": "public_editorial_web",
   "target_market": "US",
   "category": "dress",
-  "captured_at": "2025-05-05",
+  "captured_at": "2025-07-04",
   "fetched_at": "2026-04-28T00:00:00Z",
-  "page_title": "6 Summer 2025 Dress Trends To Know Before Everyone Else",
+  "page_title": "Fashion Girls Are Backing These Summer 2025 Dress Trends Over Everything Else",
   "sections": [
+    {
+      "section_id": "linen-dresses",
+      "heading": "Linen Dresses",
+      "text": "There's no doubt about it-linen dresses are fundamental to the perfect summer wardrobe. I found ones from go-to brands like Reformation, Alex Mill, and J.Crew that will give your usual lineup a much-needed mid-summer refresh.",
+      "tags": [
+        "summer"
+      ]
+    },
     {
       "section_id": "smocked-dresses",
       "heading": "Smocked Dresses",
-      "text": "Smocked dresses with smocked bodices and cotton poplin textures make the easiest summer uniform.",
+      "text": "Smocked dresses have quietly saved my wardrobe this summer. The forgiving design is perfect to throw-on-and-go when I have no idea what to wear on the hottest days. My favorites include a bright Damson Madder find that I wear all the time and a floaty classic from Free People.",
       "tags": [
         "summer"
-      ],
-      "adapter_version": "marieclaire_editorial_v1",
-      "confidence": 0.79,
-      "excerpt_anchor": "smocked dresses",
-      "matched_keywords": [
-        "smocked bodices",
-        "cotton poplin"
+      ]
+    },
+    {
+      "section_id": "chocolate-brown-dresses",
+      "heading": "Chocolate Brown Dresses",
+      "text": "I live in all-black outfits, but chocolate brown is making a strong case as my favorite summer neutral shade. It brightens up my summer wardrobe just a bit without going out of my comfort zone. Plus, the Tobie Dress on this list is a favorite of Brooke Knappenberger, Marie Claire's Associate Commerce Editor (and it's on my to-buy list because of it).",
+      "tags": [
+        "summer"
       ]
     },
     {
       "section_id": "polka-dot-dresses",
       "heading": "Polka Dot Dresses",
-      "text": "Polka dot dresses are back with a cleaner palette and a more grown-up shape this season.",
+      "text": "It's retro, but it's everywhere-the polka dot is summer's It-print. Already worn by Scarlett Johansson and Hailey Bieber, the print is making a strong comeback for 2025. Join in on the fun with one of these dotty styles, all of which retail for less than $200.",
       "tags": [
         "summer"
-      ],
-      "adapter_version": "marieclaire_editorial_v1",
-      "confidence": 0.68,
-      "excerpt_anchor": "polka dot dresses",
-      "matched_keywords": [
-        "polka dots"
-      ]
-    },
-    {
-      "section_id": "boho-dresses",
-      "heading": "Boho Dresses",
-      "text": "Boho dresses with flutter sleeves and floral details feel airy without losing structure.",
-      "tags": [
-        "summer"
-      ],
-      "adapter_version": "marieclaire_editorial_v1",
-      "confidence": 0.73,
-      "excerpt_anchor": "flutter sleeves",
-      "matched_keywords": [
-        "flutter sleeves",
-        "floral"
       ]
     },
     {
       "section_id": "gingham-dresses",
       "heading": "Gingham Dresses",
-      "text": "Gingham dresses are being cut in an a-line shape and often finished in crisp cotton poplin.",
+      "text": "If there were to be another major print trend for the season, it would be gingham. The look has been co-signed by Olivia Rodrigo at Wimbledon, cementing its must-buy status. It's another retro look that I can get behind, thanks to brands like Hill House Home and Ganni.",
       "tags": [
         "summer"
-      ],
-      "adapter_version": "marieclaire_editorial_v1",
-      "confidence": 0.71,
-      "excerpt_anchor": "a-line",
-      "matched_keywords": [
-        "a-line",
-        "cotton poplin"
+      ]
+    },
+    {
+      "section_id": "boho-dresses",
+      "heading": "Boho Dresses",
+      "text": "Summer's boho fashion trend is going strong. Shop it for the months ahead by choosing floaty textures and romantic, floaty silhouettes. Sheer fabrics show skin without baring it all, making it perfect for scorching temperatures.",
+      "tags": [
+        "summer"
       ]
     },
     {
       "section_id": "babydoll-dresses",
       "heading": "Babydoll Dresses",
-      "text": "Babydoll dresses are leaning cleaner this year, often anchored by a square neckline and flat sandals.",
+      "text": "Perhaps the most surprising fashion trend on this list is the rise of the babydoll silhouette. The drapey, sweet style is perfect for low-key days (especially during those odd heat waves) because it barely touches the skin.",
       "tags": [
         "summer"
-      ],
-      "adapter_version": "marieclaire_editorial_v1",
-      "confidence": 0.67,
-      "excerpt_anchor": "square neckline",
-      "matched_keywords": [
-        "square neckline"
       ]
     }
   ],
