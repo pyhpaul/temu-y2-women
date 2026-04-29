@@ -1,0 +1,35 @@
+{
+  "schema_version": "product-image-input-v1",
+  "products": [
+    {
+      "product_id": "dress-product-001",
+      "category": "dress",
+      "target_market": "US",
+      "product_title": "reference only for image observer context",
+      "source_url": "https://example.com/products/dress-product-001",
+      "price_band": "mid",
+      "occasion_tags": [
+        "vacation"
+      ],
+      "season_tags": [
+        "summer"
+      ],
+      "manual_tags": [
+        "vacation",
+        "summer"
+      ],
+      "images": [
+        {
+          "image_id": "dress-product-001-front",
+          "image_path": "front.jpg",
+          "view_label": "front"
+        },
+        {
+          "image_id": "dress-product-001-back",
+          "image_path": "back.jpg",
+          "view_label": "back"
+        }
+      ]
+    }
+  ]
+}
