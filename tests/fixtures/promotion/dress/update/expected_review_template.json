@@ -23,10 +23,10 @@
         "slot": "fabric",
         "value": "cotton poplin",
         "tags": ["breathable", "lightweight", "summer", "vacation"],
-        "base_score": 0.88,
+        "base_score": 0.8,
         "price_bands": ["mid"],
-        "occasion_tags": ["resort", "vacation"],
-        "season_tags": ["summer"],
+        "occasion_tags": ["casual", "resort", "vacation"],
+        "season_tags": ["spring", "summer"],
         "risk_flags": [],
         "evidence_summary": "Derived from 3 signals for crisp breathable summer dress demand.",
         "status": "active"
@@ -53,14 +53,14 @@
         "strategy_id": "dress-us-summer-vacation",
         "category": "dress",
         "target_market": "US",
-        "priority": 3,
+        "priority": 8,
         "date_window": {
-          "start": "01-01",
-          "end": "12-31"
+          "start": "05-15",
+          "end": "08-31"
         },
         "occasion_tags": ["resort", "vacation"],
-        "boost_tags": ["airy", "breathable", "feminine", "lightweight", "summer", "vacation"],
-        "suppress_tags": [],
+        "boost_tags": ["airy", "breathable", "floral", "summer", "feminine", "lightweight", "vacation"],
+        "suppress_tags": ["bodycon", "holiday"],
         "slot_preferences": {
           "detail": ["smocked bodice"],
           "fabric": ["cotton poplin"],
@@ -69,12 +69,14 @@
           "silhouette": ["a-line"],
           "sleeve": ["flutter sleeve"]
         },
-        "score_boost": 0.0,
-        "score_cap": 0.0,
+        "score_boost": 0.09,
+        "score_cap": 0.15,
         "prompt_hints": [
+          "breathable summer dress assortment",
+          "easy feminine vacation styling",
           "Aggregated from 3 signals for refreshed summer vacation dress demand."
         ],
-        "reason_template": "Aggregated from 3 signals for refreshed summer vacation dress demand.",
+        "reason_template": "summer vacation timing favors breathable feminine dress cues with broad seasonal reuse",
         "status": "active"
       }
     }

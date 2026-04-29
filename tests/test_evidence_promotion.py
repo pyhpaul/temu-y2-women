@@ -91,6 +91,58 @@ class EvidencePromotionPrepareTest(unittest.TestCase):
         self.assertIn("canonical_identity", strategy)
         self.assertIn("merge_rationale", strategy)
 
+    def test_prepare_dress_promotion_review_preserves_active_element_strength_on_update(self) -> None:
+        from temu_y2_women.evidence_promotion import prepare_dress_promotion_review
+
+        result = prepare_dress_promotion_review(
+            draft_elements_path=_PROMOTION_FIXTURE_DIR / "update" / "draft_elements.json",
+            draft_strategy_hints_path=_PROMOTION_FIXTURE_DIR / "update" / "draft_strategy_hints.json",
+            active_elements_path=_PROMOTION_FIXTURE_DIR / "baseline" / "elements.json",
+            active_strategies_path=_PROMOTION_FIXTURE_DIR / "baseline" / "strategy_templates.json",
+        )
+
+        proposed = result["elements"][0]["proposed_element"]
+        self.assertEqual(proposed["base_score"], 0.8)
+        self.assertEqual(proposed["tags"], ["breathable", "lightweight", "summer", "vacation"])
+        self.assertEqual(proposed["price_bands"], ["mid"])
+        self.assertEqual(proposed["occasion_tags"], ["casual", "resort", "vacation"])
+        self.assertEqual(proposed["season_tags"], ["spring", "summer"])
+        self.assertEqual(proposed["risk_flags"], [])
+
+    def test_prepare_dress_promotion_review_preserves_active_strategy_window_and_boost_on_update(self) -> None:
+        from temu_y2_women.evidence_promotion import prepare_dress_promotion_review
+
+        result = prepare_dress_promotion_review(
+            draft_elements_path=_PROMOTION_FIXTURE_DIR / "update" / "draft_elements.json",
+            draft_strategy_hints_path=_PROMOTION_FIXTURE_DIR / "update" / "draft_strategy_hints.json",
+            active_elements_path=_PROMOTION_FIXTURE_DIR / "baseline" / "elements.json",
+            active_strategies_path=_PROMOTION_FIXTURE_DIR / "baseline" / "strategy_templates.json",
+        )
+
+        proposed = result["strategy_hints"][0]["proposed_strategy_template"]
+        self.assertEqual(proposed["priority"], 8)
+        self.assertEqual(proposed["date_window"], {"start": "05-15", "end": "08-31"})
+        self.assertEqual(proposed["score_boost"], 0.09)
+        self.assertEqual(proposed["score_cap"], 0.15)
+        self.assertEqual(proposed["occasion_tags"], ["resort", "vacation"])
+        self.assertEqual(proposed["suppress_tags"], ["bodycon", "holiday"])
+        self.assertEqual(
+            proposed["boost_tags"],
+            ["airy", "breathable", "floral", "summer", "feminine", "lightweight", "vacation"],
+        )
+        self.assertEqual(
+            proposed["prompt_hints"],
+            [
+                "breathable summer dress assortment",
+                "easy feminine vacation styling",
+                "Aggregated from 3 signals for refreshed summer vacation dress demand.",
+            ],
+        )
+        self.assertEqual(
+            proposed["reason_template"],
+            "summer vacation timing favors breathable feminine dress cues with broad seasonal reuse",
+        )
+
     def test_prepare_dress_promotion_review_surfaces_structured_review_context(self) -> None:
         from temu_y2_women.evidence_promotion import prepare_dress_promotion_review
         from temu_y2_women.public_signal_refresh import run_public_signal_refresh
@@ -511,6 +563,53 @@ class EvidencePromotionApplyTest(unittest.TestCase):
             )
             self.assertEqual(result["summary"]["elements"]["accepted"], 2)
             self.assertEqual(result["summary"]["strategy_hints"]["accepted"], 1)
+
+    def test_apply_reviewed_dress_promotion_accepts_default_update_review_without_degrading_active_strength(self) -> None:
+        from temu_y2_women.evidence_promotion import (
+            apply_reviewed_dress_promotion,
+            prepare_dress_promotion_review,
+        )
+
+        with TemporaryDirectory() as temp_dir:
+            scenario_dir = _PROMOTION_FIXTURE_DIR / "update"
+            temp_root = Path(temp_dir)
+            elements_path, strategies_path = _seed_active_evidence(temp_root)
+            report_path = temp_root / "promotion_report.json"
+            reviewed = prepare_dress_promotion_review(
+                draft_elements_path=scenario_dir / "draft_elements.json",
+                draft_strategy_hints_path=scenario_dir / "draft_strategy_hints.json",
+                active_elements_path=elements_path,
+                active_strategies_path=strategies_path,
+            )
+            for record in reviewed["elements"]:
+                record["decision"] = "accept"
+            for record in reviewed["strategy_hints"]:
+                record["decision"] = "accept"
+            reviewed_path = temp_root / "prepared-review.json"
+            _write_json(reviewed_path, reviewed)
+
+            result = apply_reviewed_dress_promotion(
+                reviewed_path=reviewed_path,
+                draft_elements_path=scenario_dir / "draft_elements.json",
+                draft_strategy_hints_path=scenario_dir / "draft_strategy_hints.json",
+                active_elements_path=elements_path,
+                active_strategies_path=strategies_path,
+                report_path=report_path,
+            )
+
+            self.assertNotIn("error", result)
+            applied_elements = _read_json(elements_path)["elements"]
+            applied_strategies = _read_json(strategies_path)["strategy_templates"]
+            cotton_poplin = next(item for item in applied_elements if item["element_id"] == "dress-fabric-cotton-poplin-001")
+            summer_vacation = next(
+                item for item in applied_strategies if item["strategy_id"] == "dress-us-summer-vacation"
+            )
+            self.assertEqual(cotton_poplin["base_score"], 0.8)
+            self.assertEqual(cotton_poplin["occasion_tags"], ["casual", "resort", "vacation"])
+            self.assertEqual(summer_vacation["priority"], 8)
+            self.assertEqual(summer_vacation["date_window"], {"start": "05-15", "end": "08-31"})
+            self.assertEqual(summer_vacation["score_boost"], 0.09)
+            self.assertEqual(summer_vacation["score_cap"], 0.15)
 
 
 def _read_json(path: Path) -> dict[str, object]:
