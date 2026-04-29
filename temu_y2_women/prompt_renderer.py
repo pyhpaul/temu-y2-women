@@ -18,6 +18,17 @@ _DETAIL_JOB_SPECS = (
     ("fabric_print_closeup", "fabric_print_closeup.png"),
     ("hem_and_drape_closeup", "hem_and_drape_closeup.png"),
 )
+_ELEMENT_PHRASE_OVERRIDES = {
+    ("silhouette", "babydoll"): "babydoll silhouette with easy high-waist volume",
+    ("fabric", "linen blend"): "linen-blend fabric",
+    ("neckline", "bandeau neckline"): "strapless bandeau neckline",
+    ("neckline", "halter neckline"): "halter neckline with open shoulders",
+    ("pattern", "stripe print"): "directional stripe print",
+    ("pattern", "gingham check"): "two-tone gingham check",
+    ("detail", "bubble hem"): "bubble hem finish",
+    ("detail", "slip dress"): "slip-dress drape",
+    ("color_family", "brown"): "brown neutral color story",
+}
 
 
 def render_prompt_bundle(
@@ -123,6 +134,9 @@ def _structure_line(request: NormalizedRequest, concept: ComposedConcept) -> str
 
 
 def _element_phrase(slot: str, value: str) -> str:
+    override = _ELEMENT_PHRASE_OVERRIDES.get((slot, value))
+    if override:
+        return override
     if slot == "silhouette":
         return f"{value} silhouette"
     if slot == "fabric":
@@ -263,16 +277,16 @@ def _hero_shot_line(request: NormalizedRequest, angle: str) -> str:
 
 
 def _material_line(concept: ComposedConcept) -> str:
-    fabric_text = _selected_value(concept, "fabric", "dress fabric")
-    color_text = _selected_value(concept, "color_family", "commercial color")
+    fabric_text = _selected_phrase(concept, "fabric", "dress fabric")
+    color_text = _selected_phrase(concept, "color_family", "commercial color")
     items = [f"crisp {fabric_text} texture"]
     detail_text = _selected_optional_value(concept, "detail")
     if detail_text:
-        items.append(f"visible {detail_text}")
+        items.append(f"visible {_element_phrase('detail', detail_text)}")
     items.extend(("visible seam lines", "clean hem finish", f"true-to-color {color_text}"))
     pattern_text = _selected_optional_value(concept, "pattern")
     if pattern_text:
-        items.append(f"visible {pattern_text}")
+        items.append(f"visible {_element_phrase('pattern', pattern_text)}")
     print_scale = _selected_optional_value(concept, "print_scale")
     if print_scale:
         items.append(_element_phrase("print_scale", print_scale))
@@ -369,20 +383,24 @@ def _hero_edit_instruction(request: NormalizedRequest, concept: ComposedConcept,
 
 
 def _identity_lock_line(concept: ComposedConcept) -> str:
-    fabric = _selected_value(concept, "fabric", "dress fabric")
-    pattern = _selected_value(concept, "pattern", "surface print")
-    color = _selected_value(concept, "color_family", "commercial color")
-    detail = _selected_value(concept, "detail", "construction detail")
+    fabric = _selected_phrase(concept, "fabric", "dress fabric")
+    pattern = _selected_phrase(concept, "pattern", "surface print")
+    color = _selected_phrase(concept, "color_family", "commercial color")
+    detail = _selected_phrase(concept, "detail", "construction detail")
     return (
         "Keep the exact same dress, same model, same silhouette, "
-        f"same {fabric} texture, same {pattern} placement, same {color} story, and same {detail}."
+        f"same {fabric} texture, same {pattern} placement, same {color}, and same {detail}."
     )
 
 
 def _construction_edit_instruction(concept: ComposedConcept) -> str:
-    neckline = concept.selected_elements["neckline"].value
-    detail = concept.selected_elements.get("detail", concept.selected_elements["fabric"]).value
-    waistline = concept.selected_elements.get("waistline", concept.selected_elements["silhouette"]).value
+    neckline = _selected_phrase(concept, "neckline", "selected neckline")
+    detail = _selected_phrase(concept, "detail", _selected_phrase(concept, "fabric", "selected fabric"))
+    waistline = _selected_phrase(
+        concept,
+        "waistline",
+        _selected_phrase(concept, "silhouette", "selected silhouette"),
+    )
     return " ".join(
         (
             "Edit the reference image.",
@@ -395,15 +413,15 @@ def _construction_edit_instruction(concept: ComposedConcept) -> str:
 
 
 def _fabric_edit_instruction(concept: ComposedConcept) -> str:
-    fabric = concept.selected_elements["fabric"].value
-    pattern = _selected_value(concept, "pattern", "solid color")
+    fabric = _selected_phrase(concept, "fabric", "selected fabric")
+    pattern = _selected_phrase(concept, "pattern", "solid color")
     print_scale = _element_phrase("print_scale", _selected_value(concept, "print_scale", "commercial print"))
     opacity = _element_phrase("opacity_level", _selected_value(concept, "opacity_level", "opaque"))
     return " ".join(
         (
             "Edit the reference image.",
             _identity_lock_line(concept),
-            f"Zoom into the {fabric} fabric surface.",
+            f"Zoom into the {fabric} surface.",
             f"Clearly show {pattern}, {print_scale}, {opacity}, weave texture, and color accuracy.",
             "Keep soft studio lighting and realistic surface detail; no blur, no props, no text.",
         )
@@ -411,9 +429,9 @@ def _fabric_edit_instruction(concept: ComposedConcept) -> str:
 
 
 def _hem_edit_instruction(concept: ComposedConcept) -> str:
-    silhouette = concept.selected_elements["silhouette"].value
+    silhouette = _selected_phrase(concept, "silhouette", "selected silhouette")
     dress_length = _selected_value(concept, "dress_length", "balanced")
-    pattern = _selected_value(concept, "pattern", "surface print")
+    pattern = _selected_phrase(concept, "pattern", "surface print")
     return " ".join(
         (
             "Edit the reference image.",
@@ -437,6 +455,13 @@ def _selected_optional_value(concept: ComposedConcept, slot: str) -> str | None:
     return element.value
 
 
+def _selected_phrase(concept: ComposedConcept, slot: str, default: str) -> str:
+    element = concept.selected_elements.get(slot)
+    if element is None:
+        return default
+    return _element_phrase(slot, element.value)
+
+
 def _selected_style_family_id(selected_style_family: SelectedStyleFamily | None) -> str:
     if selected_style_family is None:
         return ""
@@ -444,18 +469,24 @@ def _selected_style_family_id(selected_style_family: SelectedStyleFamily | None)
 
 
 def _generic_visual_line(concept: ComposedConcept) -> str:
-    neckline = _selected_value(concept, "neckline", "selected neckline")
-    silhouette = _selected_value(concept, "silhouette", "selected silhouette")
-    detail = _selected_optional_value(concept, "detail")
-    if detail:
-        return (
-            f"keep the {neckline}, {silhouette}, and {detail} clearly readable from first glance; "
-            "do not simplify the garment into a generic commercial dress shape"
-        )
+    targets = _generic_visual_targets(concept)
     return (
-        f"keep the {neckline} and {silhouette} clearly readable from first glance; "
+        f"keep the {_oxford_join(targets)} clearly readable from first glance; "
         "do not simplify the garment into a generic commercial dress shape"
     )
+
+
+def _generic_visual_targets(concept: ComposedConcept) -> list[str]:
+    slots = ("neckline", "silhouette", "detail", "pattern")
+    targets = []
+    for slot in slots:
+        value = _selected_optional_value(concept, slot)
+        if value is None:
+            continue
+        targets.append(_element_phrase(slot, value))
+    if targets:
+        return targets
+    return ["selected neckline", "selected silhouette"]
 
 
 def _clean_minimal_visual_line(concept: ComposedConcept) -> str:

@@ -202,6 +202,52 @@ class FactorySpecBuilderTest(unittest.TestCase):
             inferred["commercial_review_context"],
         )
 
+    def test_build_factory_spec_surfaces_editorial_value_specific_review_notes(self) -> None:
+        from temu_y2_women.factory_spec_builder import build_factory_spec
+
+        factory_spec = build_factory_spec(
+            request=_objective_request(),
+            concept=_editorial_concept(),
+            selected_strategies=(_objective_strategy(),),
+            selected_style_family=_selected_style_family("vacation-romantic"),
+        )
+
+        inferred = factory_spec["inferred"]
+        self.assertIn(
+            "babydoll silhouette should keep easy high-waist volume without looking oversized",
+            inferred["fit_intent"],
+        )
+        self.assertEqual(
+            inferred["fabric_review_focus"],
+            [
+                "confirm linen-blend texture, breathable handfeel, and stable color clarity",
+                "check drape stays airy and separated without reading stiff or collapsed",
+            ],
+        )
+        self.assertEqual(
+            inferred["detail_review_focus"],
+            [
+                "verify bubble-hem turnback stays even, full, and repeatable around the skirt",
+                "confirm bubble-hem volume stays balanced without torque or collapse",
+            ],
+        )
+        self.assertIn(
+            "sample review: confirm linen blend keeps airy texture, breathable separation, and stable drape in the finished dress",
+            inferred["sample_review_watchpoints"],
+        )
+        self.assertIn(
+            "qa review: check bubble-hem turnback, fullness, and seam balance for a stable rounded shape",
+            inferred["qa_review_notes"],
+        )
+        self.assertIn(
+            "fit cue: keep babydoll volume lifted and easy without turning boxy through the body",
+            inferred["fit_review_cues"],
+        )
+        self.assertIn(
+            "visible check: confirm bubble-hem volume reads even and rounded across the skirt",
+            inferred["visible_construction_checks"],
+        )
+
 
 def _build_success_inputs(
     fixture_name: str,
@@ -284,6 +330,25 @@ def _objective_concept() -> ComposedConcept:
         },
         style_summary=("summer-ready", "vacation-oriented", "feminine silhouette"),
         constraint_notes=("must_have_tags satisfied: floral",),
+    )
+
+
+def _editorial_concept() -> ComposedConcept:
+    return ComposedConcept(
+        category="dress",
+        concept_score=0.93,
+        selected_elements={
+            "silhouette": ComposedElement("dress-silhouette-babydoll-001", "babydoll"),
+            "fabric": ComposedElement("dress-fabric-linen-blend-001", "linen blend"),
+            "neckline": ComposedElement("dress-neckline-halter-001", "halter neckline"),
+            "sleeve": ComposedElement("dress-sleeve-puff-001", "short puff sleeve"),
+            "dress_length": ComposedElement("dress-length-mini-001", "mini"),
+            "color_family": ComposedElement("dress-color-family-brown-001", "brown"),
+            "pattern": ComposedElement("dress-pattern-gingham-check-001", "gingham check"),
+            "detail": ComposedElement("dress-detail-bubble-hem-001", "bubble hem"),
+        },
+        style_summary=("editorial-trend-led", "summer-ready", "commercially grounded"),
+        constraint_notes=(),
     )
 
 
