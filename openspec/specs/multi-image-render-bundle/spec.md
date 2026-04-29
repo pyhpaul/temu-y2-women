@@ -1,7 +1,7 @@
 # multi-image-render-bundle Specification
 
 ## Purpose
-TBD - created by archiving change add-six-image-render-bundle. Update Purpose after archive.
+Define the stable contract for deterministic six-image render job bundles attached to successful `dress` concept generation results.
 ## Requirements
 ### Requirement: Successful concept results include a deterministic six-image render job set
 The system SHALL attach a deterministic six-job render bundle to every successful `dress` concept result that uses the current multi-image prompt contract.
