@@ -147,18 +147,38 @@ def _hero_jobs(
                 "prompt_id": prompt_id,
                 "group": "hero",
                 "output_name": output_name,
-                "prompt": _build_prompt(
+                "prompt": _hero_prompt(
                     request,
                     concept,
                     selected_strategies,
                     development_notes,
-                    _hero_shot_line(request, angle),
+                    prompt_id,
+                    angle,
                 ),
                 "render_strategy": _hero_render_strategy(prompt_id),
                 "reference_prompt_id": _hero_reference_prompt_id(prompt_id),
             }
         )
     return jobs
+
+
+def _hero_prompt(
+    request: NormalizedRequest,
+    concept: ComposedConcept,
+    selected_strategies: tuple[SelectedStrategy, ...],
+    development_notes: list[str],
+    prompt_id: str,
+    angle: str,
+) -> str:
+    if prompt_id == "hero_front":
+        return _build_prompt(
+            request,
+            concept,
+            selected_strategies,
+            development_notes,
+            _hero_shot_line(request, angle),
+        )
+    return _hero_edit_instruction(request, concept, angle)
 
 
 def _hero_render_strategy(prompt_id: str) -> str:
@@ -220,9 +240,9 @@ def _constraint_line(request: NormalizedRequest) -> str:
 
 def _detail_jobs(concept: ComposedConcept) -> list[dict[str, str]]:
     prompts = {
-        "construction_closeup": _construction_prompt(concept),
-        "fabric_print_closeup": _fabric_prompt(concept),
-        "hem_and_drape_closeup": _hem_prompt(concept),
+        "construction_closeup": _construction_edit_instruction(concept),
+        "fabric_print_closeup": _fabric_edit_instruction(concept),
+        "hem_and_drape_closeup": _hem_edit_instruction(concept),
     }
     jobs: list[dict[str, str]] = []
     for prompt_id, output_name in _DETAIL_JOB_SPECS:
@@ -252,35 +272,74 @@ def _detail_prompts(render_jobs: list[dict[str, str]]) -> list[dict[str, str]]:
     ]
 
 
-def _construction_prompt(concept: ComposedConcept) -> str:
-    neckline = concept.selected_elements["neckline"].value
-    detail = concept.selected_elements.get("detail", concept.selected_elements["fabric"]).value
-    waistline = concept.selected_elements.get("waistline", concept.selected_elements["silhouette"]).value
-    return (
-        f"close-up ecommerce detail image of the {neckline}, {detail}, and waistline placement; "
-        f"clearly show {waistline}, seam lines, neckline edge finish, and bodice construction; "
-        "neutral studio background; no hands, no accessories, no text"
+def _hero_edit_instruction(request: NormalizedRequest, concept: ComposedConcept, angle: str) -> str:
+    framing = "Preserve full-body framing from shoulder to hem, realistic construction, and clean negative space."
+    if request.mode != "A":
+        framing = "Preserve full-body framing, realistic construction, and neutral review presentation."
+    return " ".join(
+        (
+            "Edit the reference image.",
+            _identity_lock_line(concept),
+            f"Only change the camera angle to a {angle}.",
+            framing,
+        )
     )
 
 
-def _fabric_prompt(concept: ComposedConcept) -> str:
+def _identity_lock_line(concept: ComposedConcept) -> str:
+    fabric = _selected_value(concept, "fabric", "dress fabric")
+    pattern = _selected_value(concept, "pattern", "surface print")
+    color = _selected_value(concept, "color_family", "commercial color")
+    detail = _selected_value(concept, "detail", "construction detail")
+    return (
+        "Keep the exact same dress, same model, same silhouette, "
+        f"same {fabric} texture, same {pattern} placement, same {color} story, and same {detail}."
+    )
+
+
+def _construction_edit_instruction(concept: ComposedConcept) -> str:
+    neckline = concept.selected_elements["neckline"].value
+    detail = concept.selected_elements.get("detail", concept.selected_elements["fabric"]).value
+    waistline = concept.selected_elements.get("waistline", concept.selected_elements["silhouette"]).value
+    return " ".join(
+        (
+            "Edit the reference image.",
+            _identity_lock_line(concept),
+            f"Zoom into the {neckline}, {detail}, and waistline placement.",
+            f"Clearly show {waistline}, seam lines, neckline edge finish, and bodice construction.",
+            "Keep neutral studio lighting; no hands, no accessories, no text.",
+        )
+    )
+
+
+def _fabric_edit_instruction(concept: ComposedConcept) -> str:
     fabric = concept.selected_elements["fabric"].value
     pattern = _selected_value(concept, "pattern", "solid color")
     print_scale = _element_phrase("print_scale", _selected_value(concept, "print_scale", "commercial print"))
     opacity = _element_phrase("opacity_level", _selected_value(concept, "opacity_level", "opaque"))
-    return (
-        f"macro fabric detail image of {fabric} with {pattern} and {print_scale}; clearly show {opacity}, print scale, "
-        "weave texture, and color accuracy; soft studio lighting; no blur, no props, no text"
+    return " ".join(
+        (
+            "Edit the reference image.",
+            _identity_lock_line(concept),
+            f"Zoom into the {fabric} fabric surface.",
+            f"Clearly show {pattern}, {print_scale}, {opacity}, weave texture, and color accuracy.",
+            "Keep soft studio lighting and realistic surface detail; no blur, no props, no text.",
+        )
     )
 
 
-def _hem_prompt(concept: ComposedConcept) -> str:
+def _hem_edit_instruction(concept: ComposedConcept) -> str:
     silhouette = concept.selected_elements["silhouette"].value
     dress_length = _selected_value(concept, "dress_length", "balanced")
     pattern = _selected_value(concept, "pattern", "surface print")
-    return (
-        f"close-up lower-skirt detail image of the {silhouette} dress; clearly show {dress_length} proportion, hem finish, "
-        f"skirt volume, seam transitions, drape, and {pattern} continuity; neutral background; no cropped hem edge, no props, no text"
+    return " ".join(
+        (
+            "Edit the reference image.",
+            _identity_lock_line(concept),
+            "Zoom into the lower skirt and hem area.",
+            f"Clearly show {dress_length} proportion, hem finish, {silhouette} skirt volume, seam transitions, drape, and {pattern} continuity.",
+            "Keep the hem fully visible with a neutral background; no props, no text.",
+        )
     )
 
 

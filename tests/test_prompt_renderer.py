@@ -79,6 +79,52 @@ class PromptRendererTest(unittest.TestCase):
         self.assertIn("micro print scale", detail_prompts["fabric_print_closeup"])
         self.assertIn("mini proportion", detail_prompts["hem_and_drape_closeup"])
 
+    def test_render_mode_a_derived_hero_jobs_use_edit_instructions(self) -> None:
+        from temu_y2_women.prompt_renderer import render_prompt_bundle
+
+        bundle = render_prompt_bundle(
+            request=_request(mode="A"),
+            concept=_objective_concept(),
+            selected_strategies=(_strategy(),),
+            warnings=(),
+        )
+
+        hero_jobs = {item["prompt_id"]: item for item in bundle["render_jobs"] if item["group"] == "hero"}
+        self.assertIn("[商品主体]", hero_jobs["hero_front"]["prompt"])
+        self.assertTrue(hero_jobs["hero_three_quarter"]["prompt"].startswith("Edit the reference image."))
+        self.assertTrue(hero_jobs["hero_back"]["prompt"].startswith("Edit the reference image."))
+        self.assertNotIn("[商品主体]", hero_jobs["hero_three_quarter"]["prompt"])
+        self.assertNotIn("[商品主体]", hero_jobs["hero_back"]["prompt"])
+        self.assertIn("Keep the exact same dress", hero_jobs["hero_three_quarter"]["prompt"])
+        self.assertIn("Keep the exact same dress", hero_jobs["hero_back"]["prompt"])
+        self.assertIn("Only change the camera angle to a three-quarter view", hero_jobs["hero_three_quarter"]["prompt"])
+        self.assertIn("Only change the camera angle to a back view", hero_jobs["hero_back"]["prompt"])
+
+    def test_render_mode_a_detail_jobs_use_edit_instructions(self) -> None:
+        from temu_y2_women.prompt_renderer import render_prompt_bundle
+
+        bundle = render_prompt_bundle(
+            request=_request(mode="A"),
+            concept=_objective_concept(),
+            selected_strategies=(_strategy(),),
+            warnings=(),
+        )
+
+        detail_jobs = {item["prompt_id"]: item for item in bundle["render_jobs"] if item["group"] == "detail"}
+        construction_prompt = detail_jobs["construction_closeup"]["prompt"]
+        fabric_prompt = detail_jobs["fabric_print_closeup"]["prompt"]
+        hem_prompt = detail_jobs["hem_and_drape_closeup"]["prompt"]
+
+        self.assertTrue(construction_prompt.startswith("Edit the reference image."))
+        self.assertTrue(fabric_prompt.startswith("Edit the reference image."))
+        self.assertTrue(hem_prompt.startswith("Edit the reference image."))
+        self.assertIn("Keep the exact same dress", construction_prompt)
+        self.assertIn("Zoom into the square neckline, neck scarf, and waistline placement", construction_prompt)
+        self.assertIn("Keep the exact same dress", fabric_prompt)
+        self.assertIn("Zoom into the cotton poplin fabric surface", fabric_prompt)
+        self.assertIn("Keep the exact same dress", hem_prompt)
+        self.assertIn("Zoom into the lower skirt and hem area", hem_prompt)
+
     def assert_prompt_has_required_blocks(self, prompt: str) -> None:
         self.assertIn("[商品主体]", prompt)
         self.assertIn("[核心结构]", prompt)
