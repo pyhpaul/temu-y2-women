@@ -39,9 +39,41 @@ class PublicSignalRefreshCliTest(unittest.TestCase):
             output_root=temp_root,
             fetched_at="2026-04-28T00:00:00Z",
             source_ids=None,
+            cache_root=None,
         )
         self.assertEqual(payload["schema_version"], "public-refresh-report-v1")
         self.assertEqual(payload["source_summary"]["succeeded"], 3)
+
+    def test_cli_forwards_cache_root(self) -> None:
+        from temu_y2_women.public_signal_refresh_cli import main
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            cache_root = temp_root / "fetch-cache"
+            stdout = StringIO()
+            runner = _runner_patch(_success_report())
+            with patch(
+                "temu_y2_women.public_signal_refresh_cli.run_public_signal_refresh",
+                runner,
+            ), patch("sys.stdout", stdout):
+                exit_code = main(
+                    [
+                        "run",
+                        "--fetched-at",
+                        "2026-04-28T00:00:00Z",
+                        "--cache-root",
+                        str(cache_root),
+                    ]
+                )
+
+        self.assertEqual(exit_code, 0)
+        runner.assert_called_once_with(
+            registry_path=Path("data/refresh/dress/source_registry.json"),
+            output_root=Path("data/refresh/dress"),
+            fetched_at="2026-04-28T00:00:00Z",
+            source_ids=None,
+            cache_root=cache_root,
+        )
 
     def test_cli_forwards_repeated_source_ids(self) -> None:
         from temu_y2_women.public_signal_refresh_cli import main
@@ -73,6 +105,7 @@ class PublicSignalRefreshCliTest(unittest.TestCase):
                 "marieclaire-summer-2025-dress-trends",
                 "whowhatwear-summer-dress-trends-2025",
             ],
+            cache_root=None,
         )
 
     def test_cli_returns_nonzero_when_runner_returns_error(self) -> None:

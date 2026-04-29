@@ -12,6 +12,60 @@ _REFRESH_FIXTURE_DIR = Path("tests/fixtures/public_refresh/dress")
 
 
 class PublicSignalRefreshTest(unittest.TestCase):
+    def test_run_public_signal_refresh_writes_fetch_cache_and_fetch_artifacts(self) -> None:
+        from temu_y2_women.public_signal_refresh import run_public_signal_refresh
+
+        source_id = "whowhatwear-summer-2025-dress-trends"
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            registry_path = temp_root / "registry.json"
+            registry_path.write_text(json.dumps(_single_source_registry()), encoding="utf-8")
+            result = run_public_signal_refresh(
+                registry_path=registry_path,
+                output_root=temp_root,
+                fetched_at="2026-04-28T00:00:00Z",
+                fetcher=_fixture_fetcher(),
+            )
+            run_dir = temp_root / result["run_id"]
+            cache_meta = _read_json(temp_root / "fetch_cache" / f"{source_id}.json")
+            fetch_meta = _read_json(run_dir / "fetched_sources" / f"{source_id}.json")
+            self.assertTrue((temp_root / "fetch_cache" / f"{source_id}.html").exists())
+            self.assertTrue((run_dir / "fetched_sources" / f"{source_id}.html").exists())
+            self.assertEqual(cache_meta["fetch_status"], "live")
+            self.assertEqual(fetch_meta["fetch_status"], "live")
+            self.assertEqual(cache_meta["content_sha256"], fetch_meta["content_sha256"])
+
+    def test_run_public_signal_refresh_uses_cached_html_when_fetch_fails(self) -> None:
+        from temu_y2_women.public_signal_refresh import run_public_signal_refresh
+
+        source_id = "whowhatwear-summer-2025-dress-trends"
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            cache_root = temp_root / "cache"
+            registry_path = temp_root / "registry.json"
+            registry_path.write_text(json.dumps(_single_source_registry()), encoding="utf-8")
+            first = run_public_signal_refresh(
+                registry_path=registry_path,
+                output_root=temp_root,
+                fetched_at="2026-04-28T00:00:00Z",
+                fetcher=_fixture_fetcher(),
+                cache_root=cache_root,
+            )
+            result = run_public_signal_refresh(
+                registry_path=registry_path,
+                output_root=temp_root,
+                fetched_at="2026-04-29T00:00:00Z",
+                fetcher=_always_failing_fetcher,
+                cache_root=cache_root,
+            )
+            run_dir = temp_root / result["run_id"]
+            fetch_meta = _read_json(run_dir / "fetched_sources" / f"{source_id}.json")
+            self.assertEqual(result["source_summary"], {"total": 1, "succeeded": 1, "failed": 0})
+            self.assertEqual(result["canonical_signal_count"], first["canonical_signal_count"])
+            self.assertEqual(fetch_meta["fetch_status"], "cache_fallback")
+            self.assertEqual(fetch_meta["cache_fetched_at"], "2026-04-28T00:00:00Z")
+            self.assertEqual(fetch_meta["error_message"], "network timeout")
+
     def test_run_public_signal_refresh_writes_expected_staged_artifacts(self) -> None:
         from temu_y2_women.public_signal_refresh import run_public_signal_refresh
 
@@ -308,6 +362,10 @@ def _fixture_fetcher() -> Callable[[str], str]:
         return html
 
     return fetcher
+
+
+def _always_failing_fetcher(_: str) -> str:
+    raise OSError("network timeout")
 
 
 def _full_registry_fetcher() -> Callable[[str], str]:

@@ -13,6 +13,7 @@ from temu_y2_women.errors import GenerationError
 from temu_y2_women.public_card_observer import observe_roundup_cards
 from temu_y2_women.public_card_observer_openai import build_openai_public_card_observer
 from temu_y2_women.public_source_adapter import resolve_public_source_adapter
+from temu_y2_women.public_source_fetcher import fetch_public_source_html
 from temu_y2_women.public_source_registry import load_public_source_registry, select_public_sources
 from temu_y2_women.roundup_canonical_signal_builder import build_roundup_canonical_signals
 from temu_y2_women.signal_ingestion import ingest_dress_signals
@@ -32,12 +33,21 @@ def run_public_signal_refresh(
     fetcher: Fetcher | None = None,
     source_ids: list[str] | None = None,
     card_image_observer: CardImageObserver | None = None,
+    cache_root: Path | None = None,
 ) -> dict[str, Any]:
     try:
         registry_snapshot, registry = _load_registry_inputs(registry_path)
         selected_sources = select_public_sources(registry, source_ids)
+        run_id = _build_run_id(fetched_at, selected_sources)
+        run_dir = output_root / run_id
         fetch = fetcher or _fetch_html
-        raw_snapshots, errors = _collect_raw_snapshots(selected_sources, fetched_at, fetch)
+        raw_snapshots, errors = _collect_raw_snapshots(
+            selected_sources,
+            fetched_at,
+            fetch,
+            _cache_root(output_root, cache_root),
+            run_dir / "fetched_sources",
+        )
         canonical_payload, observations_by_source, errors = _build_canonical_payload(
             raw_snapshots,
             selected_sources,
@@ -46,8 +56,6 @@ def run_public_signal_refresh(
         )
         if not canonical_payload["signals"]:
             return _refresh_error("sources", "no valid public sources produced canonical signals", errors)
-        run_id = _build_run_id(fetched_at, selected_sources)
-        run_dir = output_root / run_id
         bundle = _canonical_payload_to_signal_bundle(canonical_payload)
         ingestion_result = _run_signal_ingestion(run_dir, bundle)
         if "error" in ingestion_result:
@@ -93,6 +101,12 @@ def _fetch_html(url: str) -> str:
         return response.read().decode("utf-8", errors="replace")
 
 
+def _cache_root(output_root: Path, cache_root: Path | None) -> Path:
+    if cache_root is not None:
+        return cache_root
+    return output_root / "fetch_cache"
+
+
 def _build_run_id(fetched_at: str, selected_sources: list[dict[str, Any]]) -> str:
     suffix = _selected_source_suffix(selected_sources)
     return f"{fetched_at.replace(':', '-')}-{suffix}"
@@ -102,11 +116,13 @@ def _collect_raw_snapshots(
     registry: list[dict[str, Any]],
     fetched_at: str,
     fetcher: Fetcher,
+    cache_root: Path,
+    artifact_root: Path,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     snapshots: list[dict[str, Any]] = []
     errors: list[dict[str, Any]] = []
     for source in registry:
-        html = _fetch_source_html(source, fetcher, errors)
+        html = _fetch_source_html(source, fetched_at, fetcher, cache_root, artifact_root, errors)
         if html is None:
             continue
         snapshot = _parse_source_snapshot(source, html, fetched_at, errors)
@@ -117,11 +133,14 @@ def _collect_raw_snapshots(
 
 def _fetch_source_html(
     source: dict[str, Any],
+    fetched_at: str,
     fetcher: Fetcher,
+    cache_root: Path,
+    artifact_root: Path,
     errors: list[dict[str, Any]],
 ) -> str | None:
     try:
-        return fetcher(str(source["source_url"]))
+        return fetch_public_source_html(source, fetched_at, fetcher, cache_root, artifact_root)
     except Exception as error:
         errors.append(_source_error(str(source["source_id"]), "fetch", error, "PUBLIC_SOURCE_FETCH_FAILED"))
         return None
