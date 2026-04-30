@@ -8,25 +8,37 @@ from typing import Any
 from temu_y2_women.errors import GenerationError
 
 
-_SECTION_RULES = (
-    ("linen-dresses-3", "linen-dresses", "Linen Dresses", ("summer",)),
-    ("smocked-dresses-3", "smocked-dresses", "Smocked Dresses", ("summer",)),
-    ("chocolate-brown-dresses-3", "chocolate-brown-dresses", "Chocolate Brown Dresses", ("summer",)),
-    ("polka-dot-dresses-3", "polka-dot-dresses", "Polka Dot Dresses", ("summer",)),
-    ("gingham-dresses-3", "gingham-dresses", "Gingham Dresses", ("summer",)),
-    ("boho-dresses-3", "boho-dresses", "Boho Dresses", ("summer",)),
-    ("babydoll-dresses-3", "babydoll-dresses", "Babydoll Dresses", ("summer",)),
-)
-_HTML_SECTION_IDS = {html_id: section_id for html_id, section_id, _, _ in _SECTION_RULES}
+_SECTION_RULES_BY_SOURCE = {
+    "marieclaire-summer-2025-dress-trends": (
+        ("linen-dresses-3", "linen-dresses", "Linen Dresses", ("summer",)),
+        ("smocked-dresses-3", "smocked-dresses", "Smocked Dresses", ("summer",)),
+        ("chocolate-brown-dresses-3", "chocolate-brown-dresses", "Chocolate Brown Dresses", ("summer",)),
+        ("polka-dot-dresses-3", "polka-dot-dresses", "Polka Dot Dresses", ("summer",)),
+        ("gingham-dresses-3", "gingham-dresses", "Gingham Dresses", ("summer",)),
+        ("boho-dresses-3", "boho-dresses", "Boho Dresses", ("summer",)),
+        ("babydoll-dresses-3", "babydoll-dresses", "Babydoll Dresses", ("summer",)),
+    ),
+    "marieclaire-spring-2026-dress-trends": (
+        ("section-crinkle-texture-dresses", "crinkle-texture-dresses", "Crinkle Texture Dresses", ("spring",)),
+        ("section-drop-waist-dresses", "drop-waist-dresses", "Drop-Waist Dresses", ("spring",)),
+        ("section-shirt-dresses", "shirt-dresses", "Shirt Dresses", ("spring",)),
+        ("section-fringe-dresses", "fringe-dresses", "Fringe Dresses", ("spring",)),
+        ("section-lace-trimmed-dresses", "lace-trimmed-dresses", "Lace-Trimmed Dresses", ("spring",)),
+        ("section-voluminous-dresses", "voluminous-dresses", "Voluminous Dresses", ("spring",)),
+        ("section-shift-dresses", "shift-dresses", "Shift Dresses", ("spring",)),
+        ("section-cape-dresses", "cape-dresses", "Cape Dresses", ("spring",)),
+    ),
+}
 
 
 def parse_marieclaire_editorial_html(source: dict[str, Any], html: str, fetched_at: str) -> dict[str, Any]:
-    parser = _MarieClaireHtmlParser()
+    section_rules = _resolve_section_rules(str(source["source_id"]))
+    parser = _MarieClaireHtmlParser(_html_section_ids(section_rules))
     parser.feed(html)
     parser.close()
     sections = [
         _build_section_record(parser, section_id, heading, tags)
-        for _, section_id, heading, tags in _SECTION_RULES
+        for _, section_id, heading, tags in section_rules
     ]
     return {
         "schema_version": "public-source-snapshot-v1",
@@ -41,6 +53,19 @@ def parse_marieclaire_editorial_html(source: dict[str, Any], html: str, fetched_
         "sections": sections,
         "warnings": [],
     }
+
+
+def _resolve_section_rules(source_id: str) -> tuple[tuple[str, str, str, tuple[str, ...]], ...]:
+    try:
+        return _SECTION_RULES_BY_SOURCE[source_id]
+    except KeyError as error:
+        raise ValueError(f"unsupported Marie Claire source: {source_id}") from error
+
+
+def _html_section_ids(
+    section_rules: tuple[tuple[str, str, str, tuple[str, ...]], ...],
+) -> dict[str, str]:
+    return {html_id: section_id for html_id, section_id, _, _ in section_rules}
 
 
 def _build_section_record(
@@ -77,8 +102,9 @@ def _adapter_error(message: str, **details: Any) -> GenerationError:
 
 
 class _MarieClaireHtmlParser(HTMLParser):
-    def __init__(self) -> None:
+    def __init__(self, html_section_ids: dict[str, str]) -> None:
         super().__init__(convert_charrefs=True)
+        self._html_section_ids = html_section_ids
         self._title_parts: list[str] = []
         self._h1_parts: list[str] = []
         self._in_title = False
@@ -96,8 +122,8 @@ class _MarieClaireHtmlParser(HTMLParser):
             self._in_h1 = True
         elif tag == "meta":
             self._capture_published_date(attr_map)
-        elif tag == "h2":
-            self._active_section = _HTML_SECTION_IDS.get(attr_map.get("id", ""))
+        elif tag in {"h2", "h3"}:
+            self._active_section = self._html_section_ids.get(attr_map.get("id", ""))
         elif tag == "p":
             self._start_section_paragraph(attr_map)
 
@@ -106,7 +132,7 @@ class _MarieClaireHtmlParser(HTMLParser):
             self._in_title = False
         elif tag == "h1":
             self._in_h1 = False
-        elif tag == "h2":
+        elif tag in {"h2", "h3"}:
             return
         elif tag == "p" and self._current_paragraph_section:
             self._active_section = None
