@@ -96,6 +96,7 @@ class PromptRendererTest(unittest.TestCase):
         )
 
         hero_jobs = {item["prompt_id"]: item for item in bundle["render_jobs"] if item["group"] == "hero"}
+
         self.assertIn("[商品主体]", hero_jobs["hero_front"]["prompt"])
         self.assertTrue(hero_jobs["hero_three_quarter"]["prompt"].startswith("Edit the reference image."))
         self.assertTrue(hero_jobs["hero_back"]["prompt"].startswith("Edit the reference image."))

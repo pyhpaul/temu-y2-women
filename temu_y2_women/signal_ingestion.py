@@ -328,7 +328,6 @@ def _merge_candidate_group(group: dict[str, Any], candidate: dict[str, Any]) -> 
 
 def _build_draft_element(slot: str, value: str, group: dict[str, Any]) -> dict[str, Any]:
     signal_count = len(group["source_signal_ids"])
-    evidence_count = _draft_evidence_count(group)
     return {
         "draft_id": _draft_id(slot, value),
         "category": "dress",
@@ -339,7 +338,7 @@ def _build_draft_element(slot: str, value: str, group: dict[str, Any]) -> dict[s
         "occasion_tags": sorted(group["occasion_tags"]),
         "season_tags": sorted(group["season_tags"]),
         "risk_flags": [],
-        "suggested_base_score": round(0.6 + (0.05 * evidence_count), 2),
+        "suggested_base_score": round(0.6 + (0.05 * signal_count), 2),
         "evidence_summary": _build_draft_element_summary(group, signal_count),
         "source_signal_ids": sorted(group["source_signal_ids"]),
         "extraction_provenance": _build_element_provenance(group),
@@ -446,22 +445,11 @@ def _build_signal_outcome(
         "status": "matched" if emitted_draft_ids else "unmatched",
         "emitted_draft_ids": sorted(emitted_draft_ids),
         "matched_rule_keys": sorted(f"{match['slot']}:{match['value']}" for match in text_matches),
-        "matched_structured_keys": sorted(f"{match['slot']}:{match['value']}" for match in structured_matches),
         "matched_channels": matched_channels,
     }
     if emitted_draft_ids:
         return outcome
     return {**outcome, "reason": "no supported phrase rules matched normalized signal text"}
-
-
-def _draft_evidence_count(group: dict[str, Any]) -> int:
-    return max(len(group["source_signal_ids"]), _max_supporting_card_count(group["structured_candidate_matches"]))
-
-
-def _max_supporting_card_count(matches: list[dict[str, Any]]) -> int:
-    if not matches:
-        return 0
-    return max(int(match["supporting_card_count"]) for match in matches)
 
 
 def _build_coverage(signal_outcomes: list[dict[str, Any]]) -> dict[str, Any]:

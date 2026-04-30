@@ -73,7 +73,9 @@ class OpenAIImageProviderConfigTest(unittest.TestCase):
         )
 
         anchor_result = provider.render(_render_input("hero_front"))
-        expansion_result = provider.render(_render_input("hero_back", render_strategy="edit", reference_image_bytes=b"anchor-image"))
+        expansion_result = provider.render(
+            _render_input("hero_back", render_strategy="edit", reference_image_bytes=b"anchor-image")
+        )
 
         self.assertEqual(anchor_result.image_bytes, b"anchor-key-generate")
         self.assertEqual(expansion_result.image_bytes, b"expansion-key-edit")
@@ -96,6 +98,83 @@ class OpenAIImageProviderConfigTest(unittest.TestCase):
             provider.render(_render_input("hero_back", render_strategy="edit"))
 
         self.assertEqual(error_context.exception.details["field"], "reference_image_bytes")
+
+    def test_build_openai_image_provider_uses_curl_transport_for_callxyq_generation(self) -> None:
+        from temu_y2_women.image_generation_openai import build_openai_image_provider
+
+        captured: dict[str, object] = {}
+
+        provider = build_openai_image_provider(
+            _resolved_config("anchor-key", base_url="https://callxyq.xyz/v1"),
+            client_factory=_unexpected_client_factory,
+            curl_runner=_curl_runner_with_json_response(captured, _png_payload("callxyq-generate")),
+        )
+
+        result = provider.render(_render_input("hero_front"))
+
+        self.assertEqual(result.image_bytes, b"callxyq-generate")
+        self.assertEqual(result.base_url, "https://callxyq.xyz/v1")
+        self.assertEqual(captured["input"], '{"model":"gpt-image-2","prompt":"test prompt","response_format":"b64_json"}')
+        self.assertIn("https://callxyq.xyz/v1/images/generations", captured["command"])
+        self.assertIn("Authorization: Bearer anchor-key", captured["command"])
+
+    def test_build_openai_image_provider_downloads_url_payload_for_callxyq_edit(self) -> None:
+        from temu_y2_women.image_generation_openai import build_openai_image_provider
+
+        captured: dict[str, object] = {}
+
+        provider = build_openai_image_provider(
+            _resolved_config("expansion-key", base_url="https://callxyq.xyz/v1"),
+            client_factory=_unexpected_client_factory,
+            curl_runner=_curl_runner_with_edit_url_response(captured),
+        )
+
+        result = provider.render(
+            _render_input(
+                "hero_back",
+                render_strategy="edit",
+                reference_image_bytes=b"anchor-image",
+            )
+        )
+
+        self.assertEqual(result.image_bytes, b"callxyq-edit")
+        self.assertEqual(len(captured["commands"]), 2)
+        self.assertIn("https://callxyq.xyz/v1/images/edits", captured["commands"][0])
+        self.assertIn("https://asset.callxyq.test/final.png", captured["commands"][1])
+        self.assertIn("-F model=gpt-image-2", " ".join(captured["commands"][0]))
+        self.assertIn("-F prompt=test prompt", " ".join(captured["commands"][0]))
+        self.assertIn("-F response_format=b64_json", " ".join(captured["commands"][0]))
+        self.assertIn("-F input_fidelity=high", " ".join(captured["commands"][0]))
+        self.assertNotIn("size=1024x1536", " ".join(captured["commands"][0]))
+        self.assertNotIn("quality=high", " ".join(captured["commands"][0]))
+        self.assertNotIn("background=auto", " ".join(captured["commands"][0]))
+        self.assertNotIn("output_format=png", " ".join(captured["commands"][0]))
+
+    def test_build_openai_image_provider_surfaces_callxyq_edit_gateway_block_hint(self) -> None:
+        from temu_y2_women.image_generation_openai import build_openai_image_provider
+
+        provider = build_openai_image_provider(
+            _resolved_config("expansion-key", base_url="https://callxyq.xyz/v1"),
+            client_factory=_unexpected_client_factory,
+            curl_runner=_curl_runner_with_http_error("<html><body>forbidden</body></html>", 403),
+        )
+
+        with self.assertRaises(GenerationError) as error_context:
+            provider.render(
+                _render_input(
+                    "hero_back",
+                    render_strategy="edit",
+                    reference_image_bytes=b"anchor-image",
+                )
+            )
+
+        details = error_context.exception.details
+        self.assertEqual(details["gateway_host"], "callxyq.xyz")
+        self.assertEqual(details["gateway_route"], "/images/edits")
+        self.assertEqual(details["http_code"], 403)
+        self.assertEqual(details["reason_type"], "html_response")
+        self.assertEqual(details["gateway_error_category"], "gateway_reference_image_blocked")
+        self.assertIn("real garment reference images", details["hint"])
 
 
 class _FakeClient:
@@ -144,12 +223,19 @@ class _ImagePayload:
         self.b64_json = b64_json
 
 
-def _resolved_config(api_key: str) -> object:
+class _CompletedProcess:
+    def __init__(self, stdout: str | bytes, stderr: str = "", returncode: int = 0) -> None:
+        self.stdout = stdout
+        self.stderr = stderr
+        self.returncode = returncode
+
+
+def _resolved_config(api_key: str, *, base_url: str = "https://example.test") -> object:
     from temu_y2_women.image_provider_config import ResolvedOpenAIImageConfig
 
     return ResolvedOpenAIImageConfig(
         api_key=api_key,
-        base_url="https://example.test",
+        base_url=base_url,
         model="gpt-image-2",
         size="1024x1536",
         quality="high",
@@ -174,3 +260,42 @@ def _render_input(
             "reference_image_bytes": reference_image_bytes,
         },
     )()
+
+
+def _unexpected_client_factory(**_: str) -> object:
+    raise AssertionError("OpenAI SDK transport should not be used for callxyq")
+
+
+def _curl_runner_with_json_response(captured: dict[str, object], payload: str):
+    def _runner(command: list[str], **kwargs: object) -> _CompletedProcess:
+        captured["command"] = command
+        captured["input"] = kwargs.get("input")
+        return _CompletedProcess(f"{payload}\nHTTP_CODE:200")
+
+    return _runner
+
+
+def _curl_runner_with_edit_url_response(captured: dict[str, object]):
+    commands: list[list[str]] = []
+    captured["commands"] = commands
+
+    def _runner(command: list[str], **kwargs: object) -> _CompletedProcess:
+        commands.append(command)
+        if len(commands) == 1:
+            payload = '{"data":[{"url":"https://asset.callxyq.test/final.png","b64_json":""}]}'
+            return _CompletedProcess(f"{payload}\nHTTP_CODE:200")
+        return _CompletedProcess(b"callxyq-edit")
+
+    return _runner
+
+
+def _curl_runner_with_http_error(body_text: str, http_code: int):
+    def _runner(command: list[str], **kwargs: object) -> _CompletedProcess:
+        return _CompletedProcess(f"{body_text}\nHTTP_CODE:{http_code}")
+
+    return _runner
+
+
+def _png_payload(value: str) -> str:
+    encoded = b64encode(value.encode("utf-8")).decode("ascii")
+    return f'{{"data":[{{"b64_json":"{encoded}"}}]}}'

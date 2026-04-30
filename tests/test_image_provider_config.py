@@ -22,6 +22,7 @@ class ImageProviderConfigTest(unittest.TestCase):
                 ProviderCliOptions(model="gpt-image-2"),
                 codex_home=codex_home,
                 environ={},
+                env_path=Path(temp_dir) / "missing.env",
             )
 
         self.assertEqual(resolved.api_key, "fixture-key")
@@ -44,6 +45,7 @@ class ImageProviderConfigTest(unittest.TestCase):
                 ProviderCliOptions(),
                 codex_home=codex_home,
                 environ={},
+                env_path=Path(temp_dir) / "missing.env",
             )
 
         self.assertEqual(resolved.base_url, "https://provider.test")
@@ -64,6 +66,7 @@ class ImageProviderConfigTest(unittest.TestCase):
                 ProviderCliOptions(),
                 codex_home=codex_home,
                 environ={},
+                env_path=Path(temp_dir) / "missing.env",
             )
 
         self.assertEqual(resolved.base_url, "https://www.aerorelay.one/v1")
@@ -84,6 +87,7 @@ class ImageProviderConfigTest(unittest.TestCase):
                 ),
                 codex_home=codex_home,
                 environ={"OPENAI_API_KEY": "env-key"},
+                env_path=Path(temp_dir) / "missing.env",
             )
 
         self.assertEqual(resolved.api_key, "cli-key")
@@ -101,6 +105,7 @@ class ImageProviderConfigTest(unittest.TestCase):
                 ProviderCliOptions(),
                 codex_home=codex_home,
                 environ={"OPENAI_API_KEY": "env-key"},
+                env_path=Path(temp_dir) / "missing.env",
             )
 
         self.assertEqual(resolved.api_key, "env-key")
@@ -134,6 +139,33 @@ class ImageProviderConfigTest(unittest.TestCase):
         self.assertEqual(resolved.default_config.base_url, "https://compat.test/v1")
         self.assertIsNotNone(resolved.expansion_config)
         self.assertEqual(resolved.expansion_config.api_key, "expansion-key")
+
+    def test_dotenv_compat_anchor_key_beats_ambient_openai_api_key(self) -> None:
+        from temu_y2_women.image_provider_config import ProviderCliOptions, resolve_openai_provider_configs
+
+        with TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            codex_home.mkdir()
+            dotenv_path = Path(temp_dir) / ".env"
+            dotenv_path.write_text(
+                "\n".join(
+                    [
+                        "OPENAI_COMPAT_BASE_URL=https://compat.test/v1",
+                        "OPENAI_COMPAT_ANCHOR_API_KEY=anchor-key",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            resolved = resolve_openai_provider_configs(
+                ProviderCliOptions(),
+                codex_home=codex_home,
+                environ={"OPENAI_API_KEY": "ambient-openai-key"},
+                env_path=dotenv_path,
+            )
+
+        self.assertEqual(resolved.default_config.base_url, "https://compat.test/v1")
+        self.assertEqual(resolved.default_config.api_key, "anchor-key")
 
     def test_cli_api_key_disables_expansion_route(self) -> None:
         from temu_y2_women.image_provider_config import ProviderCliOptions, resolve_openai_provider_configs
@@ -169,6 +201,7 @@ class ImageProviderConfigTest(unittest.TestCase):
                 ProviderCliOptions(),
                 codex_home=codex_home,
                 environ={},
+                env_path=Path(temp_dir) / "missing.env",
             )
 
         self.assertEqual(resolved.api_key, "fixture-key")
@@ -186,6 +219,7 @@ class ImageProviderConfigTest(unittest.TestCase):
                     ProviderCliOptions(),
                     codex_home=codex_home,
                     environ={},
+                    env_path=Path(temp_dir) / "missing.env",
                 )
 
         self.assertEqual(error_context.exception.code, "INVALID_IMAGE_PROVIDER_CONFIG")
@@ -205,6 +239,7 @@ class ImageProviderConfigTest(unittest.TestCase):
                     ProviderCliOptions(),
                     codex_home=codex_home,
                     environ={},
+                    env_path=Path(temp_dir) / "missing.env",
                 )
 
         self.assertEqual(error_context.exception.code, "INVALID_IMAGE_PROVIDER_CONFIG")

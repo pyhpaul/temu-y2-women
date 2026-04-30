@@ -226,6 +226,5 @@ def _expected_draft_elements_fixture() -> dict[str, object]:
 def _expected_ingestion_report_fixture() -> dict[str, object]:
     payload = _read_json(_SIGNAL_FIXTURE_DIR / "expected-ingestion-report.json")
     for outcome in payload["signal_outcomes"]:
-        outcome["matched_structured_keys"] = []
         outcome["matched_channels"] = ["text_rule"]
     return payload

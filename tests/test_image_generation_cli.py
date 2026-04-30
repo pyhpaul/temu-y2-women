@@ -50,27 +50,29 @@ class ImageGenerationCliTest(unittest.TestCase):
             _write_auth_json(codex_home / "auth.json", "file-key")
             _write_config_toml(codex_home / "config.toml", "https://file.test")
             with patch.dict(os.environ, {"CODEX_HOME": str(codex_home)}, clear=True):
-                with patch(
-                    "temu_y2_women.image_generation_cli.build_routed_openai_image_provider",
-                    side_effect=_capture_provider_factory(captured),
-                ):
-                    with patch("sys.stdout", stdout):
-                        exit_code = main(
-                            [
-                                "--result",
-                                str(_RESULT_FIXTURE_PATH),
-                                "--output-dir",
-                                str(output_dir),
-                                "--provider",
-                                "openai",
-                            ]
-                        )
+                with patch("temu_y2_women.image_provider_config._default_env_path", return_value=Path(temp_dir) / "missing.env"):
+                    with patch(
+                        "temu_y2_women.image_generation_cli.build_routed_openai_image_provider",
+                        side_effect=_capture_provider_factory(captured),
+                    ):
+                        with patch("sys.stdout", stdout):
+                            exit_code = main(
+                                [
+                                    "--result",
+                                    str(_RESULT_FIXTURE_PATH),
+                                    "--output-dir",
+                                    str(output_dir),
+                                    "--provider",
+                                    "openai",
+                                ]
+                            )
 
         payload = json.loads(stdout.getvalue())
         config = captured[0].default_config
         self.assertEqual(exit_code, 0)
         self.assertEqual(config.api_key, "file-key")
         self.assertEqual(config.base_url, "https://file.test")
+        self.assertEqual(config.model, "gpt-image-2")
         self.assertEqual(payload["base_url"], "https://file.test")
         self.assertNotIn("file-key", stdout.getvalue())
 
@@ -86,27 +88,28 @@ class ImageGenerationCliTest(unittest.TestCase):
             _write_auth_json(codex_home / "auth.json", "file-key")
             _write_config_toml(codex_home / "config.toml", "https://file.test")
             with patch.dict(os.environ, {"CODEX_HOME": str(codex_home)}, clear=True):
-                with patch(
-                    "temu_y2_women.image_generation_cli.build_routed_openai_image_provider",
-                    side_effect=_capture_provider_factory(captured),
-                ):
-                    with patch("sys.stdout", stdout):
-                        exit_code = main(
-                            [
-                                "--result",
-                                str(_RESULT_FIXTURE_PATH),
-                                "--output-dir",
-                                str(output_dir),
-                                "--provider",
-                                "openai",
-                                "--api-key",
-                                "cli-key",
-                                "--base-url",
-                                "https://cli.test",
-                                "--model",
-                                "gpt-image-2",
-                            ]
-                        )
+                with patch("temu_y2_women.image_provider_config._default_env_path", return_value=Path(temp_dir) / "missing.env"):
+                    with patch(
+                        "temu_y2_women.image_generation_cli.build_routed_openai_image_provider",
+                        side_effect=_capture_provider_factory(captured),
+                    ):
+                        with patch("sys.stdout", stdout):
+                            exit_code = main(
+                                [
+                                    "--result",
+                                    str(_RESULT_FIXTURE_PATH),
+                                    "--output-dir",
+                                    str(output_dir),
+                                    "--provider",
+                                    "openai",
+                                    "--api-key",
+                                    "cli-key",
+                                    "--base-url",
+                                    "https://cli.test",
+                                    "--model",
+                                    "gpt-image-2",
+                                ]
+                            )
 
         payload = json.loads(stdout.getvalue())
         config = captured[0].default_config
@@ -126,17 +129,18 @@ class ImageGenerationCliTest(unittest.TestCase):
             codex_home = Path(temp_dir) / ".codex"
             codex_home.mkdir()
             with patch.dict(os.environ, {"CODEX_HOME": str(codex_home)}, clear=True):
-                with patch("sys.stdout", stdout):
-                    exit_code = main(
-                        [
-                            "--result",
-                            str(_RESULT_FIXTURE_PATH),
-                            "--output-dir",
-                            str(output_dir),
-                            "--provider",
-                            "openai",
-                        ]
-                    )
+                with patch("temu_y2_women.image_provider_config._default_env_path", return_value=Path(temp_dir) / "missing.env"):
+                    with patch("sys.stdout", stdout):
+                        exit_code = main(
+                            [
+                                "--result",
+                                str(_RESULT_FIXTURE_PATH),
+                                "--output-dir",
+                                str(output_dir),
+                                "--provider",
+                                "openai",
+                            ]
+                        )
 
             self.assertEqual(exit_code, 1)
             payload = json.loads(stdout.getvalue())

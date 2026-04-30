@@ -15,40 +15,94 @@ _CANONICAL_SCHEMA_VERSION = "canonical-signals-v1"
 _ALLOWED_PRICE_BANDS = {"low", "mid", "high"}
 _ALLOWED_SIGNAL_STATUS = {"active"}
 _ALLOWED_PRICE_BAND_RESOLUTION = {"observed", "source_default", "rule_fallback"}
-_SECTION_CONFIDENCE = {
-    "the-vacation-mini": 0.78,
-    "fairy-sleeves": 0.74,
-    "all-things-polka-dots": 0.68,
-    "the-exaggerated-drop-waist": 0.70,
-    "sheer-printed-midis": 0.69,
+_SOURCE_PROFILES = {
+    "whowhatwear-summer-2025-dress-trends": {
+        "adapter_version": "whowhatwear_editorial_v1",
+        "section_confidence": {
+            "the-vacation-mini": 0.78,
+            "fairy-sleeves": 0.74,
+            "all-things-polka-dots": 0.68,
+            "the-exaggerated-drop-waist": 0.70,
+            "sheer-printed-midis": 0.69,
+        },
+        "evidence_rules": (
+            {
+                "keywords": ("smocked bodices", "halter ties", "prints", "vacation mini"),
+                "manual_tags": ("vacation",),
+                "excerpt_anchor": "smocked bodices",
+            },
+            {
+                "keywords": ("fairy sleeves", "fluttery", "romance"),
+                "manual_tags": ("airy", "romantic"),
+                "excerpt_anchor": "soft, fluttery",
+            },
+            {
+                "keywords": ("polka dots", "micro-dot", "dotted dress"),
+                "manual_tags": (),
+                "excerpt_anchor": "whether you go micro-dot",
+            },
+            {
+                "keywords": ("drop-waist dresses", "dramatic volume", "structure"),
+                "manual_tags": (),
+                "excerpt_anchor": "drop-waist dresses",
+            },
+            {
+                "keywords": ("sheer", "soft printed dresses", "playful and polished"),
+                "manual_tags": ("airy",),
+                "excerpt_anchor": "soft printed dresses",
+            },
+        ),
+    },
+    "marieclaire-summer-2025-dress-trends": {
+        "adapter_version": "marieclaire_editorial_v1",
+        "section_confidence": {
+            "linen-dresses": 0.71,
+            "smocked-dresses": 0.76,
+            "chocolate-brown-dresses": 0.67,
+            "polka-dot-dresses": 0.72,
+            "gingham-dresses": 0.70,
+            "boho-dresses": 0.75,
+            "babydoll-dresses": 0.69,
+        },
+        "evidence_rules": (
+            {
+                "keywords": ("linen dresses", "summer wardrobe", "mid-summer refresh"),
+                "manual_tags": ("lightweight",),
+                "excerpt_anchor": "linen dresses are fundamental",
+            },
+            {
+                "keywords": ("smocked dresses", "throw-on-and-go", "hottest days"),
+                "manual_tags": (),
+                "excerpt_anchor": "smocked dresses have quietly saved",
+            },
+            {
+                "keywords": ("chocolate brown", "summer neutral shade", "comfort zone"),
+                "manual_tags": (),
+                "excerpt_anchor": "chocolate brown is making a strong case",
+            },
+            {
+                "keywords": ("polka dot", "it-print", "strong comeback"),
+                "manual_tags": (),
+                "excerpt_anchor": "polka dot is summer's it-print",
+            },
+            {
+                "keywords": ("gingham", "major print trend", "must-buy status"),
+                "manual_tags": (),
+                "excerpt_anchor": "major print trend for the season",
+            },
+            {
+                "keywords": ("boho fashion trend", "floaty silhouettes", "sheer fabrics"),
+                "manual_tags": ("airy", "romantic"),
+                "excerpt_anchor": "boho fashion trend is going strong",
+            },
+            {
+                "keywords": ("babydoll silhouette", "low-key days", "heat waves"),
+                "manual_tags": (),
+                "excerpt_anchor": "rise of the babydoll silhouette",
+            },
+        ),
+    },
 }
-_EVIDENCE_RULES = (
-    {
-        "keywords": ("smocked bodices", "halter ties", "prints", "vacation mini"),
-        "manual_tags": ("vacation",),
-        "excerpt_anchor": "smocked bodices",
-    },
-    {
-        "keywords": ("fairy sleeves", "fluttery", "romance"),
-        "manual_tags": ("airy", "romantic"),
-        "excerpt_anchor": "soft, fluttery",
-    },
-    {
-        "keywords": ("polka dots", "micro-dot", "dotted dress"),
-        "manual_tags": (),
-        "excerpt_anchor": "whether you go micro-dot",
-    },
-    {
-        "keywords": ("drop-waist dresses", "dramatic volume", "structure"),
-        "manual_tags": (),
-        "excerpt_anchor": "drop-waist dresses",
-    },
-    {
-        "keywords": ("sheer", "soft printed dresses", "playful and polished"),
-        "manual_tags": ("airy",),
-        "excerpt_anchor": "soft printed dresses",
-    },
-)
 _CANONICAL_SIGNAL_REQUIRED_FIELDS = {
     "canonical_signal_id",
     "source_id",
@@ -98,7 +152,8 @@ def _build_canonical_signal(
     default_price_band: str,
     index: int,
 ) -> dict[str, Any]:
-    evidence_excerpt, matched_keywords = _derive_evidence(section)
+    profile = _source_profile(snapshot["source_id"])
+    evidence_excerpt, matched_keywords = _derive_evidence(section, profile["evidence_rules"])
     return {
         "canonical_signal_id": f"{snapshot['source_id']}-{section['section_id']}-{index:03d}",
         "source_id": snapshot["source_id"],
@@ -117,15 +172,12 @@ def _build_canonical_signal(
         "observed_price_band": default_price_band,
         "price_band_resolution": "source_default",
         "status": "active",
-        "extraction_provenance": _build_provenance(section, matched_keywords),
+        "extraction_provenance": _build_provenance(snapshot["source_id"], section["section_id"], matched_keywords),
     }
 
 
-def _derive_evidence(section: dict[str, Any]) -> tuple[str, list[str]]:
-    metadata = _section_evidence_metadata(section)
-    if metadata is not None:
-        return metadata
-    rule = _best_evidence_rule(section)
+def _derive_evidence(section: dict[str, Any], evidence_rules: tuple[dict[str, Any], ...]) -> tuple[str, list[str]]:
+    rule = _best_evidence_rule(section, evidence_rules)
     if rule is None:
         return _default_excerpt(str(section["text"])), []
     matched_keywords = _matched_keywords(rule, _section_corpus(section))
@@ -133,20 +185,14 @@ def _derive_evidence(section: dict[str, Any]) -> tuple[str, list[str]]:
     return excerpt, matched_keywords
 
 
-def _section_evidence_metadata(section: dict[str, Any]) -> tuple[str, list[str]] | None:
-    matched_keywords = _optional_string_list(section, "matched_keywords")
-    excerpt_anchor = _optional_string(section, "excerpt_anchor")
-    if matched_keywords is None and excerpt_anchor is None:
-        return None
-    excerpt = _excerpt_from_text(str(section["text"]), excerpt_anchor) if excerpt_anchor else _default_excerpt(str(section["text"]))
-    return excerpt, matched_keywords or []
-
-
-def _best_evidence_rule(section: dict[str, Any]) -> dict[str, Any] | None:
+def _best_evidence_rule(
+    section: dict[str, Any],
+    evidence_rules: tuple[dict[str, Any], ...],
+) -> dict[str, Any] | None:
     corpus = _section_corpus(section)
     best_rule: dict[str, Any] | None = None
     best_score = 0
-    for rule in _EVIDENCE_RULES:
+    for rule in evidence_rules:
         score = len(_matched_keywords(rule, corpus))
         if score > best_score:
             best_rule = dict(rule)
@@ -199,28 +245,33 @@ def _derive_manual_tags(section: dict[str, Any], matched_keywords: list[str]) ->
 def _manual_tags_from_keywords(matched_keywords: list[str]) -> list[str]:
     values: list[str] = []
     matched = set(matched_keywords)
-    for rule in _EVIDENCE_RULES:
-        if matched.intersection(rule["keywords"]):
-            values.extend(list(rule["manual_tags"]))
+    for profile in _SOURCE_PROFILES.values():
+        for rule in profile["evidence_rules"]:
+            if matched.intersection(rule["keywords"]):
+                values.extend(list(rule["manual_tags"]))
     return values
 
 
-def _section_confidence(section: dict[str, Any]) -> float:
-    value = section.get("confidence")
-    if isinstance(value, bool):
-        raise _builder_error("section.confidence", "section.confidence must be numeric")
-    if isinstance(value, (int, float)):
-        return float(value)
-    return _SECTION_CONFIDENCE.get(str(section["section_id"]), 0.65)
+def _source_profile(source_id: str) -> dict[str, Any]:
+    profile = _SOURCE_PROFILES.get(source_id)
+    if profile is not None:
+        return profile
+    raise _builder_error("snapshot.source_id", "unsupported raw source snapshot source_id")
 
 
-def _build_provenance(section: dict[str, Any], matched_keywords: list[str]) -> dict[str, Any]:
+def _section_confidence(source_id: str, section_id: str) -> float:
+    profile = _source_profile(source_id)
+    return profile["section_confidence"].get(section_id, 0.65)
+
+
+def _build_provenance(source_id: str, section_id: str, matched_keywords: list[str]) -> dict[str, Any]:
+    profile = _source_profile(source_id)
     return {
-        "source_section": section["section_id"],
+        "source_section": section_id,
         "matched_keywords": matched_keywords,
-        "adapter_version": _optional_string(section, "adapter_version") or "whowhatwear_editorial_v1",
-        "warnings": _optional_string_list(section, "warnings") or ["price band defaulted from source registry"],
-        "confidence": _section_confidence(section),
+        "adapter_version": profile["adapter_version"],
+        "warnings": ["price band defaulted from source registry"],
+        "confidence": _section_confidence(source_id, section_id),
     }
 
 
@@ -288,19 +339,7 @@ def _validate_section(section: Any, index: int) -> dict[str, Any]:
     _require_string_field(section, "heading", "section.heading")
     _require_string_field(section, "text", "section.text")
     _require_string_list(section, "tags", "section.tags")
-    _validate_optional_section_metadata(section)
     return dict(section)
-
-
-def _validate_optional_section_metadata(section: dict[str, Any]) -> None:
-    _require_optional_string_list(section, "matched_keywords", "section.matched_keywords")
-    _require_optional_string_field(section, "excerpt_anchor", "section.excerpt_anchor")
-    _require_optional_string_field(section, "adapter_version", "section.adapter_version")
-    _require_optional_string_list(section, "warnings", "section.warnings")
-    value = section.get("confidence")
-    if value is None or isinstance(value, (int, float)) and not isinstance(value, bool):
-        return
-    raise _builder_error("section.confidence", "section.confidence must be numeric")
 
 
 def _validate_canonical_signal(signal: Any, index: int) -> dict[str, Any]:
@@ -370,34 +409,8 @@ def _require_string_list(record: dict[str, Any], field: str, error_field: str) -
     raise _builder_error(error_field, f"{error_field} must be a list of strings")
 
 
-def _require_optional_string_field(record: dict[str, Any], field: str, error_field: str) -> None:
-    value = record.get(field)
-    if value is None or isinstance(value, str):
-        return
-    raise _builder_error(error_field, f"{error_field} must be a string")
-
-
-def _require_optional_string_list(record: dict[str, Any], field: str, error_field: str) -> None:
-    value = record.get(field)
-    if value is None or isinstance(value, list) and all(isinstance(item, str) for item in value):
-        return
-    raise _builder_error(error_field, f"{error_field} must be a list of strings")
-
-
 def _normalize_text(value: str) -> str:
     return " ".join(value.strip().casefold().split())
-
-
-def _optional_string(section: dict[str, Any], field: str) -> str | None:
-    value = section.get(field)
-    return value if isinstance(value, str) and value.strip() else None
-
-
-def _optional_string_list(section: dict[str, Any], field: str) -> list[str] | None:
-    value = section.get(field)
-    if isinstance(value, list) and all(isinstance(item, str) for item in value):
-        return [item for item in value if item.strip()]
-    return None
 
 
 def _dedupe(values: list[str]) -> list[str]:
