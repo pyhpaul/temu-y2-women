@@ -150,8 +150,10 @@ def _detail_requirements_line(
     ]
     if request.mode == "B":
         items.append(f"development notes: {'; '.join(development_notes)}")
+        if selected_strategies:
+            items.append(f"seasonal direction: {_strategy_reason_summary(selected_strategies)}")
     elif selected_strategies:
-        items.append(f"seasonal direction: {selected_strategies[0].reason}")
+        items.append(f"seasonal direction: {_strategy_reason_summary(selected_strategies)}")
     return "; ".join(items)
 
 
@@ -529,3 +531,7 @@ def _family_constraint_hints(selected_style_family: SelectedStyleFamily | None) 
     if selected_style_family is None:
         return ()
     return selected_style_family.profile.constraint_hints
+
+
+def _strategy_reason_summary(selected_strategies: tuple[SelectedStrategy, ...]) -> str:
+    return "; ".join(item.reason for item in selected_strategies)
