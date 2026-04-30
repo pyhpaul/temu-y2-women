@@ -181,6 +181,44 @@
       "enabled": true
     },
     {
+      "source_id": "vogue-spring-2025-dress-trends",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.vogue.com/article/spring-2025-dress-trends",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "vogue_editorial_v1",
+      "default_price_band": "mid",
+      "pipeline_mode": "editorial_text",
+      "parser_config": {
+        "section_rules": [
+          {
+            "heading": "The Butter Yellow Dress",
+            "section_id": "butter-yellow-dress",
+            "tags": ["spring", "color"]
+          },
+          {
+            "heading": "The Drop Waist Dress",
+            "section_id": "drop-waist-dress",
+            "tags": ["spring", "silhouette"]
+          },
+          {
+            "heading": "The Polka-Dot Dress",
+            "section_id": "polka-dot-dress",
+            "tags": ["spring", "print"]
+          },
+          {
+            "heading": "Fashion-Forward Florals",
+            "section_id": "fashion-forward-florals",
+            "tags": ["spring", "print"]
+          }
+        ]
+      },
+      "priority": 72,
+      "weight": 0.78,
+      "enabled": true
+    },
+    {
       "source_id": "whowhatwear-best-summer-dresses-2025",
       "source_type": "public_roundup_web",
       "source_url": "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025",
@@ -195,6 +233,23 @@
       "observation_model": "gpt-4.1-mini",
       "priority": 70,
       "weight": 0.7,
+      "enabled": true
+    },
+    {
+      "source_id": "harpersbazaar-best-summer-dresses-2025",
+      "source_type": "public_roundup_web",
+      "source_url": "https://www.harpersbazaar.com/fashion/trends/g65192976/best-summer-dresses-for-women/",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "hearst_roundup_v1",
+      "default_price_band": "mid",
+      "pipeline_mode": "roundup_image_cards",
+      "card_limit": 12,
+      "aggregation_threshold": 2,
+      "observation_model": "gpt-4.1-mini",
+      "priority": 68,
+      "weight": 0.68,
       "enabled": true
     }
   ]

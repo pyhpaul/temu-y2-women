@@ -31,6 +31,18 @@ class PublicSourceAdapterTest(unittest.TestCase):
 
         self.assertIs(resolve_public_source_adapter("marieclaire_editorial_v1"), parse_marieclaire_editorial_html)
 
+    def test_resolve_public_source_adapter_returns_vogue_parser(self) -> None:
+        from temu_y2_women.public_source_adapter import resolve_public_source_adapter
+        from temu_y2_women.public_source_adapters.vogue_editorial import parse_vogue_editorial_html
+
+        self.assertIs(resolve_public_source_adapter("vogue_editorial_v1"), parse_vogue_editorial_html)
+
+    def test_resolve_public_source_adapter_returns_hearst_parser(self) -> None:
+        from temu_y2_women.public_source_adapter import resolve_public_source_adapter
+        from temu_y2_women.public_source_adapters.hearst_roundup import parse_hearst_roundup_html
+
+        self.assertIs(resolve_public_source_adapter("hearst_roundup_v1"), parse_hearst_roundup_html)
+
     def test_resolve_public_source_adapter_rejects_unknown_adapter_id(self) -> None:
         from temu_y2_women.public_source_adapter import resolve_public_source_adapter
 

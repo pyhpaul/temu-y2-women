@@ -173,12 +173,15 @@ class PublicSignalRefreshTest(unittest.TestCase):
             second_whowhatwear_exists = (run_dir / "raw_sources" / "whowhatwear-summer-dress-trends-2025.json").exists()
             marieclaire_exists = (run_dir / "raw_sources" / "marieclaire-summer-2025-dress-trends.json").exists()
             marieclaire_2026_exists = (run_dir / "raw_sources" / "marieclaire-spring-2026-dress-trends.json").exists()
+            vogue_exists = (run_dir / "raw_sources" / "vogue-spring-2025-dress-trends.json").exists()
             roundup_exists = (run_dir / "raw_sources" / "whowhatwear-best-summer-dresses-2025.json").exists()
             observation_exists = (run_dir / "card_observations" / "whowhatwear-best-summer-dresses-2025.json").exists()
+            hearst_roundup_exists = (run_dir / "raw_sources" / "harpersbazaar-best-summer-dresses-2025.json").exists()
+            hearst_observation_exists = (run_dir / "card_observations" / "harpersbazaar-best-summer-dresses-2025.json").exists()
 
-        self.assertEqual(result["source_summary"], {"total": 5, "succeeded": 5, "failed": 0})
-        self.assertEqual(result["canonical_signal_count"], 29)
-        self.assertEqual(result["coverage"]["matched_signals"], 12)
+        self.assertEqual(result["source_summary"], {"total": 7, "succeeded": 7, "failed": 0})
+        self.assertEqual(result["canonical_signal_count"], 34)
+        self.assertEqual(result["coverage"]["matched_signals"], 16)
         self.assertEqual(
             result["selected_source_ids"],
             [
@@ -186,18 +189,23 @@ class PublicSignalRefreshTest(unittest.TestCase):
                 "whowhatwear-summer-dress-trends-2025",
                 "marieclaire-summer-2025-dress-trends",
                 "marieclaire-spring-2026-dress-trends",
+                "vogue-spring-2025-dress-trends",
                 "whowhatwear-best-summer-dresses-2025",
+                "harpersbazaar-best-summer-dresses-2025",
             ],
         )
         self.assertEqual(
             [item["matched_signal_count"] for item in result["source_details"]],
-            [5, 2, 1, 3, 1],
+            [5, 2, 1, 3, 3, 1, 1],
         )
         self.assertTrue(second_whowhatwear_exists)
         self.assertTrue(marieclaire_exists)
         self.assertTrue(marieclaire_2026_exists)
+        self.assertTrue(vogue_exists)
         self.assertTrue(roundup_exists)
         self.assertTrue(observation_exists)
+        self.assertTrue(hearst_roundup_exists)
+        self.assertTrue(hearst_observation_exists)
 
     def test_run_public_signal_refresh_merges_editorial_and_roundup_sources(self) -> None:
         from temu_y2_women.public_signal_refresh import run_public_signal_refresh
@@ -383,8 +391,14 @@ def _full_registry_fetcher() -> Callable[[str], str]:
         "https://www.marieclaire.com/fashion/spring-2026-dress-trends/": (
             _SOURCE_FIXTURE_DIR / "marieclaire-spring-2026-dress-trends.html"
         ).read_text(encoding="utf-8"),
+        "https://www.vogue.com/article/spring-2025-dress-trends": (
+            _SOURCE_FIXTURE_DIR / "vogue-spring-2025-dress-trends.html"
+        ).read_text(encoding="utf-8"),
         "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025": (
             _SOURCE_FIXTURE_DIR / "whowhatwear-best-summer-dresses-2025.html"
+        ).read_text(encoding="utf-8"),
+        "https://www.harpersbazaar.com/fashion/trends/g65192976/best-summer-dresses-for-women/": (
+            _SOURCE_FIXTURE_DIR / "harpersbazaar-best-summer-dresses-2025.html"
         ).read_text(encoding="utf-8"),
     }
 

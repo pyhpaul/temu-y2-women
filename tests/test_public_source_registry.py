@@ -12,7 +12,7 @@ class PublicSourceRegistryTest(unittest.TestCase):
 
         result = load_public_source_registry(Path("data/refresh/dress/source_registry.json"))
 
-        self.assertEqual(len(result), 5)
+        self.assertEqual(len(result), 7)
         self.assertEqual(result[0]["source_id"], "whowhatwear-summer-2025-dress-trends")
         self.assertEqual(result[0]["adapter_id"], "whowhatwear_editorial_v1")
         self.assertEqual(result[0]["default_price_band"], "mid")
@@ -47,7 +47,9 @@ class PublicSourceRegistryTest(unittest.TestCase):
                 "whowhatwear-summer-dress-trends-2025",
                 "marieclaire-summer-2025-dress-trends",
                 "marieclaire-spring-2026-dress-trends",
+                "vogue-spring-2025-dress-trends",
                 "whowhatwear-best-summer-dresses-2025",
+                "harpersbazaar-best-summer-dresses-2025",
             ],
         )
 

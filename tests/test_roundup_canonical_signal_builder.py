@@ -54,6 +54,25 @@ class RoundupCanonicalSignalBuilderTest(unittest.TestCase):
         self.assertEqual(candidate["observation_model"], "fake-roundup-observer")
         self.assertIn("hemline ends above knee", candidate["evidence_summary"])
 
+    def test_build_roundup_canonical_signals_prefers_snapshot_adapter_version_when_present(self) -> None:
+        from temu_y2_women.roundup_canonical_signal_builder import build_roundup_canonical_signals
+
+        snapshot = _read_json(_FIXTURE_DIR / "expected-whowhatwear-best-summer-dresses-2025-raw-source-snapshot.json")
+        observations = _read_json(_FIXTURE_DIR / "expected-whowhatwear-best-summer-dresses-2025-card-observations.json")
+        snapshot["adapter_version"] = "hearst_roundup_v1"
+
+        result = build_roundup_canonical_signals(
+            snapshot=snapshot,
+            observations=observations,
+            default_price_band="mid",
+            aggregation_threshold=2,
+        )
+
+        self.assertEqual(
+            result["signals"][0]["extraction_provenance"]["adapter_version"],
+            "hearst_roundup_v1",
+        )
+
 
 def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))

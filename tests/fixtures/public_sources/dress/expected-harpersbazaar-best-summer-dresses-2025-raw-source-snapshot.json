@@ -1,0 +1,46 @@
+{
+  "schema_version": "public-roundup-source-snapshot-v1",
+  "adapter_version": "hearst_roundup_v1",
+  "source_id": "harpersbazaar-best-summer-dresses-2025",
+  "source_type": "public_roundup_web",
+  "source_url": "https://www.harpersbazaar.com/fashion/trends/g65192976/best-summer-dresses-for-women/",
+  "captured_at": "2025-06-30",
+  "fetched_at": "2026-04-30T00:00:00Z",
+  "target_market": "US",
+  "category": "dress",
+  "page_title": "The Best Summer Dresses 2025 to Shop Now and Wear All Season Long",
+  "page_context_tags": ["summer", "shopping", "dress"],
+  "cards": [
+    {
+      "card_id": "harpersbazaar-best-summer-dresses-2025-card-001",
+      "rank": 1,
+      "title": "The Drop-Waist Midi",
+      "image_url": "https://example.com/drop-waist-midi.jpg",
+      "source_url": "https://example.com/drop-waist-midi",
+      "price_text": "",
+      "brand_text": "J.Crew",
+      "badges": []
+    },
+    {
+      "card_id": "harpersbazaar-best-summer-dresses-2025-card-002",
+      "rank": 2,
+      "title": "Vacation Crochet Mini",
+      "image_url": "https://example.com/crochet-mini.jpg",
+      "source_url": "https://example.com/crochet-mini",
+      "price_text": "",
+      "brand_text": "Dôen",
+      "badges": []
+    },
+    {
+      "card_id": "harpersbazaar-best-summer-dresses-2025-card-003",
+      "rank": 3,
+      "title": "Gingham Day Dress",
+      "image_url": "https://example.com/gingham-day-dress.jpg",
+      "source_url": "https://example.com/gingham-day-dress",
+      "price_text": "",
+      "brand_text": "Posse",
+      "badges": []
+    }
+  ],
+  "warnings": []
+}

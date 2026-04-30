@@ -1,0 +1,38 @@
+{
+  "schema_version": "public-source-snapshot-v1",
+  "source_id": "vogue-spring-2025-dress-trends",
+  "source_url": "https://www.vogue.com/article/spring-2025-dress-trends",
+  "source_type": "public_editorial_web",
+  "target_market": "US",
+  "category": "dress",
+  "captured_at": "2025-03-09",
+  "fetched_at": "2026-04-30T00:00:00Z",
+  "page_title": "10 Spring Dress Trends to Shop in 2025",
+  "sections": [
+    {
+      "section_id": "butter-yellow-dress",
+      "heading": "The Butter Yellow Dress",
+      "text": "Butter yellow has quickly become a runway staple across spring and summer collections.",
+      "tags": ["spring", "color"]
+    },
+    {
+      "section_id": "drop-waist-dress",
+      "heading": "The Drop Waist Dress",
+      "text": "Drop-waist dresses elongate the silhouette and pair easily with minimalist flats. They deliver an unfussy but directional spring shape.",
+      "tags": ["spring", "silhouette"]
+    },
+    {
+      "section_id": "polka-dot-dress",
+      "heading": "The Polka-Dot Dress",
+      "text": "Polka dots return with semi-sheer, draped, and strapless shapes that feel modern again.",
+      "tags": ["spring", "print"]
+    },
+    {
+      "section_id": "fashion-forward-florals",
+      "heading": "Fashion-Forward Florals",
+      "text": "Floral dresses show up with unexpected silhouettes and styling that breaks from tradition.",
+      "tags": ["spring", "print"]
+    }
+  ],
+  "warnings": []
+}
