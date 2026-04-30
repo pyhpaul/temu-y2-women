@@ -92,6 +92,50 @@ class StrategySelectorTest(unittest.TestCase):
 
         self.assertEqual(result.selected[0].strategy.strategy_id, "summer-party-dress")
 
+    def test_ignore_specific_strategy_when_occasion_is_mismatched(self) -> None:
+        from temu_y2_women.strategy_selector import select_strategies
+
+        request = _request(launch_date=date(2026, 7, 4), occasion_tags=("party",))
+        strategies = [
+            {
+                "strategy_id": "baseline-dress-us",
+                "category": "dress",
+                "target_market": "US",
+                "priority": 1,
+                "date_window": {"start": "01-01", "end": "12-31"},
+                "occasion_tags": [],
+                "boost_tags": ["dress"],
+                "suppress_tags": [],
+                "slot_preferences": {},
+                "score_boost": 0.02,
+                "score_cap": 0.05,
+                "prompt_hints": ["baseline dress styling"],
+                "reason_template": "baseline fallback for dress requests",
+                "status": "active",
+            },
+            {
+                "strategy_id": "summer-vacation-dress",
+                "category": "dress",
+                "target_market": "US",
+                "priority": 10,
+                "date_window": {"start": "05-15", "end": "08-31"},
+                "occasion_tags": ["vacation", "resort"],
+                "boost_tags": ["summer", "floral"],
+                "suppress_tags": ["heavy"],
+                "slot_preferences": {"pattern": ["floral"]},
+                "score_boost": 0.12,
+                "score_cap": 0.2,
+                "prompt_hints": ["summer vacation mood"],
+                "reason_template": "launch date falls into the US summer vacation window",
+                "status": "active",
+            },
+        ]
+
+        result = select_strategies(request, strategies)
+
+        self.assertEqual([item.strategy.strategy_id for item in result.selected], ["baseline-dress-us"])
+        self.assertEqual(result.warnings, ("No specific strategy matched; using baseline strategy.",))
+
     def test_fall_back_to_baseline_strategy(self) -> None:
         from temu_y2_women.strategy_selector import select_strategies
 
@@ -150,7 +194,7 @@ class StrategySelectorTest(unittest.TestCase):
                 "target_market": "US",
                 "priority": 9,
                 "date_window": {"start": "05-15", "end": "08-31"},
-                "occasion_tags": ["casual"],
+                "occasion_tags": [],
                 "boost_tags": ["floral"],
                 "suppress_tags": [],
                 "slot_preferences": {},
