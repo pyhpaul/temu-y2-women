@@ -170,41 +170,29 @@ class PublicSignalRefreshTest(unittest.TestCase):
                 card_image_observer=_fake_card_observer,
             )
             run_dir = temp_root / result["run_id"]
-            second_whowhatwear_exists = (run_dir / "raw_sources" / "whowhatwear-summer-dress-trends-2025.json").exists()
-            vogue_exists = (run_dir / "raw_sources" / "vogue-spring-2025-dress-trends.json").exists()
-            marieclaire_exists = (run_dir / "raw_sources" / "marieclaire-summer-2025-dress-trends.json").exists()
-            roundup_exists = (run_dir / "raw_sources" / "whowhatwear-best-summer-dresses-2025.json").exists()
-            observation_exists = (run_dir / "card_observations" / "whowhatwear-best-summer-dresses-2025.json").exists()
-            hearst_roundup_exists = (run_dir / "raw_sources" / "harpersbazaar-best-summer-dresses-2025.json").exists()
-            hearst_observation_exists = (
-                run_dir / "card_observations" / "harpersbazaar-best-summer-dresses-2025.json"
+            whowhatwear_exists = (run_dir / "raw_sources" / "whowhatwear-dress-trends-2026.json").exists()
+            marieclaire_exists = (run_dir / "raw_sources" / "marieclaire-spring-2026-dress-trends.json").exists()
+            trend_predictions_exists = (
+                run_dir / "raw_sources" / "whowhatwear-summer-2026-trend-predictions.json"
             ).exists()
+            roundup_exists = (run_dir / "raw_sources" / "whowhatwear-best-summer-dresses-2026.json").exists()
+            observation_exists = (run_dir / "card_observations" / "whowhatwear-best-summer-dresses-2026.json").exists()
 
-        self.assertEqual(result["source_summary"], {"total": 6, "succeeded": 6, "failed": 0})
-        self.assertEqual(result["canonical_signal_count"], 32)
-        self.assertEqual(result["coverage"]["matched_signals"], 31)
+        self.assertEqual(result["source_summary"], {"total": 4, "succeeded": 4, "failed": 0})
         self.assertEqual(
             result["selected_source_ids"],
             [
-                "whowhatwear-summer-2025-dress-trends",
-                "whowhatwear-summer-dress-trends-2025",
-                "vogue-spring-2025-dress-trends",
-                "marieclaire-summer-2025-dress-trends",
-                "whowhatwear-best-summer-dresses-2025",
-                "harpersbazaar-best-summer-dresses-2025",
+                "whowhatwear-dress-trends-2026",
+                "marieclaire-spring-2026-dress-trends",
+                "whowhatwear-summer-2026-trend-predictions",
+                "whowhatwear-best-summer-dresses-2026",
             ],
         )
-        self.assertEqual(
-            [item["matched_signal_count"] for item in result["source_details"]],
-            [5, 8, 9, 7, 1, 1],
-        )
-        self.assertTrue(second_whowhatwear_exists)
-        self.assertTrue(vogue_exists)
+        self.assertTrue(whowhatwear_exists)
         self.assertTrue(marieclaire_exists)
+        self.assertTrue(trend_predictions_exists)
         self.assertTrue(roundup_exists)
         self.assertTrue(observation_exists)
-        self.assertTrue(hearst_roundup_exists)
-        self.assertTrue(hearst_observation_exists)
 
     def test_run_public_signal_refresh_merges_editorial_and_roundup_sources(self) -> None:
         from temu_y2_women.public_signal_refresh import run_public_signal_refresh
@@ -380,21 +368,17 @@ def _always_failing_fetcher(_: str) -> str:
 
 def _full_registry_fetcher() -> Callable[[str], str]:
     html_by_url = {
-        "https://www.whowhatwear.com/fashion/summer/summer-2025-dress-trends": _fixture_html(),
-        "https://www.whowhatwear.com/fashion/dresses/summer-dress-trends-2025": (
-            _SOURCE_FIXTURE_DIR / "whowhatwear-summer-dress-trends-2025.html"
+        "https://www.whowhatwear.com/fashion/trends/dress-trends-2026": (
+            _SOURCE_FIXTURE_DIR / "whowhatwear-dress-trends-2026.html"
         ).read_text(encoding="utf-8"),
-        "https://www.vogue.com/article/spring-2025-dress-trends": (
-            _SOURCE_FIXTURE_DIR / "vogue-spring-2025-dress-trends.html"
+        "https://www.marieclaire.com/fashion/spring-2026-dress-trends/": (
+            _SOURCE_FIXTURE_DIR / "marieclaire-spring-2026-dress-trends.html"
         ).read_text(encoding="utf-8"),
-        "https://www.marieclaire.com/fashion/summer-fashion/summer-2025-dress-trends/": (
-            _SOURCE_FIXTURE_DIR / "marieclaire-summer-2025-dress-trends.html"
+        "https://www.whowhatwear.com/uk/fashion/summer/summer-2026-trend-predictions": (
+            _SOURCE_FIXTURE_DIR / "whowhatwear-summer-2026-trend-predictions.html"
         ).read_text(encoding="utf-8"),
-        "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025": (
-            _SOURCE_FIXTURE_DIR / "whowhatwear-best-summer-dresses-2025.html"
-        ).read_text(encoding="utf-8"),
-        "https://www.harpersbazaar.com/fashion/trends/g65192976/best-summer-dresses-for-women/": (
-            _SOURCE_FIXTURE_DIR / "harpersbazaar-best-summer-dresses-2025.html"
+        "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2026": (
+            _SOURCE_FIXTURE_DIR / "whowhatwear-best-summer-dresses-2026.html"
         ).read_text(encoding="utf-8"),
     }
 

@@ -101,7 +101,7 @@ class GenerateAndRenderWorkflowSuccessTest(unittest.TestCase):
             self.assertEqual(concept_result["selected_strategies"][0]["strategy_id"], "dress-us-summer-vacation")
             self.assertEqual(
                 concept_result["composed_concept"]["selected_elements"]["neckline"]["value"],
-                "halter neckline",
+                "square neckline",
             )
             self.assertTrue((output_dir / "hero_front.png").exists())
 

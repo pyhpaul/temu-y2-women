@@ -12,8 +12,8 @@ class PublicSourceRegistryTest(unittest.TestCase):
 
         result = load_public_source_registry(Path("data/refresh/dress/source_registry.json"))
 
-        self.assertEqual(len(result), 6)
-        self.assertEqual(result[0]["source_id"], "whowhatwear-summer-2025-dress-trends")
+        self.assertEqual(len(result), 4)
+        self.assertEqual(result[0]["source_id"], "whowhatwear-dress-trends-2026")
         self.assertEqual(result[0]["adapter_id"], "whowhatwear_editorial_v1")
         self.assertEqual(result[0]["default_price_band"], "mid")
         self.assertEqual(result[0]["priority"], 100)
@@ -24,7 +24,7 @@ class PublicSourceRegistryTest(unittest.TestCase):
 
         result = load_public_source_registry(Path("data/refresh/dress/source_registry.json"))
 
-        roundup = next(source for source in result if source["source_id"] == "whowhatwear-best-summer-dresses-2025")
+        roundup = next(source for source in result if source["source_id"] == "whowhatwear-best-summer-dresses-2026")
         self.assertEqual(roundup["source_type"], "public_roundup_web")
         self.assertEqual(roundup["adapter_id"], "whowhatwear_roundup_v1")
         self.assertEqual(roundup["pipeline_mode"], "roundup_image_cards")
@@ -32,30 +32,14 @@ class PublicSourceRegistryTest(unittest.TestCase):
         self.assertEqual(roundup["aggregation_threshold"], 2)
         self.assertEqual(roundup["observation_model"], "gpt-4.1-mini")
 
-    def test_load_enabled_sources_includes_vogue_editorial_source(self) -> None:
+    def test_load_enabled_sources_excludes_disabled_legacy_sources(self) -> None:
         from temu_y2_women.public_source_registry import load_public_source_registry
 
         result = load_public_source_registry(Path("data/refresh/dress/source_registry.json"))
+        enabled_ids = {source["source_id"] for source in result}
 
-        vogue = next(source for source in result if source["source_id"] == "vogue-spring-2025-dress-trends")
-        self.assertEqual(vogue["source_type"], "public_editorial_web")
-        self.assertEqual(vogue["adapter_id"], "vogue_editorial_v1")
-        self.assertEqual(vogue["pipeline_mode"], "editorial_text")
-        self.assertEqual(vogue["priority"], 85)
-        self.assertEqual(vogue["weight"], 0.8)
-
-    def test_load_enabled_sources_includes_hearst_roundup_source(self) -> None:
-        from temu_y2_women.public_source_registry import load_public_source_registry
-
-        result = load_public_source_registry(Path("data/refresh/dress/source_registry.json"))
-
-        roundup = next(source for source in result if source["source_id"] == "harpersbazaar-best-summer-dresses-2025")
-        self.assertEqual(roundup["source_type"], "public_roundup_web")
-        self.assertEqual(roundup["adapter_id"], "hearst_roundup_v1")
-        self.assertEqual(roundup["pipeline_mode"], "roundup_image_cards")
-        self.assertEqual(roundup["card_limit"], 12)
-        self.assertEqual(roundup["aggregation_threshold"], 2)
-        self.assertEqual(roundup["observation_model"], "gpt-4.1-mini")
+        self.assertNotIn("vogue-spring-2025-dress-trends", enabled_ids)
+        self.assertNotIn("harpersbazaar-best-summer-dresses-2025", enabled_ids)
 
     def test_select_public_sources_returns_all_enabled_sources_by_default(self) -> None:
         from temu_y2_women.public_source_registry import load_public_source_registry, select_public_sources
@@ -67,12 +51,10 @@ class PublicSourceRegistryTest(unittest.TestCase):
         self.assertEqual(
             [source["source_id"] for source in result],
             [
-                "whowhatwear-summer-2025-dress-trends",
-                "whowhatwear-summer-dress-trends-2025",
-                "vogue-spring-2025-dress-trends",
-                "marieclaire-summer-2025-dress-trends",
-                "whowhatwear-best-summer-dresses-2025",
-                "harpersbazaar-best-summer-dresses-2025",
+                "whowhatwear-dress-trends-2026",
+                "marieclaire-spring-2026-dress-trends",
+                "whowhatwear-summer-2026-trend-predictions",
+                "whowhatwear-best-summer-dresses-2026",
             ],
         )
 
@@ -84,16 +66,16 @@ class PublicSourceRegistryTest(unittest.TestCase):
         result = select_public_sources(
             registry,
             source_ids=[
-                "marieclaire-summer-2025-dress-trends",
-                "whowhatwear-summer-dress-trends-2025",
+                "marieclaire-spring-2026-dress-trends",
+                "whowhatwear-summer-2026-trend-predictions",
             ],
         )
 
         self.assertEqual(
             [source["source_id"] for source in result],
             [
-                "marieclaire-summer-2025-dress-trends",
-                "whowhatwear-summer-dress-trends-2025",
+                "marieclaire-spring-2026-dress-trends",
+                "whowhatwear-summer-2026-trend-predictions",
             ],
         )
 

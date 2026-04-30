@@ -2,9 +2,9 @@
   "schema_version": "public-source-registry-v1",
   "sources": [
     {
-      "source_id": "whowhatwear-summer-2025-dress-trends",
+      "source_id": "whowhatwear-dress-trends-2026",
       "source_type": "public_editorial_web",
-      "source_url": "https://www.whowhatwear.com/fashion/summer/summer-2025-dress-trends",
+      "source_url": "https://www.whowhatwear.com/fashion/trends/dress-trends-2026",
       "target_market": "US",
       "category": "dress",
       "fetch_mode": "html",
@@ -16,13 +16,13 @@
       "enabled": true
     },
     {
-      "source_id": "whowhatwear-summer-dress-trends-2025",
+      "source_id": "marieclaire-spring-2026-dress-trends",
       "source_type": "public_editorial_web",
-      "source_url": "https://www.whowhatwear.com/fashion/dresses/summer-dress-trends-2025",
+      "source_url": "https://www.marieclaire.com/fashion/spring-2026-dress-trends/",
       "target_market": "US",
       "category": "dress",
       "fetch_mode": "html",
-      "adapter_id": "whowhatwear_editorial_v1",
+      "adapter_id": "marieclaire_editorial_v1",
       "default_price_band": "mid",
       "pipeline_mode": "editorial_text",
       "priority": 90,
@@ -30,27 +30,13 @@
       "enabled": true
     },
     {
-      "source_id": "vogue-spring-2025-dress-trends",
+      "source_id": "whowhatwear-summer-2026-trend-predictions",
       "source_type": "public_editorial_web",
-      "source_url": "https://www.vogue.com/article/spring-2025-dress-trends",
+      "source_url": "https://www.whowhatwear.com/uk/fashion/summer/summer-2026-trend-predictions",
       "target_market": "US",
       "category": "dress",
       "fetch_mode": "html",
-      "adapter_id": "vogue_editorial_v1",
-      "default_price_band": "mid",
-      "pipeline_mode": "editorial_text",
-      "priority": 85,
-      "weight": 0.8,
-      "enabled": true
-    },
-    {
-      "source_id": "marieclaire-summer-2025-dress-trends",
-      "source_type": "public_editorial_web",
-      "source_url": "https://www.marieclaire.com/fashion/summer-fashion/summer-2025-dress-trends/",
-      "target_market": "US",
-      "category": "dress",
-      "fetch_mode": "html",
-      "adapter_id": "marieclaire_editorial_v1",
+      "adapter_id": "whowhatwear_editorial_v1",
       "default_price_band": "mid",
       "pipeline_mode": "editorial_text",
       "priority": 80,
@@ -58,9 +44,9 @@
       "enabled": true
     },
     {
-      "source_id": "whowhatwear-best-summer-dresses-2025",
+      "source_id": "whowhatwear-best-summer-dresses-2026",
       "source_type": "public_roundup_web",
-      "source_url": "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025",
+      "source_url": "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2026",
       "target_market": "US",
       "category": "dress",
       "fetch_mode": "html",
@@ -75,6 +61,79 @@
       "enabled": true
     },
     {
+      "source_id": "whowhatwear-summer-2025-dress-trends",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.whowhatwear.com/fashion/summer/summer-2025-dress-trends",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "whowhatwear_editorial_v1",
+      "default_price_band": "mid",
+      "pipeline_mode": "editorial_text",
+      "priority": 60,
+      "weight": 0.6,
+      "enabled": false
+    },
+    {
+      "source_id": "whowhatwear-summer-dress-trends-2025",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.whowhatwear.com/fashion/dresses/summer-dress-trends-2025",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "whowhatwear_editorial_v1",
+      "default_price_band": "mid",
+      "pipeline_mode": "editorial_text",
+      "priority": 55,
+      "weight": 0.55,
+      "enabled": false
+    },
+    {
+      "source_id": "vogue-spring-2025-dress-trends",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.vogue.com/article/spring-2025-dress-trends",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "vogue_editorial_v1",
+      "default_price_band": "mid",
+      "pipeline_mode": "editorial_text",
+      "priority": 50,
+      "weight": 0.5,
+      "enabled": false
+    },
+    {
+      "source_id": "marieclaire-summer-2025-dress-trends",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.marieclaire.com/fashion/summer-fashion/summer-2025-dress-trends/",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "marieclaire_editorial_v1",
+      "default_price_band": "mid",
+      "pipeline_mode": "editorial_text",
+      "priority": 45,
+      "weight": 0.45,
+      "enabled": false
+    },
+    {
+      "source_id": "whowhatwear-best-summer-dresses-2025",
+      "source_type": "public_roundup_web",
+      "source_url": "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "whowhatwear_roundup_v1",
+      "default_price_band": "mid",
+      "pipeline_mode": "roundup_image_cards",
+      "card_limit": 12,
+      "aggregation_threshold": 2,
+      "observation_model": "gpt-4.1-mini",
+      "priority": 40,
+      "weight": 0.4,
+      "enabled": false
+    },
+    {
       "source_id": "harpersbazaar-best-summer-dresses-2025",
       "source_type": "public_roundup_web",
       "source_url": "https://www.harpersbazaar.com/fashion/trends/g65192976/best-summer-dresses-for-women/",
@@ -87,9 +146,9 @@
       "card_limit": 12,
       "aggregation_threshold": 2,
       "observation_model": "gpt-4.1-mini",
-      "priority": 60,
-      "weight": 0.65,
-      "enabled": true
+      "priority": 35,
+      "weight": 0.35,
+      "enabled": false
     }
   ]
 }
