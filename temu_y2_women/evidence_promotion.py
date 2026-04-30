@@ -190,12 +190,16 @@ def _load_draft_elements(path: Path, taxonomy: dict[str, Any]) -> list[dict[str,
         raise _promotion_error(path, "schema_version", "INVALID_PROMOTION_INPUT", "draft elements schema_version is unsupported")
     elements = _require_list_field(path, payload, "elements", "INVALID_PROMOTION_INPUT")
     transformed: list[dict[str, Any]] = []
+    normalized: list[dict[str, Any]] = []
     seen_draft_ids: set[str] = set()
+    summary_max_length = int(taxonomy["summary"]["max_length"])
     for index, element in enumerate(elements):
-        _validate_draft_element_record(path, index, element, seen_draft_ids, taxonomy)
-        transformed.append(_draft_element_to_active_shape(element))
+        record = _normalize_draft_element(element, summary_max_length)
+        _validate_draft_element_record(path, index, record, seen_draft_ids, taxonomy)
+        transformed.append(_draft_element_to_active_shape(record))
+        normalized.append(record)
     _validate_promotion_elements(path, taxonomy, transformed, "INVALID_PROMOTION_INPUT")
-    return [dict(element) for element in elements]
+    return normalized
 
 
 def _load_draft_strategy_hints(path: Path, taxonomy: dict[str, Any]) -> list[dict[str, Any]]:
@@ -256,20 +260,7 @@ def _build_element_review_entry(
         "merge_rationale": _build_element_merge_rationale(draft_element, matched),
         "source_signal_ids": list(draft_element["source_signal_ids"]),
         "decision": "pending",
-        "proposed_element": {
-            "element_id": matched["element_id"] if matched else _draft_element_id(draft_element),
-            "category": draft_element["category"],
-            "slot": draft_element["slot"],
-            "value": draft_element["value"],
-            "tags": list(draft_element["tags"]),
-            "base_score": draft_element["suggested_base_score"],
-            "price_bands": list(draft_element["price_bands"]),
-            "occasion_tags": list(draft_element["occasion_tags"]),
-            "season_tags": list(draft_element["season_tags"]),
-            "risk_flags": list(draft_element["risk_flags"]),
-            "evidence_summary": draft_element["evidence_summary"],
-            "status": "active",
-        },
+        "proposed_element": _build_proposed_element(draft_element, matched),
     }
     review_context = _build_structured_review_context(draft_element)
     if review_context is not None:
@@ -281,7 +272,7 @@ def _build_structured_review_context(draft_element: dict[str, Any]) -> dict[str,
     provenance = draft_element.get("extraction_provenance")
     if not isinstance(provenance, dict):
         return None
-    structured_matches = provenance.get("structured_matches")
+    structured_matches = _structured_matches(provenance)
     if not isinstance(structured_matches, list) or not structured_matches:
         structured_matches = provenance.get("structured_candidate_matches")
     if not isinstance(structured_matches, list) or not structured_matches:
@@ -294,6 +285,13 @@ def _build_structured_review_context(draft_element: dict[str, Any]) -> dict[str,
     if isinstance(rule_matches, list) and rule_matches:
         context["rule_matches"] = [_rule_review_match(match) for match in rule_matches if isinstance(match, dict)]
     return context
+
+
+def _structured_matches(provenance: dict[str, Any]) -> Any:
+    matches = provenance.get("structured_matches")
+    if isinstance(matches, list) and matches:
+        return matches
+    return provenance.get("structured_candidate_matches")
 
 
 def _structured_review_match(match: dict[str, Any]) -> dict[str, Any]:
@@ -337,6 +335,7 @@ def _build_strategy_review_entry(
     active_by_id: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
     strategy_id, matched_id = _resolve_strategy_identity(str(draft_strategy_hint["hint_id"]), active_by_id)
+    matched = active_by_id.get(matched_id) if matched_id else None
     canonical_identity = {
         "target_market": draft_strategy_hint["target_market"],
         "resolved_strategy_id": strategy_id,
@@ -349,22 +348,11 @@ def _build_strategy_review_entry(
         "merge_rationale": _build_strategy_merge_rationale(strategy_id, matched_id),
         "source_signal_ids": list(draft_strategy_hint["source_signal_ids"]),
         "decision": "pending",
-        "proposed_strategy_template": {
-            "strategy_id": strategy_id,
-            "category": draft_strategy_hint["category"],
-            "target_market": draft_strategy_hint["target_market"],
-            "priority": draft_strategy_hint["priority_signal"],
-            "date_window": {"start": "01-01", "end": "12-31"},
-            "occasion_tags": list(draft_strategy_hint["occasion_tags"]),
-            "boost_tags": list(draft_strategy_hint["boost_tags"]),
-            "suppress_tags": [],
-            "slot_preferences": dict(draft_strategy_hint["slot_preferences"]),
-            "score_boost": 0.0,
-            "score_cap": 0.0,
-            "prompt_hints": [draft_strategy_hint["reason_summary"]],
-            "reason_template": draft_strategy_hint["reason_summary"],
-            "status": "active",
-        },
+        "proposed_strategy_template": _build_proposed_strategy_template(
+            draft_strategy_hint,
+            strategy_id,
+            matched,
+        ),
     }
 
 
@@ -761,6 +749,109 @@ def _draft_element_to_active_shape(draft_element: dict[str, Any]) -> dict[str, A
     }
 
 
+def _normalize_draft_element(element: dict[str, Any], summary_max_length: int) -> dict[str, Any]:
+    record = dict(element)
+    summary = record.get("evidence_summary")
+    if isinstance(summary, str):
+        record["evidence_summary"] = _clamp_summary(summary, summary_max_length)
+    return record
+
+
+def _build_proposed_element(
+    draft_element: dict[str, Any],
+    matched: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if matched is None:
+        return _draft_element_to_active_shape(draft_element)
+    return {
+        "element_id": matched["element_id"],
+        "category": matched["category"],
+        "slot": matched["slot"],
+        "value": matched["value"],
+        "tags": _stable_union_strings(matched["tags"], draft_element["tags"]),
+        "base_score": matched["base_score"],
+        "price_bands": _stable_union_strings(matched["price_bands"], draft_element["price_bands"]),
+        "occasion_tags": _stable_union_strings(matched["occasion_tags"], draft_element["occasion_tags"]),
+        "season_tags": _stable_union_strings(matched["season_tags"], draft_element["season_tags"]),
+        "risk_flags": _stable_union_strings(matched["risk_flags"], draft_element["risk_flags"]),
+        "evidence_summary": draft_element["evidence_summary"],
+        "status": "active",
+    }
+
+
+def _build_proposed_strategy_template(
+    draft_strategy_hint: dict[str, Any],
+    strategy_id: str,
+    matched: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if matched is None:
+        return {
+            "strategy_id": strategy_id,
+            "category": draft_strategy_hint["category"],
+            "target_market": draft_strategy_hint["target_market"],
+            "priority": draft_strategy_hint["priority_signal"],
+            "date_window": {"start": "01-01", "end": "12-31"},
+            "occasion_tags": list(draft_strategy_hint["occasion_tags"]),
+            "boost_tags": list(draft_strategy_hint["boost_tags"]),
+            "suppress_tags": [],
+            "slot_preferences": _copy_slot_preferences(draft_strategy_hint["slot_preferences"]),
+            "score_boost": 0.0,
+            "score_cap": 0.0,
+            "prompt_hints": [draft_strategy_hint["reason_summary"]],
+            "reason_template": draft_strategy_hint["reason_summary"],
+            "status": "active",
+        }
+    return {
+        "strategy_id": matched["strategy_id"],
+        "category": matched["category"],
+        "target_market": matched["target_market"],
+        "priority": matched["priority"],
+        "date_window": dict(matched["date_window"]),
+        "occasion_tags": list(matched["occasion_tags"]),
+        "boost_tags": _stable_union_strings(matched["boost_tags"], draft_strategy_hint["boost_tags"]),
+        "suppress_tags": list(matched["suppress_tags"]),
+        "slot_preferences": _merge_slot_preferences(matched["slot_preferences"], draft_strategy_hint["slot_preferences"]),
+        "score_boost": matched["score_boost"],
+        "score_cap": matched["score_cap"],
+        "prompt_hints": _merge_prompt_hints(matched["prompt_hints"], draft_strategy_hint["reason_summary"]),
+        "reason_template": matched["reason_template"],
+        "status": "active",
+    }
+
+
+def _copy_slot_preferences(slot_preferences: dict[str, Any]) -> dict[str, Any]:
+    return {slot: list(values) for slot, values in slot_preferences.items()}
+
+
+def _merge_slot_preferences(
+    active_preferences: dict[str, Any],
+    draft_preferences: dict[str, Any],
+) -> dict[str, Any]:
+    merged: dict[str, Any] = {}
+    for slot, values in active_preferences.items():
+        merged[slot] = _stable_union_strings(values, draft_preferences.get(slot, []))
+    for slot, values in draft_preferences.items():
+        if slot not in merged:
+            merged[slot] = list(values)
+    return merged
+
+
+def _merge_prompt_hints(active_hints: list[str], draft_reason_summary: str) -> list[str]:
+    return _stable_union_strings(active_hints, [draft_reason_summary])
+
+
+def _stable_union_strings(primary: list[Any], secondary: list[Any]) -> list[str]:
+    merged: list[str] = []
+    seen: set[str] = set()
+    for value in [*primary, *secondary]:
+        item = str(value)
+        if item in seen:
+            continue
+        seen.add(item)
+        merged.append(item)
+    return merged
+
+
 def _draft_element_id(draft_element: dict[str, Any]) -> str:
     return f"{draft_element['category']}-{draft_element['slot']}-{_slug(str(draft_element['value']))}-001"
 
@@ -931,6 +1022,18 @@ def _build_strategy_merge_rationale(strategy_id: str, matched_id: str | None) ->
 
 def _slug(value: str) -> str:
     return "-".join(segment for segment in value.strip().casefold().replace("/", " ").split() if segment)
+
+
+def _clamp_summary(summary: str, max_length: int) -> str:
+    normalized = " ".join(summary.split())
+    if len(normalized) <= max_length:
+        return normalized
+    cutoff = max_length - 3
+    trimmed = normalized[:cutoff].rstrip(" ,;:.")
+    boundary = trimmed.rfind(" ")
+    if boundary >= 20:
+        trimmed = trimmed[:boundary]
+    return f"{trimmed}..."
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
