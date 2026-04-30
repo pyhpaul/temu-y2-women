@@ -7,17 +7,18 @@
       "fallback_reason": "vacation or resort request defaults to the airy romantic route",
       "hard_slot_values": {
         "silhouette": ["a-line"],
-        "fabric": ["cotton poplin", "cotton voile"],
+        "fabric": ["cotton poplin", "cotton voile", "linen blend"],
         "color_family": ["white"]
       },
       "soft_slot_values": {
-        "pattern": ["floral print"],
-        "detail": ["neck scarf"],
+        "pattern": ["floral print", "gingham check", "scarf print"],
+        "sleeve": ["flutter sleeve", "short puff sleeve"],
+        "detail": ["neck scarf", "lace trim"],
         "opacity_level": ["sheer"]
       },
       "blocked_slot_values": {
         "silhouette": ["bodycon"],
-        "detail": ["tailored seam panel", "ruched side seam"]
+        "detail": ["tailored seam panel", "ruched side seam", "fringe hem", "draped bodice"]
       },
       "prompt_shell": {
         "subject_hint": "airy romantic resort dress with soft feminine movement",
@@ -37,7 +38,7 @@
         "dress_length": ["midi"],
         "neckline": ["jewel neckline"],
         "waistline": ["natural waist"],
-        "color_family": ["stone"],
+        "color_family": ["stone", "blue"],
         "opacity_level": ["opaque"]
       },
       "soft_slot_values": {
@@ -64,17 +65,18 @@
         "fabric": ["matte crepe"],
         "dress_length": ["midi"],
         "neckline": ["square neckline"],
-        "waistline": ["natural waist"],
-        "color_family": ["navy", "black"],
+        "waistline": ["natural waist", "asymmetric waist"],
+        "color_family": ["navy", "black", "brown", "blue"],
         "opacity_level": ["opaque"],
-        "detail": ["tailored seam panel"]
+        "detail": ["tailored seam panel", "draped bodice"]
       },
       "soft_slot_values": {
-        "sleeve": ["cap sleeve"]
+        "sleeve": ["cap sleeve"],
+        "pattern": ["stripe print"]
       },
       "blocked_slot_values": {
-        "pattern": ["floral print", "polka dot"],
-        "detail": ["smocked bodice", "neck scarf", "ruched side seam"]
+        "pattern": ["floral print", "polka dot", "gingham check", "scarf print"],
+        "detail": ["smocked bodice", "neck scarf", "ruched side seam", "lace trim", "fringe hem"]
       },
       "prompt_shell": {
         "subject_hint": "structured polished city dress with sharper commuter-friendly proportion",
@@ -90,19 +92,21 @@
       "fallback_reason": "party demand defaults to the fitted evening route",
       "hard_slot_values": {
         "silhouette": ["bodycon"],
-        "fabric": ["stretch jersey"],
+        "fabric": ["stretch jersey", "silk satin"],
         "dress_length": ["mini"],
+        "sleeve": ["sleeveless"],
+        "waistline": ["natural waist"],
         "color_family": ["black", "red"],
         "opacity_level": ["opaque"]
       },
       "soft_slot_values": {
-        "neckline": ["sweetheart neckline"],
+        "neckline": ["halter neckline", "sweetheart neckline", "bandeau neckline"],
         "sleeve": ["sleeveless"],
-        "detail": ["ruched side seam"]
+        "detail": ["ruched side seam", "draped bodice"]
       },
       "blocked_slot_values": {
-        "pattern": ["floral print", "polka dot"],
-        "detail": ["smocked bodice", "neck scarf", "tailored seam panel"]
+        "pattern": ["floral print", "polka dot", "gingham check", "scarf print", "stripe print"],
+        "detail": ["smocked bodice", "neck scarf", "tailored seam panel", "lace trim", "fringe hem"]
       },
       "prompt_shell": {
         "subject_hint": "sleek fitted evening dress with stronger after-dark line emphasis",

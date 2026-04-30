@@ -90,7 +90,7 @@ class FactorySpecBuilderTest(unittest.TestCase):
             inferred["sample_review_watchpoints"],
             [
                 "sample review: confirm cotton poplin keeps crisp opacity and breathable structure in the finished dress",
-                "sample review: verify square neckline, neck scarf, and flutter sleeve read clearly in the first sample",
+                "sample review: verify square neckline, neck scarf, and short puff sleeve read clearly in the first sample",
                 "sample review: check floral print continuity and placement across bodice, waist seam, and skirt panels",
                 "sample review: confirm a-line shape stays easy and non-bodycon through waist-to-hem movement",
             ],
@@ -100,7 +100,7 @@ class FactorySpecBuilderTest(unittest.TestCase):
             [
                 "qa review: check square neckline edge finish for symmetry and clean top-line shape",
                 "qa review: check neck scarf attachment, symmetry, and edge finish for clean repeatability",
-                "qa review: check flutter sleeve openings and hem finish for clean turnback and stable shape",
+                "qa review: check short puff sleeve openings and hem finish for clean turnback and stable shape",
                 "qa review: check floral print alignment and continuity across visible seams",
             ],
         )
@@ -143,7 +143,7 @@ class FactorySpecBuilderTest(unittest.TestCase):
             [
                 "visible check: confirm square neckline edge finish stays clean and even",
                 "visible check: confirm neck scarf attachment stays clean and balanced around the neckline",
-                "visible check: confirm flutter sleeve openings keep soft volume with clean finishing",
+                "visible check: confirm short puff sleeve openings keep soft volume with clean finishing",
                 "visible check: confirm waist seam placement supports balanced a-line proportion",
                 "visible check: confirm drop-waist seam reads level and balanced across the full body",
                 "visible check: confirm micro print scale stays readable without muddying the fabric surface",

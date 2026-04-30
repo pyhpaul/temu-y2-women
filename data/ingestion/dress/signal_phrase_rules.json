@@ -32,6 +32,12 @@
       "tags": ["floral", "summer", "vacation"]
     },
     {
+      "slot": "pattern",
+      "value": "scarf print",
+      "phrases": ["scarf print", "scarf prints"],
+      "tags": ["scarf", "summer", "vacation"]
+    },
+    {
       "slot": "detail",
       "value": "smocked bodice",
       "phrases": ["smocked bodice", "smocked bodices", "smocked dresses"],
@@ -46,8 +52,17 @@
     {
       "slot": "pattern",
       "value": "stripe print",
-      "phrases": ["chic stripes", "soft stripes", "striped dress", "pinstripes"],
-      "tags": ["polished", "summer"]
+      "phrases": [
+        "chic stripes",
+        "soft stripes",
+        "striped dress",
+        "pinstripes",
+        "stripe print",
+        "stripe prints",
+        "striped dresses",
+        "stripes"
+      ],
+      "tags": ["polished", "structured", "summer"]
     },
     {
       "slot": "sleeve",
@@ -66,6 +81,24 @@
       "value": "slip dress",
       "phrases": ["lingerie slips", "slip dresses", "slip dress"],
       "tags": ["sleek", "summer"]
+    },
+    {
+      "slot": "detail",
+      "value": "lace trim",
+      "phrases": ["lace trim", "lace-trimmed", "lace-trimmed dresses"],
+      "tags": ["dress", "feminine", "romantic"]
+    },
+    {
+      "slot": "detail",
+      "value": "fringe hem",
+      "phrases": ["fringe hem", "fringe dresses", "fringe"],
+      "tags": ["dress", "party", "summer"]
+    },
+    {
+      "slot": "detail",
+      "value": "draped bodice",
+      "phrases": ["draped bodice", "draped dresses", "chic draping", "draping"],
+      "tags": ["evening", "polished", "structured"]
     },
     {
       "slot": "neckline",
@@ -116,10 +149,28 @@
       "tags": ["drop-waist", "feminine", "vacation"]
     },
     {
+      "slot": "waistline",
+      "value": "asymmetric waist",
+      "phrases": ["asymmetric waist", "asymmetric waists"],
+      "tags": ["dress", "polished", "structured"]
+    },
+    {
       "slot": "color_family",
       "value": "white",
       "phrases": ["white dress", "white dresses"],
       "tags": ["summer", "vacation", "white"]
+    },
+    {
+      "slot": "color_family",
+      "value": "blue",
+      "phrases": ["bold blue", "blue dress", "blue dresses"],
+      "tags": ["polished", "summer", "vacation"]
+    },
+    {
+      "slot": "fabric",
+      "value": "silk satin",
+      "phrases": ["silk minidress", "silk minidresses", "satin minidress", "satin minidresses", "silk satin"],
+      "tags": ["dress", "evening", "sleek"]
     },
     {
       "slot": "print_scale",

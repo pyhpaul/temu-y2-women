@@ -158,6 +158,29 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
         for slot, expected in expected_values.items():
             self.assertEqual(values_by_slot[slot], expected)
 
+    def _expanded_objective_slot_values(self) -> dict[str, set[str]]:
+        return {
+            "dress_length": {"mini", "midi", "maxi"},
+            "waistline": {"natural waist", "drop waist", "empire waist", "asymmetric waist"},
+            "color_family": {"white", "red", "black", "navy", "stone", "brown", "blue"},
+            "print_scale": {"micro print", "oversized print"},
+            "opacity_level": {"opaque", "sheer"},
+        }
+
+    def _assert_expanded_active_values(self, active_by_slot: dict[str, set[str]]) -> None:
+        self._assert_objective_slot_values(active_by_slot, self._expanded_objective_slot_values())
+        expected_values = {
+            "pattern": {"polka dot", "gingham check", "scarf print", "stripe print"},
+            "detail": {"neck scarf", "lace trim", "fringe hem", "draped bodice"},
+            "neckline": {"halter neckline"},
+            "sleeve": {"short puff sleeve"},
+            "fabric": {"linen blend", "silk satin"},
+            "waistline": {"asymmetric waist"},
+            "color_family": {"blue"},
+        }
+        for slot, values in expected_values.items():
+            self.assertTrue(values.issubset(active_by_slot[slot]))
+
     def _assert_objective_slot_preferences(self, strategy_record: dict[str, object]) -> None:
         slot_preferences = strategy_record["slot_preferences"]
         self.assertEqual(slot_preferences["dress_length"], ["mini", "midi"])
@@ -945,18 +968,7 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
 
         elements = load_elements(elements_path, taxonomy_path=taxonomy_path)
         active_by_slot = self._active_values_by_slot(elements)
-        self._assert_objective_slot_values(
-            active_by_slot,
-            {
-                "dress_length": {"mini", "midi"},
-                "waistline": {"natural waist", "drop waist"},
-                "color_family": {"white", "red", "black", "navy", "stone"},
-                "print_scale": {"micro print", "oversized print"},
-                "opacity_level": {"opaque", "sheer"},
-            },
-        )
-        self.assertIn("polka dot", active_by_slot["pattern"])
-        self.assertIn("neck scarf", active_by_slot["detail"])
+        self._assert_expanded_active_values(active_by_slot)
 
         strategies = load_strategy_templates(
             strategies_path,
@@ -977,13 +989,7 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
                 slot: {str(item["value"]) for item in grouped[slot]}
                 for slot in ("dress_length", "waistline", "color_family", "print_scale", "opacity_level")
             },
-            {
-                "dress_length": {"mini", "midi"},
-                "waistline": {"natural waist", "drop waist"},
-                "color_family": {"white", "red", "black", "navy", "stone"},
-                "print_scale": {"micro print", "oversized print"},
-                "opacity_level": {"opaque", "sheer"},
-            },
+            self._expanded_objective_slot_values(),
         )
         self._assert_runtime_candidate_boost(grouped, elements, "dress_length", "mini")
         self._assert_runtime_candidate_boost(grouped, elements, "waistline", "drop waist")
@@ -1027,6 +1033,8 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
         self.assertEqual({item["value"] for item in grouped["silhouette"]}, {"bodycon"})
         self.assertEqual({item["value"] for item in grouped["dress_length"]}, {"mini"})
         self.assertEqual(grouped["detail"][0]["value"], "ruched side seam")
+        self.assertIn("halter neckline", {item["value"] for item in grouped["neckline"]})
+        self.assertEqual(grouped["sleeve"][0]["value"], "sleeveless")
 
     def test_reject_invalid_strategy_slot_preference_fixture(self) -> None:
         from temu_y2_women.errors import GenerationError
@@ -1094,16 +1102,15 @@ class EvidenceRepositoryValidationTest(unittest.TestCase):
             active_by_slot.setdefault(str(element["slot"]), set()).add(str(element["value"]))
 
         expected_slots = {
-            "dress_length": {"mini", "midi"},
-            "waistline": {"natural waist", "drop waist"},
-            "color_family": {"white", "red", "black", "navy", "stone"},
+            "dress_length": {"mini", "midi", "maxi"},
+            "waistline": {"natural waist", "drop waist", "empire waist", "asymmetric waist"},
+            "color_family": {"white", "red", "black", "navy", "stone", "brown", "blue"},
             "print_scale": {"micro print", "oversized print"},
             "opacity_level": {"opaque", "sheer"},
         }
         for slot, values in expected_slots.items():
             self.assertEqual(active_by_slot[slot], values)
-        self.assertIn("polka dot", active_by_slot["pattern"])
-        self.assertIn("neck scarf", active_by_slot["detail"])
+        self._assert_expanded_active_values(active_by_slot)
 
         strategies = load_strategy_templates(
             strategies_path,
