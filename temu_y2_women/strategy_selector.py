@@ -26,8 +26,8 @@ def select_strategies(
         and strategy.target_market == request.target_market
         and _matches_launch_window(strategy.date_window, request.target_launch_date)
     ]
-
-    specific = [strategy for strategy in matching if strategy.priority > 1]
+    overlays = _sorted_overlays(matching, request)
+    specific = [strategy for strategy in matching if strategy.priority > 1 and not _is_overlay_strategy(strategy)]
     prioritized = sorted(
         specific,
         key=lambda strategy: (
@@ -37,10 +37,11 @@ def select_strategies(
         ),
     )
     if prioritized:
-        selected = tuple(
-            SelectedStrategy(strategy=strategy, reason=strategy.reason_template)
-            for strategy in prioritized[:2]
-        )
+        selected = _selected_with_overlays(prioritized[:2], overlays)
+        return StrategySelectionResult(selected=selected, warnings=())
+
+    if overlays:
+        selected = _selected_with_overlays((), overlays)
         return StrategySelectionResult(selected=selected, warnings=())
 
     baselines = sorted(
@@ -100,3 +101,37 @@ def _occasion_matches(strategy: StrategyTemplate, request: NormalizedRequest) ->
     if not strategy.occasion_tags:
         return False
     return any(tag in strategy.occasion_tags for tag in request.occasion_tags)
+
+
+def _selected_with_overlays(
+    primary: tuple[StrategyTemplate, ...] | list[StrategyTemplate],
+    overlays: list[StrategyTemplate],
+) -> tuple[SelectedStrategy, ...]:
+    selected = list(primary)
+    selected_ids = {strategy.strategy_id for strategy in selected}
+    for overlay in overlays:
+        if len(selected) >= 2:
+            break
+        if overlay.strategy_id in selected_ids:
+            continue
+        selected.append(overlay)
+        selected_ids.add(overlay.strategy_id)
+    return tuple(SelectedStrategy(strategy=strategy, reason=strategy.reason_template) for strategy in selected)
+
+
+def _sorted_overlays(
+    matching: list[StrategyTemplate],
+    request: NormalizedRequest,
+) -> list[StrategyTemplate]:
+    return sorted(
+        (strategy for strategy in matching if _is_overlay_strategy(strategy)),
+        key=lambda strategy: (
+            not _occasion_matches(strategy, request),
+            -strategy.priority,
+            strategy.strategy_id,
+        ),
+    )
+
+
+def _is_overlay_strategy(strategy: StrategyTemplate) -> bool:
+    return strategy.strategy_id.endswith("-product-image")

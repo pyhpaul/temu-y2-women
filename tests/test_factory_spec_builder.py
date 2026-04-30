@@ -248,6 +248,26 @@ class FactorySpecBuilderTest(unittest.TestCase):
             inferred["visible_construction_checks"],
         )
 
+    def test_build_factory_spec_includes_overlay_strategy_reason_when_present(self) -> None:
+        from temu_y2_women.factory_spec_builder import build_factory_spec
+
+        factory_spec = build_factory_spec(
+            request=_objective_request(),
+            concept=_objective_concept(),
+            selected_strategies=(_objective_strategy(), _overlay_strategy()),
+            selected_style_family=_selected_style_family("vacation-romantic"),
+        )
+
+        inferred = factory_spec["inferred"]
+        self.assertIn(
+            "seasonal review context: matched summer vacation window; product image evidence overlay",
+            inferred["commercial_review_context"],
+        )
+        self.assertIn(
+            "commercial cue: seasonal review should stay anchored to matched summer vacation window; product image evidence overlay",
+            inferred["commercial_review_cues"],
+        )
+
 
 def _build_success_inputs(
     fixture_name: str,
@@ -371,6 +391,28 @@ def _objective_strategy() -> SelectedStrategy:
             status="active",
         ),
         reason="matched summer vacation window",
+    )
+
+
+def _overlay_strategy() -> SelectedStrategy:
+    return SelectedStrategy(
+        strategy=StrategyTemplate(
+            strategy_id="dress-us-summer-vacation-product-image",
+            category="dress",
+            target_market="US",
+            priority=1,
+            date_window=DateWindow(start="01-01", end="12-31"),
+            occasion_tags=("vacation",),
+            boost_tags=("summer", "vacation", "feminine"),
+            suppress_tags=(),
+            slot_preferences={"detail": ("waist tie",), "dress_length": ("mini",)},
+            score_boost=0.08,
+            score_cap=0.12,
+            prompt_hints=("product image overlay",),
+            reason_template="product image evidence overlay",
+            status="active",
+        ),
+        reason="product image evidence overlay",
     )
 
 

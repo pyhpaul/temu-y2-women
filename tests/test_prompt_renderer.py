@@ -111,6 +111,22 @@ class PromptRendererTest(unittest.TestCase):
         self.assertIn("Clearly show two-tone gingham check", detail_prompts["fabric_print_closeup"])
         self.assertIn("babydoll silhouette with easy high-waist volume skirt volume", detail_prompts["hem_and_drape_closeup"])
 
+    def test_render_mode_a_includes_overlay_strategy_reason_when_present(self) -> None:
+        from temu_y2_women.prompt_renderer import render_prompt_bundle
+
+        bundle = render_prompt_bundle(
+            request=_request(mode="A"),
+            concept=_objective_concept(),
+            selected_strategies=(_strategy(), _overlay_strategy()),
+            selected_style_family=None,
+            warnings=(),
+        )
+
+        self.assertIn(
+            "seasonal direction: matched summer vacation window; product image evidence overlay",
+            bundle["prompt"],
+        )
+
     def test_render_mode_a_derived_hero_jobs_use_edit_instructions(self) -> None:
         from temu_y2_women.prompt_renderer import render_prompt_bundle
 
@@ -370,6 +386,28 @@ def _strategy() -> SelectedStrategy:
             status="active",
         ),
         reason="matched summer vacation window",
+    )
+
+
+def _overlay_strategy() -> SelectedStrategy:
+    return SelectedStrategy(
+        strategy=StrategyTemplate(
+            strategy_id="dress-us-summer-vacation-product-image",
+            category="dress",
+            target_market="US",
+            priority=1,
+            date_window=DateWindow(start="01-01", end="12-31"),
+            occasion_tags=("vacation",),
+            boost_tags=("summer", "vacation", "feminine"),
+            suppress_tags=(),
+            slot_preferences={"detail": ("waist tie",), "dress_length": ("mini",)},
+            score_boost=0.08,
+            score_cap=0.12,
+            prompt_hints=("product image overlay",),
+            reason_template="product image evidence overlay",
+            status="active",
+        ),
+        reason="product image evidence overlay",
     )
 
 

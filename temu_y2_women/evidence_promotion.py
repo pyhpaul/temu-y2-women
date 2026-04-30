@@ -356,6 +356,12 @@ def _build_strategy_review_entry(
     }
 
 
+def _default_strategy_scoring(draft_strategy_hint: dict[str, Any]) -> tuple[float, float]:
+    if _is_product_image_strategy_hint(draft_strategy_hint):
+        return 0.08, 0.12
+    return 0.0, 0.0
+
+
 def _validate_review_bundle(path: Path, reviewed: dict[str, Any], expected: dict[str, Any]) -> None:
     missing = sorted(_REVIEW_ROOT_FIELDS.difference(reviewed.keys()))
     if missing:
@@ -561,10 +567,34 @@ def _build_post_promotion_elements(
         proposed = dict(record["proposed_element"])
         identity = _canonical_identity(str(proposed["slot"]), str(proposed["value"]))
         if record["merge_action"] == "update" and identity in identity_to_index:
-            snapshot[identity_to_index[identity]] = proposed
+            active = snapshot[identity_to_index[identity]]
+            snapshot[identity_to_index[identity]] = _merge_updated_element(active, proposed)
             continue
         snapshot.append(proposed)
     return snapshot
+
+
+def _merge_updated_element(active: dict[str, Any], proposed: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(active)
+    merged.update(proposed)
+    merged["tags"] = _merge_string_lists(active.get("tags"), proposed.get("tags"))
+    merged["price_bands"] = _merge_string_lists(active.get("price_bands"), proposed.get("price_bands"))
+    merged["occasion_tags"] = _merge_string_lists(active.get("occasion_tags"), proposed.get("occasion_tags"))
+    merged["season_tags"] = _merge_string_lists(active.get("season_tags"), proposed.get("season_tags"))
+    merged["risk_flags"] = _merge_string_lists(active.get("risk_flags"), proposed.get("risk_flags"))
+    merged["base_score"] = max(float(active["base_score"]), float(proposed["base_score"]))
+    return merged
+
+
+def _merge_string_lists(active_values: Any, proposed_values: Any) -> list[str]:
+    merged: list[str] = []
+    for values in (active_values, proposed_values):
+        if not isinstance(values, list):
+            continue
+        for value in values:
+            if isinstance(value, str) and value not in merged:
+                merged.append(value)
+    return merged
 
 
 def _build_post_promotion_strategies(
@@ -785,6 +815,7 @@ def _build_proposed_strategy_template(
     matched: dict[str, Any] | None,
 ) -> dict[str, Any]:
     if matched is None:
+        score_boost, score_cap = _default_strategy_scoring(draft_strategy_hint)
         return {
             "strategy_id": strategy_id,
             "category": draft_strategy_hint["category"],
@@ -795,8 +826,8 @@ def _build_proposed_strategy_template(
             "boost_tags": list(draft_strategy_hint["boost_tags"]),
             "suppress_tags": [],
             "slot_preferences": _copy_slot_preferences(draft_strategy_hint["slot_preferences"]),
-            "score_boost": 0.0,
-            "score_cap": 0.0,
+            "score_boost": score_boost,
+            "score_cap": score_cap,
             "prompt_hints": [draft_strategy_hint["reason_summary"]],
             "reason_template": draft_strategy_hint["reason_summary"],
             "status": "active",
