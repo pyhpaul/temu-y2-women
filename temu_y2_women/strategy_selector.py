@@ -27,7 +27,7 @@ def select_strategies(
         and _matches_launch_window(strategy.date_window, request.target_launch_date)
     ]
     overlays = _sorted_overlays(matching, request)
-    specific = [strategy for strategy in matching if strategy.priority > 1 and not _is_overlay_strategy(strategy)]
+    specific = [strategy for strategy in matching if _is_applicable_specific_strategy(strategy, request)]
     prioritized = sorted(
         specific,
         key=lambda strategy: (
@@ -101,6 +101,17 @@ def _occasion_matches(strategy: StrategyTemplate, request: NormalizedRequest) ->
     if not strategy.occasion_tags:
         return False
     return any(tag in strategy.occasion_tags for tag in request.occasion_tags)
+
+
+def _is_applicable_specific_strategy(
+    strategy: StrategyTemplate,
+    request: NormalizedRequest,
+) -> bool:
+    if strategy.priority <= 1 or _is_overlay_strategy(strategy):
+        return False
+    if not strategy.occasion_tags:
+        return True
+    return _occasion_matches(strategy, request)
 
 
 def _selected_with_overlays(
