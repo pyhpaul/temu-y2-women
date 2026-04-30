@@ -334,7 +334,7 @@ def _build_strategy_review_entry(
     draft_strategy_hint: dict[str, Any],
     active_by_id: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
-    strategy_id, matched_id = _resolve_strategy_identity(str(draft_strategy_hint["hint_id"]), active_by_id)
+    strategy_id, matched_id = _resolve_strategy_identity(draft_strategy_hint, active_by_id)
     matched = active_by_id.get(matched_id) if matched_id else None
     canonical_identity = {
         "target_market": draft_strategy_hint["target_market"],
@@ -857,16 +857,26 @@ def _draft_element_id(draft_element: dict[str, Any]) -> str:
 
 
 def _resolve_strategy_identity(
-    hint_id: str,
+    draft_strategy_hint: dict[str, Any],
     active_by_id: dict[str, dict[str, Any]],
 ) -> tuple[str, str | None]:
+    hint_id = str(draft_strategy_hint["hint_id"])
     base_id = f"dress-{hint_id.removeprefix('draft-strategy-')}"
+    if _is_product_image_strategy_hint(draft_strategy_hint):
+        return f"{base_id}-product-image", None
     if base_id in active_by_id:
         return base_id, base_id
     stripped_id = base_id.removesuffix("-refresh")
     if stripped_id in active_by_id:
         return stripped_id, stripped_id
     return base_id, None
+
+
+def _is_product_image_strategy_hint(draft_strategy_hint: dict[str, Any]) -> bool:
+    source_signal_ids = draft_strategy_hint.get("source_signal_ids")
+    if not isinstance(source_signal_ids, list) or not source_signal_ids:
+        return False
+    return all(isinstance(item, str) and item.startswith("product-image-") for item in source_signal_ids)
 
 
 def _load_json_object(path: Path, code: str, root_message: str) -> dict[str, Any]:
