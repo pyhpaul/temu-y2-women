@@ -172,27 +172,30 @@ class PublicSignalRefreshTest(unittest.TestCase):
             run_dir = temp_root / result["run_id"]
             second_whowhatwear_exists = (run_dir / "raw_sources" / "whowhatwear-summer-dress-trends-2025.json").exists()
             marieclaire_exists = (run_dir / "raw_sources" / "marieclaire-summer-2025-dress-trends.json").exists()
+            marieclaire_2026_exists = (run_dir / "raw_sources" / "marieclaire-spring-2026-dress-trends.json").exists()
             roundup_exists = (run_dir / "raw_sources" / "whowhatwear-best-summer-dresses-2025.json").exists()
             observation_exists = (run_dir / "card_observations" / "whowhatwear-best-summer-dresses-2025.json").exists()
 
-        self.assertEqual(result["source_summary"], {"total": 4, "succeeded": 4, "failed": 0})
-        self.assertEqual(result["canonical_signal_count"], 21)
-        self.assertEqual(result["coverage"]["matched_signals"], 9)
+        self.assertEqual(result["source_summary"], {"total": 5, "succeeded": 5, "failed": 0})
+        self.assertEqual(result["canonical_signal_count"], 29)
+        self.assertEqual(result["coverage"]["matched_signals"], 12)
         self.assertEqual(
             result["selected_source_ids"],
             [
                 "whowhatwear-summer-2025-dress-trends",
                 "whowhatwear-summer-dress-trends-2025",
                 "marieclaire-summer-2025-dress-trends",
+                "marieclaire-spring-2026-dress-trends",
                 "whowhatwear-best-summer-dresses-2025",
             ],
         )
         self.assertEqual(
             [item["matched_signal_count"] for item in result["source_details"]],
-            [5, 2, 1, 1],
+            [5, 2, 1, 3, 1],
         )
         self.assertTrue(second_whowhatwear_exists)
         self.assertTrue(marieclaire_exists)
+        self.assertTrue(marieclaire_2026_exists)
         self.assertTrue(roundup_exists)
         self.assertTrue(observation_exists)
 
@@ -376,6 +379,9 @@ def _full_registry_fetcher() -> Callable[[str], str]:
         ).read_text(encoding="utf-8"),
         "https://www.marieclaire.com/fashion/summer-fashion/summer-2025-dress-trends/": (
             _SOURCE_FIXTURE_DIR / "marieclaire-summer-2025-dress-trends.html"
+        ).read_text(encoding="utf-8"),
+        "https://www.marieclaire.com/fashion/spring-2026-dress-trends/": (
+            _SOURCE_FIXTURE_DIR / "marieclaire-spring-2026-dress-trends.html"
         ).read_text(encoding="utf-8"),
         "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2025": (
             _SOURCE_FIXTURE_DIR / "whowhatwear-best-summer-dresses-2025.html"

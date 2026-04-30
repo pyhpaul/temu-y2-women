@@ -150,8 +150,8 @@ class RefreshExperimentApplyTest(unittest.TestCase):
             self.assertEqual(
                 report["summary"],
                 {
-                    "selection_changed": 1,
-                    "strategy_changed_only": 1,
+                    "selection_changed": 0,
+                    "strategy_changed_only": 2,
                     "retrieval_changed_only": 0,
                     "no_observable_change": 0,
                 },
@@ -159,6 +159,10 @@ class RefreshExperimentApplyTest(unittest.TestCase):
             self.assertEqual(
                 report["requests"]["baseline-transitional"]["change_type"],
                 "strategy_changed_only",
+            )
+            self.assertEqual(
+                report["requests"]["summer-vacation"]["selected_strategy_ids"]["after"],
+                ["dress-us-summer-vacation", "dress-us-spring-vacation"],
             )
 
     def test_apply_can_auto_accept_pending_review_template(self) -> None:

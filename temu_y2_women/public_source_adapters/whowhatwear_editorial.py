@@ -7,6 +7,7 @@ from typing import Any
 
 from temu_y2_women.errors import GenerationError
 
+SectionRule = tuple[str, str, tuple[str, ...]]
 
 _SECTION_RULES_BY_SOURCE = {
     "whowhatwear-summer-2025-dress-trends": (
@@ -30,7 +31,7 @@ _SECTION_RULES_BY_SOURCE = {
 
 
 def parse_whowhatwear_editorial_html(source: dict[str, Any], html: str, fetched_at: str) -> dict[str, Any]:
-    section_rules = _resolve_section_rules(source["source_id"])
+    section_rules = _resolve_section_rules(source)
     parser = _WhoWhatWearHtmlParser(tuple(section_id for section_id, _, _ in section_rules))
     parser.feed(html)
     parser.close()
@@ -52,11 +53,34 @@ def parse_whowhatwear_editorial_html(source: dict[str, Any], html: str, fetched_
     }
 
 
-def _resolve_section_rules(source_id: str) -> tuple[tuple[str, str, tuple[str, ...]], ...]:
+def _resolve_section_rules(source: dict[str, Any]) -> tuple[SectionRule, ...]:
+    configured = _configured_section_rules(source)
+    if configured is not None:
+        return configured
+    source_id = str(source["source_id"])
     try:
         return _SECTION_RULES_BY_SOURCE[source_id]
     except KeyError as error:
         raise ValueError(f"unsupported Who What Wear source: {source_id}") from error
+
+
+def _configured_section_rules(source: dict[str, Any]) -> tuple[SectionRule, ...] | None:
+    parser_config = source.get("parser_config")
+    if not isinstance(parser_config, dict):
+        return None
+    section_rules = parser_config.get("section_rules")
+    if not isinstance(section_rules, list) or not section_rules:
+        return None
+    return tuple(_configured_section_rule(item) for item in section_rules)
+
+
+def _configured_section_rule(item: Any) -> SectionRule:
+    if not isinstance(item, dict):
+        raise ValueError("section rule must be an object")
+    tags = tuple(str(tag) for tag in item.get("tags", []))
+    if not tags:
+        raise ValueError("section rule tags must be non-empty")
+    return str(item["section_id"]), str(item["heading"]), tags
 
 
 def _build_section_record(

@@ -80,6 +80,38 @@ class PublicSourceAdapterTest(unittest.TestCase):
             _load_snapshot("expected-whowhatwear-summer-dress-trends-2025-raw-source-snapshot.json"),
         )
 
+    def test_parse_whowhatwear_editorial_html_supports_registry_defined_section_rules(self) -> None:
+        from temu_y2_women.public_source_adapters.whowhatwear_editorial import parse_whowhatwear_editorial_html
+
+        result = parse_whowhatwear_editorial_html(
+            source={
+                "source_id": "custom-whowhatwear-source",
+                "source_type": "public_editorial_web",
+                "source_url": "https://www.whowhatwear.com/fashion/dresses/custom-dress-trends",
+                "target_market": "US",
+                "category": "dress",
+                "parser_config": {
+                    "section_rules": [
+                        {"section_id": "trend-one", "heading": "Trend One", "tags": ["summer", "custom"]},
+                        {"section_id": "trend-two", "heading": "Trend Two", "tags": ["summer"]},
+                    ]
+                },
+            },
+            html=(
+                '<html><head><meta property="article:published_time" content="2026-04-12T09:00:00Z"></head>'
+                "<body>"
+                "<h1>Custom Dress Trends</h1>"
+                '<h2 id="section-trend-one"><span>1. Trend One</span></h2><p id="p1">Trend one body.</p>'
+                '<h2 id="section-trend-two"><span>2. Trend Two</span></h2><p id="p2">Trend two body.</p>'
+                "</body></html>"
+            ),
+            fetched_at="2026-04-30T00:00:00Z",
+        )
+
+        self.assertEqual([section["section_id"] for section in result["sections"]], ["trend-one", "trend-two"])
+        self.assertEqual(result["sections"][0]["tags"], ["summer", "custom"])
+        self.assertEqual(result["sections"][1]["text"], "Trend two body.")
+
     def test_parse_marieclaire_editorial_html_returns_expected_snapshot(self) -> None:
         from temu_y2_women.public_source_adapters.marieclaire_editorial import parse_marieclaire_editorial_html
 
@@ -96,6 +128,104 @@ class PublicSourceAdapterTest(unittest.TestCase):
         )
 
         self.assertEqual(result, _load_snapshot("expected-marieclaire-raw-source-snapshot.json"))
+
+    def test_parse_marieclaire_editorial_html_supports_spring_2026_source_fixture(self) -> None:
+        from temu_y2_women.public_source_adapters.marieclaire_editorial import parse_marieclaire_editorial_html
+
+        result = parse_marieclaire_editorial_html(
+            source={
+                "source_id": "marieclaire-spring-2026-dress-trends",
+                "source_type": "public_editorial_web",
+                "source_url": "https://www.marieclaire.com/fashion/spring-2026-dress-trends/",
+                "target_market": "US",
+                "category": "dress",
+                "parser_config": {
+                    "section_rules": [
+                        {
+                            "html_id": "section-crinkle-texture-dresses",
+                            "section_id": "crinkle-texture-dresses",
+                            "heading": "Crinkle Texture Dresses",
+                            "tags": ["spring"],
+                        },
+                        {
+                            "html_id": "section-drop-waist-dresses",
+                            "section_id": "drop-waist-dresses",
+                            "heading": "Drop-Waist Dresses",
+                            "tags": ["spring"],
+                        },
+                        {"html_id": "section-shirt-dresses", "section_id": "shirt-dresses", "heading": "Shirt Dresses", "tags": ["spring"]},
+                        {"html_id": "section-fringe-dresses", "section_id": "fringe-dresses", "heading": "Fringe Dresses", "tags": ["spring"]},
+                        {
+                            "html_id": "section-lace-trimmed-dresses",
+                            "section_id": "lace-trimmed-dresses",
+                            "heading": "Lace-Trimmed Dresses",
+                            "tags": ["spring"],
+                        },
+                        {
+                            "html_id": "section-voluminous-dresses",
+                            "section_id": "voluminous-dresses",
+                            "heading": "Voluminous Dresses",
+                            "tags": ["spring"],
+                        },
+                        {"html_id": "section-shift-dresses", "section_id": "shift-dresses", "heading": "Shift Dresses", "tags": ["spring"]},
+                        {"html_id": "section-cape-dresses", "section_id": "cape-dresses", "heading": "Cape Dresses", "tags": ["spring"]},
+                    ]
+                },
+            },
+            html=_load_fixture("marieclaire-spring-2026-dress-trends.html"),
+            fetched_at="2026-04-30T00:00:00Z",
+        )
+
+        self.assertEqual(result["captured_at"], "2026-02-20")
+        self.assertEqual(result["page_title"], "The Best Spring 2026 Dress Trends Prove It's All in the Details")
+        self.assertEqual(len(result["sections"]), 8)
+        self.assertEqual(result["sections"][1]["section_id"], "drop-waist-dresses")
+        self.assertIn("no-iron", result["sections"][0]["text"])
+
+    def test_parse_marieclaire_editorial_html_supports_registry_defined_section_rules(self) -> None:
+        from temu_y2_women.public_source_adapters.marieclaire_editorial import parse_marieclaire_editorial_html
+
+        result = parse_marieclaire_editorial_html(
+            source={
+                "source_id": "custom-marieclaire-source",
+                "source_type": "public_editorial_web",
+                "source_url": "https://www.marieclaire.com/fashion/custom-dress-trends/",
+                "target_market": "US",
+                "category": "dress",
+                "parser_config": {
+                    "section_rules": [
+                        {
+                            "html_id": "custom-section-1",
+                            "section_id": "custom-section-one",
+                            "heading": "Custom Section One",
+                            "tags": ["summer"],
+                        },
+                        {
+                            "html_id": "custom-section-2",
+                            "section_id": "custom-section-two",
+                            "heading": "Custom Section Two",
+                            "tags": ["summer", "occasion"],
+                        },
+                    ]
+                },
+            },
+            html=(
+                '<html><head><meta property="article:published_time" content="2026-04-11T10:00:00Z"></head>'
+                "<body>"
+                "<h1>Custom Marie Claire Dress Trends</h1>"
+                '<h2 id="custom-section-1">Custom Section One</h2><p id="p1">First body.</p>'
+                '<h2 id="custom-section-2">Custom Section Two</h2><p id="p2">Second body.</p>'
+                "</body></html>"
+            ),
+            fetched_at="2026-04-30T00:00:00Z",
+        )
+
+        self.assertEqual(
+            [section["section_id"] for section in result["sections"]],
+            ["custom-section-one", "custom-section-two"],
+        )
+        self.assertEqual(result["sections"][1]["tags"], ["summer", "occasion"])
+        self.assertEqual(result["sections"][0]["text"], "First body.")
 
     def test_parse_whowhatwear_editorial_html_rejects_missing_sections(self) -> None:
         from temu_y2_women.public_source_adapters.whowhatwear_editorial import parse_whowhatwear_editorial_html

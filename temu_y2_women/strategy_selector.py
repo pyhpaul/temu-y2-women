@@ -32,6 +32,7 @@ def select_strategies(
         specific,
         key=lambda strategy: (
             not _occasion_matches(strategy, request),
+            _is_aggregate_strategy(strategy),
             -strategy.priority,
             strategy.strategy_id,
         ),
@@ -135,3 +136,7 @@ def _sorted_overlays(
 
 def _is_overlay_strategy(strategy: StrategyTemplate) -> bool:
     return strategy.strategy_id.endswith("-product-image")
+
+
+def _is_aggregate_strategy(strategy: StrategyTemplate) -> bool:
+    return strategy.reason_template.startswith("Aggregated from ")

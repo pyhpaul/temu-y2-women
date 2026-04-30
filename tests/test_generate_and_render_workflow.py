@@ -98,10 +98,13 @@ class GenerateAndRenderWorkflowSuccessTest(unittest.TestCase):
 
             concept_result = _read_json(output_dir / "concept_result.json")
             self.assertEqual(result["provider"], "recording")
-            self.assertEqual(concept_result["selected_strategies"][0]["strategy_id"], "dress-us-summer-vacation")
+            self.assertEqual(
+                [item["strategy_id"] for item in concept_result["selected_strategies"]],
+                ["dress-us-summer-vacation", "dress-us-spring-vacation"],
+            )
             self.assertEqual(
                 concept_result["composed_concept"]["selected_elements"]["neckline"]["value"],
-                "v-neckline",
+                "square neckline",
             )
             self.assertTrue((output_dir / "hero_front.png").exists())
 

@@ -226,6 +226,26 @@ class CanonicalSignalBuilderTest(unittest.TestCase):
         self.assertEqual(signal["extraction_provenance"]["warnings"], ["custom warning"])
         self.assertEqual(signal["extraction_provenance"]["confidence"], 0.91)
 
+    def test_accepts_unknown_editorial_source_id_with_default_provenance_fallback(self) -> None:
+        from temu_y2_women.canonical_signal_builder import build_canonical_signals
+
+        snapshot = _load_snapshot()
+        snapshot["source_id"] = "custom-editorial-source"
+        snapshot["source_url"] = "https://example.com/custom-editorial"
+
+        result = build_canonical_signals(snapshot=snapshot, default_price_band="mid")
+        signal = result["signals"][0]
+
+        self.assertEqual(signal["source_id"], "custom-editorial-source")
+        self.assertEqual(
+            signal["canonical_signal_id"],
+            "custom-editorial-source-the-vacation-mini-001",
+        )
+        self.assertEqual(signal["manual_tags"], ["summer", "vacation"])
+        self.assertEqual(signal["extraction_provenance"]["matched_keywords"], [])
+        self.assertEqual(signal["extraction_provenance"]["adapter_version"], "configured_editorial_v1")
+        self.assertEqual(signal["extraction_provenance"]["confidence"], 0.65)
+
 
 def _load_snapshot() -> dict[str, object]:
     return json.loads((_FIXTURE_DIR / "expected-whowhatwear-raw-source-snapshot.json").read_text(encoding="utf-8"))

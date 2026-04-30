@@ -11,6 +11,19 @@
       "adapter_id": "whowhatwear_editorial_v1",
       "default_price_band": "mid",
       "pipeline_mode": "editorial_text",
+      "parser_config": {
+        "section_rules": [
+          {"section_id": "the-vacation-mini", "heading": "The Vacation Mini", "tags": ["summer", "vacation"]},
+          {"section_id": "fairy-sleeves", "heading": "Fairy Sleeves", "tags": ["summer"]},
+          {"section_id": "all-things-polka-dots", "heading": "All Things Polka Dots", "tags": ["summer"]},
+          {
+            "section_id": "the-exaggerated-drop-waist",
+            "heading": "The Exaggerated Drop Waist",
+            "tags": ["summer"]
+          },
+          {"section_id": "sheer-printed-midis", "heading": "Sheer Printed Midis", "tags": ["summer"]}
+        ]
+      },
       "priority": 100,
       "weight": 1.0,
       "enabled": true
@@ -25,6 +38,18 @@
       "adapter_id": "whowhatwear_editorial_v1",
       "default_price_band": "mid",
       "pipeline_mode": "editorial_text",
+      "parser_config": {
+        "section_rules": [
+          {"section_id": "shirred-bodices", "heading": "Shirred Bodices", "tags": ["summer"]},
+          {"section_id": "drop-waist", "heading": "Drop-Waist", "tags": ["summer"]},
+          {"section_id": "elegant-bandeaus", "heading": "Elegant Bandeaus", "tags": ["summer"]},
+          {"section_id": "chic-stripes", "heading": "Chic Stripes", "tags": ["summer"]},
+          {"section_id": "romantic-sleeves", "heading": "Romantic Sleeves", "tags": ["summer"]},
+          {"section_id": "bubble-hems", "heading": "Bubble Hems", "tags": ["summer"]},
+          {"section_id": "lingerie-slips", "heading": "Lingerie Slips", "tags": ["summer"]},
+          {"section_id": "halterneck-dresses", "heading": "Halterneck Dresses", "tags": ["summer"]}
+        ]
+      },
       "priority": 90,
       "weight": 0.95,
       "enabled": true
@@ -39,8 +64,120 @@
       "adapter_id": "marieclaire_editorial_v1",
       "default_price_band": "mid",
       "pipeline_mode": "editorial_text",
+      "parser_config": {
+        "section_rules": [
+          {
+            "html_id": "linen-dresses-3",
+            "section_id": "linen-dresses",
+            "heading": "Linen Dresses",
+            "tags": ["summer"]
+          },
+          {
+            "html_id": "smocked-dresses-3",
+            "section_id": "smocked-dresses",
+            "heading": "Smocked Dresses",
+            "tags": ["summer"]
+          },
+          {
+            "html_id": "chocolate-brown-dresses-3",
+            "section_id": "chocolate-brown-dresses",
+            "heading": "Chocolate Brown Dresses",
+            "tags": ["summer"]
+          },
+          {
+            "html_id": "polka-dot-dresses-3",
+            "section_id": "polka-dot-dresses",
+            "heading": "Polka Dot Dresses",
+            "tags": ["summer"]
+          },
+          {
+            "html_id": "gingham-dresses-3",
+            "section_id": "gingham-dresses",
+            "heading": "Gingham Dresses",
+            "tags": ["summer"]
+          },
+          {
+            "html_id": "boho-dresses-3",
+            "section_id": "boho-dresses",
+            "heading": "Boho Dresses",
+            "tags": ["summer"]
+          },
+          {
+            "html_id": "babydoll-dresses-3",
+            "section_id": "babydoll-dresses",
+            "heading": "Babydoll Dresses",
+            "tags": ["summer"]
+          }
+        ]
+      },
       "priority": 80,
       "weight": 0.85,
+      "enabled": true
+    },
+    {
+      "source_id": "marieclaire-spring-2026-dress-trends",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.marieclaire.com/fashion/spring-2026-dress-trends/",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "marieclaire_editorial_v1",
+      "default_price_band": "mid",
+      "pipeline_mode": "editorial_text",
+      "parser_config": {
+        "section_rules": [
+          {
+            "html_id": "section-crinkle-texture-dresses",
+            "section_id": "crinkle-texture-dresses",
+            "heading": "Crinkle Texture Dresses",
+            "tags": ["spring"]
+          },
+          {
+            "html_id": "section-drop-waist-dresses",
+            "section_id": "drop-waist-dresses",
+            "heading": "Drop-Waist Dresses",
+            "tags": ["spring"]
+          },
+          {
+            "html_id": "section-shirt-dresses",
+            "section_id": "shirt-dresses",
+            "heading": "Shirt Dresses",
+            "tags": ["spring"]
+          },
+          {
+            "html_id": "section-fringe-dresses",
+            "section_id": "fringe-dresses",
+            "heading": "Fringe Dresses",
+            "tags": ["spring"]
+          },
+          {
+            "html_id": "section-lace-trimmed-dresses",
+            "section_id": "lace-trimmed-dresses",
+            "heading": "Lace-Trimmed Dresses",
+            "tags": ["spring"]
+          },
+          {
+            "html_id": "section-voluminous-dresses",
+            "section_id": "voluminous-dresses",
+            "heading": "Voluminous Dresses",
+            "tags": ["spring"]
+          },
+          {
+            "html_id": "section-shift-dresses",
+            "section_id": "shift-dresses",
+            "heading": "Shift Dresses",
+            "tags": ["spring"]
+          },
+          {
+            "html_id": "section-cape-dresses",
+            "section_id": "cape-dresses",
+            "heading": "Cape Dresses",
+            "tags": ["spring"]
+          }
+        ]
+      },
+      "priority": 75,
+      "weight": 0.82,
       "enabled": true
     },
     {

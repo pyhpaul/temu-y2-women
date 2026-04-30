@@ -207,8 +207,9 @@ def _build_canonical_signal(
     default_price_band: str,
     index: int,
 ) -> dict[str, Any]:
-    profile = _source_profile(snapshot["source_id"])
-    evidence_excerpt, matched_keywords = _derive_evidence(section, profile["evidence_rules"])
+    profile = _optional_source_profile(str(snapshot["source_id"]))
+    evidence_rules = _profile_evidence_rules(profile)
+    evidence_excerpt, matched_keywords = _derive_evidence(section, evidence_rules)
     return {
         "canonical_signal_id": f"{snapshot['source_id']}-{section['section_id']}-{index:03d}",
         "source_id": snapshot["source_id"],
@@ -223,11 +224,11 @@ def _build_canonical_signal(
         "evidence_excerpt": evidence_excerpt,
         "observed_occasion_tags": _derive_occasion_tags(section),
         "observed_season_tags": _derive_season_tags(section),
-        "manual_tags": _derive_manual_tags(section, matched_keywords, profile["evidence_rules"]),
+        "manual_tags": _derive_manual_tags(section, matched_keywords, evidence_rules),
         "observed_price_band": default_price_band,
         "price_band_resolution": "source_default",
         "status": "active",
-        "extraction_provenance": _build_provenance(snapshot["source_id"], section, matched_keywords),
+        "extraction_provenance": _build_provenance(section, matched_keywords, profile),
     }
 
 
@@ -329,30 +330,43 @@ def _manual_tags_from_keywords(
     return values
 
 
-def _source_profile(source_id: str) -> dict[str, Any]:
-    profile = _SOURCE_PROFILES.get(source_id)
-    if profile is not None:
-        return profile
-    raise _builder_error("snapshot.source_id", "unsupported raw source snapshot source_id")
+def _optional_source_profile(source_id: str) -> dict[str, Any] | None:
+    return _SOURCE_PROFILES.get(source_id)
 
 
-def _section_confidence(source_id: str, section: dict[str, Any]) -> float:
+def _profile_evidence_rules(profile: dict[str, Any] | None) -> tuple[dict[str, Any], ...]:
+    if profile is None:
+        return ()
+    return tuple(profile["evidence_rules"])
+
+
+def _section_confidence(profile: dict[str, Any] | None, section: dict[str, Any]) -> float:
     value = section.get("confidence")
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return float(value)
-    profile = _source_profile(source_id)
+    if profile is None:
+        return 0.65
     return profile["section_confidence"].get(str(section["section_id"]), 0.65)
 
 
-def _build_provenance(source_id: str, section: dict[str, Any], matched_keywords: list[str]) -> dict[str, Any]:
-    profile = _source_profile(source_id)
+def _build_provenance(
+    section: dict[str, Any],
+    matched_keywords: list[str],
+    profile: dict[str, Any] | None,
+) -> dict[str, Any]:
     return {
         "source_section": str(section["section_id"]),
         "matched_keywords": matched_keywords,
-        "adapter_version": _optional_string(section, "adapter_version") or profile["adapter_version"],
+        "adapter_version": _optional_string(section, "adapter_version") or _profile_adapter_version(profile),
         "warnings": _optional_string_list(section, "warnings") or ["price band defaulted from source registry"],
-        "confidence": _section_confidence(source_id, section),
+        "confidence": _section_confidence(profile, section),
     }
+
+
+def _profile_adapter_version(profile: dict[str, Any] | None) -> str:
+    if profile is None:
+        return "configured_editorial_v1"
+    return str(profile["adapter_version"])
 
 
 def _build_signal_bundle_record(signal: dict[str, Any]) -> dict[str, Any]:

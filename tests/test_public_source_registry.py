@@ -12,12 +12,13 @@ class PublicSourceRegistryTest(unittest.TestCase):
 
         result = load_public_source_registry(Path("data/refresh/dress/source_registry.json"))
 
-        self.assertEqual(len(result), 4)
+        self.assertEqual(len(result), 5)
         self.assertEqual(result[0]["source_id"], "whowhatwear-summer-2025-dress-trends")
         self.assertEqual(result[0]["adapter_id"], "whowhatwear_editorial_v1")
         self.assertEqual(result[0]["default_price_band"], "mid")
         self.assertEqual(result[0]["priority"], 100)
         self.assertEqual(result[0]["weight"], 1.0)
+        self.assertEqual(result[0]["parser_config"]["section_rules"][0]["section_id"], "the-vacation-mini")
 
     def test_load_enabled_sources_includes_roundup_routing_fields(self) -> None:
         from temu_y2_women.public_source_registry import load_public_source_registry
@@ -45,6 +46,7 @@ class PublicSourceRegistryTest(unittest.TestCase):
                 "whowhatwear-summer-2025-dress-trends",
                 "whowhatwear-summer-dress-trends-2025",
                 "marieclaire-summer-2025-dress-trends",
+                "marieclaire-spring-2026-dress-trends",
                 "whowhatwear-best-summer-dresses-2025",
             ],
         )

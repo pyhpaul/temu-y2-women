@@ -215,6 +215,52 @@ class StrategySelectorTest(unittest.TestCase):
             ["dress-us-summer-vacation", "dress-us-summer-vacation-product-image"],
         )
 
+    def test_prefers_date_grounded_primary_strategy_over_refresh_aggregate_strategy(self) -> None:
+        from temu_y2_women.strategy_selector import select_strategies
+
+        request = _request(launch_date=date(2026, 6, 15), occasion_tags=("vacation",))
+        strategies = [
+            {
+                "strategy_id": "dress-us-spring-vacation",
+                "category": "dress",
+                "target_market": "US",
+                "priority": 11,
+                "date_window": {"start": "03-01", "end": "06-30"},
+                "occasion_tags": ["vacation"],
+                "boost_tags": ["spring", "vacation"],
+                "suppress_tags": [],
+                "slot_preferences": {"waistline": ["drop waist"]},
+                "score_boost": 0.12,
+                "score_cap": 0.2,
+                "prompt_hints": ["Aggregated from 11 signals for US spring dress demand."],
+                "reason_template": "Aggregated from 11 signals for US spring dress demand.",
+                "status": "active",
+            },
+            {
+                "strategy_id": "dress-us-summer-vacation",
+                "category": "dress",
+                "target_market": "US",
+                "priority": 10,
+                "date_window": {"start": "05-15", "end": "08-31"},
+                "occasion_tags": ["vacation", "resort"],
+                "boost_tags": ["summer", "vacation"],
+                "suppress_tags": [],
+                "slot_preferences": {"pattern": ["floral print"]},
+                "score_boost": 0.12,
+                "score_cap": 0.2,
+                "prompt_hints": ["fresh summer styling"],
+                "reason_template": "launch date falls in the US summer vacation window and occasion tags align to vacation demand",
+                "status": "active",
+            },
+        ]
+
+        result = select_strategies(request, strategies)
+
+        self.assertEqual(
+            [item.strategy.strategy_id for item in result.selected],
+            ["dress-us-summer-vacation", "dress-us-spring-vacation"],
+        )
+
 
 def _request(
     launch_date: date,

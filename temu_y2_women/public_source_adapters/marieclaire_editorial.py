@@ -7,6 +7,7 @@ from typing import Any
 
 from temu_y2_women.errors import GenerationError
 
+SectionRule = tuple[str, str, str, tuple[str, ...]]
 
 _SECTION_RULES = (
     ("linen-dresses-3", "linen-dresses", "Linen Dresses", ("summer",)),
@@ -17,16 +18,16 @@ _SECTION_RULES = (
     ("boho-dresses-3", "boho-dresses", "Boho Dresses", ("summer",)),
     ("babydoll-dresses-3", "babydoll-dresses", "Babydoll Dresses", ("summer",)),
 )
-_HTML_SECTION_IDS = {html_id: section_id for html_id, section_id, _, _ in _SECTION_RULES}
 
 
 def parse_marieclaire_editorial_html(source: dict[str, Any], html: str, fetched_at: str) -> dict[str, Any]:
-    parser = _MarieClaireHtmlParser()
+    section_rules = _resolve_section_rules(source)
+    parser = _MarieClaireHtmlParser(_html_section_ids(section_rules))
     parser.feed(html)
     parser.close()
     sections = [
         _build_section_record(parser, section_id, heading, tags)
-        for _, section_id, heading, tags in _SECTION_RULES
+        for _, section_id, heading, tags in section_rules
     ]
     return {
         "schema_version": "public-source-snapshot-v1",
@@ -41,6 +42,36 @@ def parse_marieclaire_editorial_html(source: dict[str, Any], html: str, fetched_
         "sections": sections,
         "warnings": [],
     }
+
+
+def _resolve_section_rules(source: dict[str, Any]) -> tuple[SectionRule, ...]:
+    configured = _configured_section_rules(source)
+    if configured is not None:
+        return configured
+    return _SECTION_RULES
+
+
+def _configured_section_rules(source: dict[str, Any]) -> tuple[SectionRule, ...] | None:
+    parser_config = source.get("parser_config")
+    if not isinstance(parser_config, dict):
+        return None
+    section_rules = parser_config.get("section_rules")
+    if not isinstance(section_rules, list) or not section_rules:
+        return None
+    return tuple(_configured_section_rule(item) for item in section_rules)
+
+
+def _configured_section_rule(item: Any) -> SectionRule:
+    if not isinstance(item, dict):
+        raise ValueError("section rule must be an object")
+    tags = tuple(str(tag) for tag in item.get("tags", []))
+    if not tags:
+        raise ValueError("section rule tags must be non-empty")
+    return str(item["html_id"]), str(item["section_id"]), str(item["heading"]), tags
+
+
+def _html_section_ids(section_rules: tuple[SectionRule, ...]) -> dict[str, str]:
+    return {html_id: section_id for html_id, section_id, _, _ in section_rules}
 
 
 def _build_section_record(
@@ -77,8 +108,9 @@ def _adapter_error(message: str, **details: Any) -> GenerationError:
 
 
 class _MarieClaireHtmlParser(HTMLParser):
-    def __init__(self) -> None:
+    def __init__(self, html_section_ids: dict[str, str]) -> None:
         super().__init__(convert_charrefs=True)
+        self._html_section_ids = html_section_ids
         self._title_parts: list[str] = []
         self._h1_parts: list[str] = []
         self._in_title = False
@@ -97,7 +129,7 @@ class _MarieClaireHtmlParser(HTMLParser):
         elif tag == "meta":
             self._capture_published_date(attr_map)
         elif tag == "h2":
-            self._active_section = _HTML_SECTION_IDS.get(attr_map.get("id", ""))
+            self._active_section = self._html_section_ids.get(attr_map.get("id", ""))
         elif tag == "p":
             self._start_section_paragraph(attr_map)
 
