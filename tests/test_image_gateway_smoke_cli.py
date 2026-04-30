@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 import io
 import json
 import os
@@ -28,12 +30,13 @@ class ImageGatewaySmokeCliTest(unittest.TestCase):
                 },
                 clear=True,
             ):
-                with patch(
-                    "temu_y2_women.image_gateway_smoke_cli.run_gateway_smoke",
-                    side_effect=_capture_smoke_runner(captured),
-                ):
-                    with patch("sys.stdout", stdout):
-                        exit_code = main(["run", "--timeout-sec", "12.5"])
+                with _isolated_dotenv(temp_dir):
+                    with patch(
+                        "temu_y2_women.image_gateway_smoke_cli.run_gateway_smoke",
+                        side_effect=_capture_smoke_runner(captured),
+                    ):
+                        with patch("sys.stdout", stdout):
+                            exit_code = main(["run", "--timeout-sec", "12.5"])
 
         payload = json.loads(stdout.getvalue())
         settings = captured[0]
@@ -56,26 +59,27 @@ class ImageGatewaySmokeCliTest(unittest.TestCase):
             _write_auth_json(codex_home / "auth.json", "file-key")
             _write_config_toml(codex_home / "config.toml", "https://file.test/v1")
             with patch.dict(os.environ, {"CODEX_HOME": str(codex_home)}, clear=True):
-                with patch(
-                    "temu_y2_women.image_gateway_smoke_cli.run_gateway_smoke",
-                    side_effect=_capture_smoke_runner(captured),
-                ):
-                    with patch("sys.stdout", stdout):
-                        exit_code = main(
-                            [
-                                "run",
-                                "--base-url",
-                                "https://cli.test/v1",
-                                "--anchor-api-key",
-                                "cli-anchor",
-                                "--expansion-api-key",
-                                "cli-expansion",
-                                "--model",
-                                "gpt-image-2",
-                                "--check",
-                                "models",
-                            ]
-                        )
+                with _isolated_dotenv(temp_dir):
+                    with patch(
+                        "temu_y2_women.image_gateway_smoke_cli.run_gateway_smoke",
+                        side_effect=_capture_smoke_runner(captured),
+                    ):
+                        with patch("sys.stdout", stdout):
+                            exit_code = main(
+                                [
+                                    "run",
+                                    "--base-url",
+                                    "https://cli.test/v1",
+                                    "--anchor-api-key",
+                                    "cli-anchor",
+                                    "--expansion-api-key",
+                                    "cli-expansion",
+                                    "--model",
+                                    "gpt-image-2",
+                                    "--check",
+                                    "models",
+                                ]
+                            )
 
         payload = json.loads(stdout.getvalue())
         settings = captured[0]
@@ -93,8 +97,9 @@ class ImageGatewaySmokeCliTest(unittest.TestCase):
             codex_home = Path(temp_dir) / ".codex"
             codex_home.mkdir()
             with patch.dict(os.environ, {"CODEX_HOME": str(codex_home)}, clear=True):
-                with patch("sys.stdout", stdout):
-                    exit_code = main(["run"])
+                with _isolated_dotenv(temp_dir):
+                    with patch("sys.stdout", stdout):
+                        exit_code = main(["run"])
 
         payload = json.loads(stdout.getvalue())
         self.assertEqual(exit_code, 1)
@@ -121,6 +126,15 @@ def _capture_smoke_runner(captured: list[object]) -> object:
         }
 
     return run_smoke
+
+
+@contextmanager
+def _isolated_dotenv(temp_dir: str) -> Iterator[None]:
+    with patch(
+        "temu_y2_women.image_provider_config._default_env_path",
+        return_value=Path(temp_dir) / "missing.env",
+    ):
+        yield
 
 
 def _write_auth_json(path: Path, api_key: str) -> None:
