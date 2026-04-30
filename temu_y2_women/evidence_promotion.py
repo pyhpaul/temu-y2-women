@@ -334,7 +334,7 @@ def _build_strategy_review_entry(
     draft_strategy_hint: dict[str, Any],
     active_by_id: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
-    strategy_id, matched_id = _resolve_strategy_identity(str(draft_strategy_hint["hint_id"]), active_by_id)
+    strategy_id, matched_id = _resolve_strategy_identity(draft_strategy_hint, active_by_id)
     matched = active_by_id.get(matched_id) if matched_id else None
     canonical_identity = {
         "target_market": draft_strategy_hint["target_market"],
@@ -354,6 +354,12 @@ def _build_strategy_review_entry(
             matched,
         ),
     }
+
+
+def _default_strategy_scoring(draft_strategy_hint: dict[str, Any]) -> tuple[float, float]:
+    if _is_product_image_strategy_hint(draft_strategy_hint):
+        return 0.08, 0.12
+    return 0.0, 0.0
 
 
 def _validate_review_bundle(path: Path, reviewed: dict[str, Any], expected: dict[str, Any]) -> None:
@@ -561,10 +567,34 @@ def _build_post_promotion_elements(
         proposed = dict(record["proposed_element"])
         identity = _canonical_identity(str(proposed["slot"]), str(proposed["value"]))
         if record["merge_action"] == "update" and identity in identity_to_index:
-            snapshot[identity_to_index[identity]] = proposed
+            active = snapshot[identity_to_index[identity]]
+            snapshot[identity_to_index[identity]] = _merge_updated_element(active, proposed)
             continue
         snapshot.append(proposed)
     return snapshot
+
+
+def _merge_updated_element(active: dict[str, Any], proposed: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(active)
+    merged.update(proposed)
+    merged["tags"] = _merge_string_lists(active.get("tags"), proposed.get("tags"))
+    merged["price_bands"] = _merge_string_lists(active.get("price_bands"), proposed.get("price_bands"))
+    merged["occasion_tags"] = _merge_string_lists(active.get("occasion_tags"), proposed.get("occasion_tags"))
+    merged["season_tags"] = _merge_string_lists(active.get("season_tags"), proposed.get("season_tags"))
+    merged["risk_flags"] = _merge_string_lists(active.get("risk_flags"), proposed.get("risk_flags"))
+    merged["base_score"] = max(float(active["base_score"]), float(proposed["base_score"]))
+    return merged
+
+
+def _merge_string_lists(active_values: Any, proposed_values: Any) -> list[str]:
+    merged: list[str] = []
+    for values in (active_values, proposed_values):
+        if not isinstance(values, list):
+            continue
+        for value in values:
+            if isinstance(value, str) and value not in merged:
+                merged.append(value)
+    return merged
 
 
 def _build_post_promotion_strategies(
@@ -785,6 +815,7 @@ def _build_proposed_strategy_template(
     matched: dict[str, Any] | None,
 ) -> dict[str, Any]:
     if matched is None:
+        score_boost, score_cap = _default_strategy_scoring(draft_strategy_hint)
         return {
             "strategy_id": strategy_id,
             "category": draft_strategy_hint["category"],
@@ -795,8 +826,8 @@ def _build_proposed_strategy_template(
             "boost_tags": list(draft_strategy_hint["boost_tags"]),
             "suppress_tags": [],
             "slot_preferences": _copy_slot_preferences(draft_strategy_hint["slot_preferences"]),
-            "score_boost": 0.0,
-            "score_cap": 0.0,
+            "score_boost": score_boost,
+            "score_cap": score_cap,
             "prompt_hints": [draft_strategy_hint["reason_summary"]],
             "reason_template": draft_strategy_hint["reason_summary"],
             "status": "active",
@@ -857,16 +888,26 @@ def _draft_element_id(draft_element: dict[str, Any]) -> str:
 
 
 def _resolve_strategy_identity(
-    hint_id: str,
+    draft_strategy_hint: dict[str, Any],
     active_by_id: dict[str, dict[str, Any]],
 ) -> tuple[str, str | None]:
+    hint_id = str(draft_strategy_hint["hint_id"])
     base_id = f"dress-{hint_id.removeprefix('draft-strategy-')}"
+    if _is_product_image_strategy_hint(draft_strategy_hint):
+        return f"{base_id}-product-image", None
     if base_id in active_by_id:
         return base_id, base_id
     stripped_id = base_id.removesuffix("-refresh")
     if stripped_id in active_by_id:
         return stripped_id, stripped_id
     return base_id, None
+
+
+def _is_product_image_strategy_hint(draft_strategy_hint: dict[str, Any]) -> bool:
+    source_signal_ids = draft_strategy_hint.get("source_signal_ids")
+    if not isinstance(source_signal_ids, list) or not source_signal_ids:
+        return False
+    return all(isinstance(item, str) and item.startswith("product-image-") for item in source_signal_ids)
 
 
 def _load_json_object(path: Path, code: str, root_message: str) -> dict[str, Any]:

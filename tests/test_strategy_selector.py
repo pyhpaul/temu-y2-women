@@ -169,6 +169,52 @@ class StrategySelectorTest(unittest.TestCase):
             ["summer-vacation-dress", "summer-floral-dress"],
         )
 
+    def test_selects_product_image_overlay_alongside_primary_strategy(self) -> None:
+        from temu_y2_women.strategy_selector import select_strategies
+
+        request = _request(launch_date=date(2026, 7, 4), occasion_tags=("vacation",))
+        strategies = [
+            {
+                "strategy_id": "dress-us-summer-vacation",
+                "category": "dress",
+                "target_market": "US",
+                "priority": 10,
+                "date_window": {"start": "05-15", "end": "08-31"},
+                "occasion_tags": ["vacation", "resort"],
+                "boost_tags": ["summer", "vacation"],
+                "suppress_tags": [],
+                "slot_preferences": {"detail": ["neck scarf"]},
+                "score_boost": 0.12,
+                "score_cap": 0.2,
+                "prompt_hints": ["vacation mood"],
+                "reason_template": "summer vacation window",
+                "status": "active",
+            },
+            {
+                "strategy_id": "dress-us-summer-vacation-product-image",
+                "category": "dress",
+                "target_market": "US",
+                "priority": 1,
+                "date_window": {"start": "01-01", "end": "12-31"},
+                "occasion_tags": ["vacation"],
+                "boost_tags": ["summer", "vacation", "feminine"],
+                "suppress_tags": [],
+                "slot_preferences": {"detail": ["waist tie"]},
+                "score_boost": 0.08,
+                "score_cap": 0.12,
+                "prompt_hints": ["product image overlay"],
+                "reason_template": "product image evidence overlay",
+                "status": "active",
+            },
+        ]
+
+        result = select_strategies(request, strategies)
+
+        self.assertEqual(
+            [item.strategy.strategy_id for item in result.selected],
+            ["dress-us-summer-vacation", "dress-us-summer-vacation-product-image"],
+        )
+
 
 def _request(
     launch_date: date,

@@ -15,6 +15,7 @@ from temu_y2_women.models import (
 _DEFAULT_ELEMENTS_PATH = Path("data/mvp/dress/elements.json")
 _DEFAULT_STRATEGIES_PATH = Path("data/mvp/dress/strategy_templates.json")
 _DEFAULT_TAXONOMY_PATH = Path("data/mvp/dress/evidence_taxonomy.json")
+_OVERLAY_SLOT_PREFERENCE_BONUS = 0.08
 _ELEMENT_REQUIRED_FIELDS = {
     "element_id",
     "category",
@@ -521,6 +522,7 @@ def _calculate_effective_score(
 ) -> float:
     effective_score = float(element["base_score"])
     tags = set(element.get("tags", []))
+    overlay_preferences = _overlay_slot_preferences(selected_strategies)
     matching_strategies = _matching_strategies_for_element(selected_strategies, element, tags)
     if matching_strategies:
         effective_score += min(
@@ -529,8 +531,10 @@ def _calculate_effective_score(
         )
     if request.must_have_tags and tags.intersection(request.must_have_tags):
         effective_score += 0.02
-    if _style_family_soft_match(element, selected_style_family):
+    if _style_family_soft_match(element, selected_style_family) and not _overlay_controls_slot(element, overlay_preferences):
         effective_score += 0.05
+    if _overlay_prefers_element_value(element, overlay_preferences):
+        effective_score += _OVERLAY_SLOT_PREFERENCE_BONUS
     return effective_score
 
 
@@ -566,6 +570,34 @@ def _style_family_soft_match(
         return False
     values = selected_style_family.profile.soft_slot_values.get(str(element.get("slot")), ())
     return _canonicalize_value(str(element.get("value"))) in {_canonicalize_value(item) for item in values}
+
+
+def _overlay_slot_preferences(
+    selected_strategies: tuple[SelectedStrategy, ...],
+) -> dict[str, set[str]]:
+    preferences: dict[str, set[str]] = {}
+    for item in selected_strategies:
+        if not item.strategy.strategy_id.endswith("-product-image"):
+            continue
+        for slot, values in item.strategy.slot_preferences.items():
+            preferences.setdefault(_canonicalize_value(slot), set()).update(_canonicalize_value(value) for value in values)
+    return preferences
+
+
+def _overlay_controls_slot(
+    element: dict[str, Any],
+    overlay_preferences: dict[str, set[str]],
+) -> bool:
+    return _canonicalize_value(str(element.get("slot"))) in overlay_preferences
+
+
+def _overlay_prefers_element_value(
+    element: dict[str, Any],
+    overlay_preferences: dict[str, set[str]],
+) -> bool:
+    slot = _canonicalize_value(str(element.get("slot")))
+    value = _canonicalize_value(str(element.get("value")))
+    return value in overlay_preferences.get(slot, set())
 
 
 def _matching_strategies_for_element(

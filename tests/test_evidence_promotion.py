@@ -186,6 +186,41 @@ class EvidencePromotionPrepareTest(unittest.TestCase):
         self.assertEqual(match["observation_model"], "fake-card-observer-with-new-value")
         self.assertIn("pattern=gingham check", match["evidence_summary"])
 
+    def test_prepare_dress_promotion_review_keeps_product_image_strategy_hints_create_only(self) -> None:
+        from temu_y2_women.evidence_promotion import prepare_dress_promotion_review
+        from temu_y2_women.product_image_signal_run import run_product_image_signal_ingestion
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            manifest_path = _write_product_image_manifest(temp_root)
+            run_report = run_product_image_signal_ingestion(
+                input_path=manifest_path,
+                output_root=temp_root / "runs",
+                observed_at="2026-04-30T07:30:00Z",
+                observe_image=_fake_product_image_observer_with_new_detail,
+            )
+            run_dir = temp_root / "runs" / run_report["run_id"]
+            result = prepare_dress_promotion_review(
+                draft_elements_path=run_dir / "draft_elements.json",
+                draft_strategy_hints_path=run_dir / "draft_strategy_hints.json",
+                active_elements_path=_PROMOTION_FIXTURE_DIR / "baseline" / "elements.json",
+                active_strategies_path=_PROMOTION_FIXTURE_DIR / "baseline" / "strategy_templates.json",
+            )
+
+        strategy = result["strategy_hints"][0]
+        self.assertEqual(strategy["merge_action"], "create")
+        self.assertIsNone(strategy["matched_active_strategy_id"])
+        self.assertEqual(
+            strategy["canonical_identity"]["resolved_strategy_id"],
+            "dress-us-summer-vacation-product-image",
+        )
+        self.assertEqual(
+            strategy["proposed_strategy_template"]["strategy_id"],
+            "dress-us-summer-vacation-product-image",
+        )
+        self.assertEqual(strategy["proposed_strategy_template"]["score_boost"], 0.08)
+        self.assertEqual(strategy["proposed_strategy_template"]["score_cap"], 0.12)
+
 
 class EvidencePromotionValidationTest(unittest.TestCase):
     def test_validate_reviewed_dress_promotion_accepts_valid_reviewed_fixtures(self) -> None:
@@ -615,6 +650,53 @@ class EvidencePromotionApplyTest(unittest.TestCase):
             self.assertEqual(summer_vacation["score_boost"], 0.09)
             self.assertEqual(summer_vacation["score_cap"], 0.15)
 
+    def test_apply_reviewed_dress_promotion_keeps_stronger_active_metadata_on_element_update(self) -> None:
+        from temu_y2_women.evidence_promotion import apply_reviewed_dress_promotion, prepare_dress_promotion_review
+        from temu_y2_women.product_image_signal_run import run_product_image_signal_ingestion
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            manifest_path = _write_product_image_manifest(temp_root)
+            run_report = run_product_image_signal_ingestion(
+                input_path=manifest_path,
+                output_root=temp_root / "runs",
+                observed_at="2026-04-30T07:30:00Z",
+                observe_image=_fake_product_image_observer_with_new_detail,
+            )
+            run_dir = temp_root / "runs" / run_report["run_id"]
+            reviewed = prepare_dress_promotion_review(
+                draft_elements_path=run_dir / "draft_elements.json",
+                draft_strategy_hints_path=run_dir / "draft_strategy_hints.json",
+                active_elements_path=_PROMOTION_FIXTURE_DIR / "baseline" / "elements.json",
+                active_strategies_path=_PROMOTION_FIXTURE_DIR / "baseline" / "strategy_templates.json",
+            )
+            for item in reviewed["elements"]:
+                item["decision"] = "accept"
+            reviewed["strategy_hints"][0]["decision"] = "reject"
+            reviewed["strategy_hints"][0]["proposed_strategy_template"] = None
+            reviewed_path = temp_root / "reviewed.json"
+            _write_json(reviewed_path, reviewed)
+            elements_path, strategies_path = _seed_active_evidence(temp_root)
+
+            apply_reviewed_dress_promotion(
+                reviewed_path=reviewed_path,
+                draft_elements_path=run_dir / "draft_elements.json",
+                draft_strategy_hints_path=run_dir / "draft_strategy_hints.json",
+                active_elements_path=elements_path,
+                active_strategies_path=strategies_path,
+                report_path=temp_root / "promotion_report.json",
+            )
+
+            updated = next(
+                item
+                for item in _read_json(elements_path)["elements"]
+                if item["element_id"] == "dress-neckline-square-001"
+            )
+            self.assertEqual(updated["base_score"], 0.7)
+            self.assertEqual(updated["tags"], ["feminine", "romantic", "summer", "vacation"])
+            self.assertEqual(updated["occasion_tags"], ["casual", "resort", "vacation"])
+            self.assertEqual(updated["season_tags"], ["spring", "summer"])
+
 
 def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -699,6 +781,38 @@ def _fake_card_observer_with_new_value(card: dict[str, object]) -> dict[str, obj
         "abstained_slots": ["opacity_level"],
         "warnings": [],
     }
+
+
+def _fake_product_image_observer_with_new_detail(image: dict[str, object]) -> dict[str, object]:
+    if str(image["image_id"]).endswith("front"):
+        return {
+            "observed_slots": [
+                {"slot": "detail", "value": "waist tie", "evidence_summary": "front view shows a tied sash shaping the waist"},
+                {"slot": "neckline", "value": "square neckline", "evidence_summary": "front view shows a flat squared neck opening"},
+                {"slot": "dress_length", "value": "mini", "evidence_summary": "hemline sits above the knee"},
+            ],
+            "abstained_slots": [],
+            "warnings": [],
+        }
+    return {
+        "observed_slots": [
+            {"slot": "detail", "value": "waist tie", "evidence_summary": "back view confirms self-tie waist shaping"},
+        ],
+        "abstained_slots": ["neckline"],
+        "warnings": [],
+    }
+
+
+def _write_product_image_manifest(temp_root: Path) -> Path:
+    manifest = _read_json(Path("tests/fixtures/product_image_signals/dress/input-manifest.json"))
+    for product in manifest["products"]:
+        for image in product["images"]:
+            image_path = temp_root / Path(str(image["image_path"])).name
+            image_path.write_bytes(str(image["image_id"]).encode("utf-8"))
+            image["image_path"] = str(image_path)
+    manifest_path = temp_root / "product-image-manifest.json"
+    _write_json(manifest_path, manifest)
+    return manifest_path
 
 
 def _combined_payload(filename: str, field: str) -> dict[str, object]:

@@ -185,7 +185,7 @@ def _commercial_review_context(
     if style_family_id is not None:
         context.append(f"style family review context: {style_family_id}")
     if selected_strategies:
-        context.append(f"seasonal review context: {selected_strategies[0].reason}")
+        context.append(f"seasonal review context: {_strategy_reason_summary(selected_strategies)}")
     if request.occasion_tags:
         context.append(
             f"occasion review context: align construction readability to {'/'.join(request.occasion_tags)} use"
@@ -274,7 +274,7 @@ def _commercial_review_cues(
     if _selected_value(concept, "print_scale") == "micro print":
         cues.append("commercial cue: keep micro print scale crisp enough to read without visual noise")
     if selected_strategies:
-        cues.append(f"commercial cue: seasonal review should stay anchored to {selected_strategies[0].reason}")
+        cues.append(f"commercial cue: seasonal review should stay anchored to {_strategy_reason_summary(selected_strategies)}")
     if request.occasion_tags:
         cues.append(
             f"commercial cue: keep {request.occasion_tags[0]} use obvious from first-glance silhouette, fabric, and print direction"
@@ -367,3 +367,7 @@ def _join_values(values: list[str]) -> str:
     if len(values) < 3:
         return " and ".join(values)
     return f"{', '.join(values[:-1])}, and {values[-1]}"
+
+
+def _strategy_reason_summary(selected_strategies: tuple[SelectedStrategy, ...]) -> str:
+    return "; ".join(item.reason for item in selected_strategies)
