@@ -53,6 +53,61 @@ _SOURCE_PROFILES = {
             },
         ),
     },
+    "whowhatwear-summer-dress-trends-2025": {
+        "adapter_version": "whowhatwear_editorial_v1",
+        "section_confidence": {
+            "shirred-bodices": 0.74,
+            "drop-waist": 0.76,
+            "elegant-bandeaus": 0.69,
+            "chic-stripes": 0.68,
+            "romantic-sleeves": 0.71,
+            "bubble-hems": 0.66,
+            "lingerie-slips": 0.67,
+            "halterneck-dresses": 0.72,
+        },
+        "evidence_rules": (
+            {
+                "keywords": ("shirred dress trend", "smocked bodices", "shirring"),
+                "manual_tags": ("feminine",),
+                "excerpt_anchor": "shirred dress trend",
+            },
+            {
+                "keywords": ("drop-waist dress trend", "drop-waist", "lengthened effect"),
+                "manual_tags": ("feminine",),
+                "excerpt_anchor": "drop-waist dress trend",
+            },
+            {
+                "keywords": ("absence of straps", "bustiers", "bandeau dress"),
+                "manual_tags": ("party",),
+                "excerpt_anchor": "absence of straps",
+            },
+            {
+                "keywords": ("stripes", "neapolitan", "discrete lines"),
+                "manual_tags": (),
+                "excerpt_anchor": "stripes have rightfully earned",
+            },
+            {
+                "keywords": ("romantic", "puff sleeves", "broderie anglaise"),
+                "manual_tags": ("romantic",),
+                "excerpt_anchor": "romantic, dreamy takes",
+            },
+            {
+                "keywords": ("bubble-hem trend", "bubble hems"),
+                "manual_tags": (),
+                "excerpt_anchor": "bubble-hem trend",
+            },
+            {
+                "keywords": ("slip dresses", "open button-down shirt", "summer aesthetic"),
+                "manual_tags": (),
+                "excerpt_anchor": "slip dresses will never go out of style",
+            },
+            {
+                "keywords": ("halter neck trend", "halterneck", "in-demand trends"),
+                "manual_tags": (),
+                "excerpt_anchor": "halter neck trend",
+            },
+        ),
+    },
     "marieclaire-summer-2025-dress-trends": {
         "adapter_version": "marieclaire_editorial_v1",
         "section_confidence": {
@@ -168,21 +223,33 @@ def _build_canonical_signal(
         "evidence_excerpt": evidence_excerpt,
         "observed_occasion_tags": _derive_occasion_tags(section),
         "observed_season_tags": _derive_season_tags(section),
-        "manual_tags": _derive_manual_tags(section, matched_keywords),
+        "manual_tags": _derive_manual_tags(section, matched_keywords, profile["evidence_rules"]),
         "observed_price_band": default_price_band,
         "price_band_resolution": "source_default",
         "status": "active",
-        "extraction_provenance": _build_provenance(snapshot["source_id"], section["section_id"], matched_keywords),
+        "extraction_provenance": _build_provenance(snapshot["source_id"], section, matched_keywords),
     }
 
 
 def _derive_evidence(section: dict[str, Any], evidence_rules: tuple[dict[str, Any], ...]) -> tuple[str, list[str]]:
+    metadata = _section_evidence_metadata(section)
+    if metadata is not None:
+        return metadata
     rule = _best_evidence_rule(section, evidence_rules)
     if rule is None:
         return _default_excerpt(str(section["text"])), []
     matched_keywords = _matched_keywords(rule, _section_corpus(section))
     excerpt = _excerpt_from_text(str(section["text"]), str(rule["excerpt_anchor"]))
     return excerpt, matched_keywords
+
+
+def _section_evidence_metadata(section: dict[str, Any]) -> tuple[str, list[str]] | None:
+    matched_keywords = _optional_string_list(section, "matched_keywords")
+    excerpt_anchor = _optional_string(section, "excerpt_anchor")
+    if matched_keywords is None and excerpt_anchor is None:
+        return None
+    excerpt = _excerpt_from_text(str(section["text"]), excerpt_anchor) if excerpt_anchor else _default_excerpt(str(section["text"]))
+    return excerpt, matched_keywords or []
 
 
 def _best_evidence_rule(
@@ -209,8 +276,12 @@ def _section_corpus(section: dict[str, Any]) -> str:
 
 
 def _excerpt_from_text(text: str, anchor: str) -> str:
-    normalized_anchor = _normalize_text(anchor)
+    casefold_anchor = anchor.casefold().strip()
     for sentence in _split_sentences(text):
+        direct_index = sentence.casefold().find(casefold_anchor)
+        if direct_index >= 0:
+            return sentence[direct_index:].strip().rstrip(".!?")
+        normalized_anchor = _normalize_text(anchor)
         index = _normalize_text(sentence).find(normalized_anchor)
         if index >= 0:
             return sentence[index:].strip().rstrip(".!?")
@@ -234,21 +305,27 @@ def _derive_season_tags(section: dict[str, Any]) -> list[str]:
     return _supported_source_tags(list(section["tags"]), "allowed_seasons")
 
 
-def _derive_manual_tags(section: dict[str, Any], matched_keywords: list[str]) -> list[str]:
+def _derive_manual_tags(
+    section: dict[str, Any],
+    matched_keywords: list[str],
+    evidence_rules: tuple[dict[str, Any], ...],
+) -> list[str]:
     values = [
         *_supported_source_tags(list(section["tags"]), "allowed_tags"),
-        *_manual_tags_from_keywords(matched_keywords),
+        *_manual_tags_from_keywords(matched_keywords, evidence_rules),
     ]
     return _validated_tags(values, "allowed_tags", "manual_tags")
 
 
-def _manual_tags_from_keywords(matched_keywords: list[str]) -> list[str]:
+def _manual_tags_from_keywords(
+    matched_keywords: list[str],
+    evidence_rules: tuple[dict[str, Any], ...],
+) -> list[str]:
     values: list[str] = []
     matched = set(matched_keywords)
-    for profile in _SOURCE_PROFILES.values():
-        for rule in profile["evidence_rules"]:
-            if matched.intersection(rule["keywords"]):
-                values.extend(list(rule["manual_tags"]))
+    for rule in evidence_rules:
+        if matched.intersection(rule["keywords"]):
+            values.extend(list(rule["manual_tags"]))
     return values
 
 
@@ -259,19 +336,22 @@ def _source_profile(source_id: str) -> dict[str, Any]:
     raise _builder_error("snapshot.source_id", "unsupported raw source snapshot source_id")
 
 
-def _section_confidence(source_id: str, section_id: str) -> float:
+def _section_confidence(source_id: str, section: dict[str, Any]) -> float:
+    value = section.get("confidence")
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
     profile = _source_profile(source_id)
-    return profile["section_confidence"].get(section_id, 0.65)
+    return profile["section_confidence"].get(str(section["section_id"]), 0.65)
 
 
-def _build_provenance(source_id: str, section_id: str, matched_keywords: list[str]) -> dict[str, Any]:
+def _build_provenance(source_id: str, section: dict[str, Any], matched_keywords: list[str]) -> dict[str, Any]:
     profile = _source_profile(source_id)
     return {
-        "source_section": section_id,
+        "source_section": str(section["section_id"]),
         "matched_keywords": matched_keywords,
-        "adapter_version": profile["adapter_version"],
-        "warnings": ["price band defaulted from source registry"],
-        "confidence": _section_confidence(source_id, section_id),
+        "adapter_version": _optional_string(section, "adapter_version") or profile["adapter_version"],
+        "warnings": _optional_string_list(section, "warnings") or ["price band defaulted from source registry"],
+        "confidence": _section_confidence(source_id, section),
     }
 
 
@@ -339,7 +419,19 @@ def _validate_section(section: Any, index: int) -> dict[str, Any]:
     _require_string_field(section, "heading", "section.heading")
     _require_string_field(section, "text", "section.text")
     _require_string_list(section, "tags", "section.tags")
+    _validate_optional_section_metadata(section)
     return dict(section)
+
+
+def _validate_optional_section_metadata(section: dict[str, Any]) -> None:
+    _require_optional_string_list(section, "matched_keywords", "section.matched_keywords")
+    _require_optional_string_field(section, "excerpt_anchor", "section.excerpt_anchor")
+    _require_optional_string_field(section, "adapter_version", "section.adapter_version")
+    _require_optional_string_list(section, "warnings", "section.warnings")
+    value = section.get("confidence")
+    if value is None or isinstance(value, (int, float)) and not isinstance(value, bool):
+        return
+    raise _builder_error("section.confidence", "section.confidence must be numeric")
 
 
 def _validate_canonical_signal(signal: Any, index: int) -> dict[str, Any]:
@@ -409,8 +501,34 @@ def _require_string_list(record: dict[str, Any], field: str, error_field: str) -
     raise _builder_error(error_field, f"{error_field} must be a list of strings")
 
 
+def _require_optional_string_field(record: dict[str, Any], field: str, error_field: str) -> None:
+    value = record.get(field)
+    if value is None or isinstance(value, str):
+        return
+    raise _builder_error(error_field, f"{error_field} must be a string")
+
+
+def _require_optional_string_list(record: dict[str, Any], field: str, error_field: str) -> None:
+    value = record.get(field)
+    if value is None or isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return
+    raise _builder_error(error_field, f"{error_field} must be a list of strings")
+
+
 def _normalize_text(value: str) -> str:
     return " ".join(value.strip().casefold().split())
+
+
+def _optional_string(section: dict[str, Any], field: str) -> str | None:
+    value = section.get(field)
+    return value if isinstance(value, str) and value.strip() else None
+
+
+def _optional_string_list(section: dict[str, Any], field: str) -> list[str] | None:
+    value = section.get(field)
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return [item for item in value if item.strip()]
+    return None
 
 
 def _dedupe(values: list[str]) -> list[str]:

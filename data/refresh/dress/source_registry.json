@@ -59,17 +59,6 @@
       "priority": 70,
       "weight": 0.7,
       "enabled": true
-    },
-    {
-      "source_id": "marieclaire-summer-2025-dress-trends",
-      "source_type": "public_editorial_web",
-      "source_url": "https://www.marieclaire.com/fashion/summer-fashion/summer-2025-dress-trends/",
-      "target_market": "US",
-      "category": "dress",
-      "fetch_mode": "html",
-      "adapter_id": "marieclaire_editorial_v1",
-      "default_price_band": "mid",
-      "enabled": true
     }
   ]
 }

@@ -34,6 +34,7 @@ _STRUCTURED_CANDIDATE_REQUIRED_FIELDS = {
     "observation_model",
     "evidence_summary",
 }
+_MAX_DRAFT_SUMMARY_LENGTH = 140
 
 
 def ingest_dress_signals(
@@ -328,6 +329,7 @@ def _merge_candidate_group(group: dict[str, Any], candidate: dict[str, Any]) -> 
 
 def _build_draft_element(slot: str, value: str, group: dict[str, Any]) -> dict[str, Any]:
     signal_count = len(group["source_signal_ids"])
+    evidence_count = _draft_evidence_count(group)
     return {
         "draft_id": _draft_id(slot, value),
         "category": "dress",
@@ -338,7 +340,7 @@ def _build_draft_element(slot: str, value: str, group: dict[str, Any]) -> dict[s
         "occasion_tags": sorted(group["occasion_tags"]),
         "season_tags": sorted(group["season_tags"]),
         "risk_flags": [],
-        "suggested_base_score": round(0.6 + (0.05 * signal_count), 2),
+        "suggested_base_score": round(0.6 + (0.05 * evidence_count), 2),
         "evidence_summary": _build_draft_element_summary(group, signal_count),
         "source_signal_ids": sorted(group["source_signal_ids"]),
         "extraction_provenance": _build_element_provenance(group),
@@ -445,6 +447,7 @@ def _build_signal_outcome(
         "status": "matched" if emitted_draft_ids else "unmatched",
         "emitted_draft_ids": sorted(emitted_draft_ids),
         "matched_rule_keys": sorted(f"{match['slot']}:{match['value']}" for match in text_matches),
+        "matched_structured_keys": sorted(f"{match['slot']}:{match['value']}" for match in structured_matches),
         "matched_channels": matched_channels,
     }
     if emitted_draft_ids:
@@ -591,12 +594,34 @@ def _build_structured_candidate(
 
 def _build_draft_element_summary(group: dict[str, Any], signal_count: int) -> str:
     if group["structured_candidate_matches"]:
-        return sorted(group["structured_candidate_matches"], key=_structured_summary_sort_key)[0]["evidence_summary"]
+        return _compact_structured_summary(
+            sorted(group["structured_candidate_matches"], key=_structured_summary_sort_key)[0]
+        )
     return f"Derived from {signal_count} signal{'s' if signal_count != 1 else ''} for US dress demand."
 
 
 def _structured_summary_sort_key(match: dict[str, Any]) -> tuple[int, str, str]:
     return -int(match["supporting_card_count"]), str(match["signal_id"]), str(match["candidate_source"])
+
+
+def _compact_structured_summary(match: dict[str, Any]) -> str:
+    summary = (
+        f"{match['supporting_card_count']} cards agree on "
+        f"{match['slot']}={match['value']}: {match['evidence_summary']}"
+    )
+    if len(summary) <= _MAX_DRAFT_SUMMARY_LENGTH:
+        return summary
+    return f"{summary[:_MAX_DRAFT_SUMMARY_LENGTH - 3].rstrip()}..."
+
+
+def _draft_evidence_count(group: dict[str, Any]) -> int:
+    return max(len(group["source_signal_ids"]), _max_supporting_card_count(group["structured_candidate_matches"]))
+
+
+def _max_supporting_card_count(matches: list[dict[str, Any]]) -> int:
+    if not matches:
+        return 0
+    return max(int(match["supporting_card_count"]) for match in matches)
 
 
 def _build_element_provenance(group: dict[str, Any]) -> dict[str, Any]:

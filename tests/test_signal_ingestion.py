@@ -176,7 +176,13 @@ class SignalIngestionTest(unittest.TestCase):
         waist_tie = next(item for item in draft_elements if item["draft_id"] == "draft-detail-waist-tie")
         self.assertEqual(waist_tie["value"], "waist tie")
         self.assertEqual(waist_tie["tags"], [])
-        self.assertEqual(waist_tie["evidence_summary"], bundle["signals"][0]["structured_candidates"][0]["evidence_summary"])
+        self.assertEqual(
+            waist_tie["evidence_summary"],
+            (
+                "2 cards agree on detail=waist tie: "
+                "Waist ties give lightweight summer dresses a clear shape cue without losing vacation ease."
+            ),
+        )
         self.assertEqual(waist_tie["extraction_provenance"]["kind"], "structured-signal-candidate")
         self.assertEqual(waist_tie["extraction_provenance"]["matched_channels"], ["structured_candidate"])
         self.assertEqual(report["signal_outcomes"][0]["matched_channels"], ["structured_candidate", "text_rule"])
@@ -226,5 +232,6 @@ def _expected_draft_elements_fixture() -> dict[str, object]:
 def _expected_ingestion_report_fixture() -> dict[str, object]:
     payload = _read_json(_SIGNAL_FIXTURE_DIR / "expected-ingestion-report.json")
     for outcome in payload["signal_outcomes"]:
+        outcome["matched_structured_keys"] = []
         outcome["matched_channels"] = ["text_rule"]
     return payload

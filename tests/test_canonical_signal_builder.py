@@ -49,6 +49,9 @@ class CanonicalSignalBuilderTest(unittest.TestCase):
             [
                 "whowhatwear-summer-2025-dress-trends-the-vacation-mini-001",
                 "whowhatwear-summer-2025-dress-trends-fairy-sleeves-002",
+                "whowhatwear-summer-2025-dress-trends-all-things-polka-dots-003",
+                "whowhatwear-summer-2025-dress-trends-the-exaggerated-drop-waist-004",
+                "whowhatwear-summer-2025-dress-trends-sheer-printed-midis-005",
             ],
         )
 
@@ -182,6 +185,11 @@ class CanonicalSignalBuilderTest(unittest.TestCase):
 
         self.assertIn("fairy sleeves", by_value["flutter sleeve"]["phrases"])
         self.assertIn("smocked bodices", by_value["smocked bodice"]["phrases"])
+        self.assertIn("minis", by_value["mini"]["phrases"])
+        self.assertIn("drop-waist", by_value["drop waist"]["phrases"])
+        self.assertIn("white dresses", by_value["white"]["phrases"])
+        self.assertIn("micro-dot", by_value["micro print"]["phrases"])
+        self.assertIn("sheer", by_value["sheer"]["phrases"])
 
     def test_normalizes_source_tag_case_and_whitespace(self) -> None:
         from temu_y2_women.canonical_signal_builder import build_canonical_signals
@@ -196,25 +204,31 @@ class CanonicalSignalBuilderTest(unittest.TestCase):
         self.assertEqual(signal["observed_occasion_tags"], ["vacation"])
         self.assertEqual(signal["manual_tags"], ["summer", "vacation"])
 
-    def test_builds_source_aware_canonical_signals_for_marieclaire_snapshot(self) -> None:
+    def test_uses_section_metadata_for_provenance_when_present(self) -> None:
         from temu_y2_women.canonical_signal_builder import build_canonical_signals
 
-        result = build_canonical_signals(snapshot=_load_marieclaire_snapshot(), default_price_band="mid")
-        smocked = next(item for item in result["signals"] if item["title"] == "Smocked Dresses")
-        boho = next(item for item in result["signals"] if item["title"] == "Boho Dresses")
+        snapshot = _load_snapshot()
+        snapshot["sections"][0]["matched_keywords"] = ["custom keyword"]
+        snapshot["sections"][0]["confidence"] = 0.91
+        snapshot["sections"][0]["adapter_version"] = "custom_editorial_v1"
+        snapshot["sections"][0]["warnings"] = ["custom warning"]
+        snapshot["sections"][0]["excerpt_anchor"] = "halter ties"
 
-        self.assertEqual(smocked["extraction_provenance"]["adapter_version"], "marieclaire_editorial_v1")
-        self.assertIn("smocked dresses", smocked["extraction_provenance"]["matched_keywords"])
-        self.assertEqual(boho["extraction_provenance"]["adapter_version"], "marieclaire_editorial_v1")
-        self.assertIn("boho fashion trend", boho["extraction_provenance"]["matched_keywords"])
+        result = build_canonical_signals(snapshot=snapshot, default_price_band="mid")
+        signal = result["signals"][0]
+
+        self.assertEqual(
+            signal["evidence_excerpt"],
+            "halter ties, and prints that look like they belong in a cocktail glass",
+        )
+        self.assertEqual(signal["extraction_provenance"]["matched_keywords"], ["custom keyword"])
+        self.assertEqual(signal["extraction_provenance"]["adapter_version"], "custom_editorial_v1")
+        self.assertEqual(signal["extraction_provenance"]["warnings"], ["custom warning"])
+        self.assertEqual(signal["extraction_provenance"]["confidence"], 0.91)
 
 
 def _load_snapshot() -> dict[str, object]:
     return json.loads((_FIXTURE_DIR / "expected-whowhatwear-raw-source-snapshot.json").read_text(encoding="utf-8"))
-
-
-def _load_marieclaire_snapshot() -> dict[str, object]:
-    return json.loads((_FIXTURE_DIR / "expected-marieclaire-raw-source-snapshot.json").read_text(encoding="utf-8"))
 
 
 def _valid_canonical_payload() -> dict[str, object]:
