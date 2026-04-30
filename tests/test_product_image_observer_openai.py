@@ -77,10 +77,12 @@ class ProductImageObserverOpenAITest(unittest.TestCase):
         request = fake_client.responses.create.call_args.kwargs["input"][0]
         self.assertEqual(request["content"][1]["type"], "input_image")
         self.assertEqual(request["content"][1]["image_url"], expected_data_url)
-        self.assertEqual(
-            request["content"][0]["text"],
-            "return JSON only with keys observed_slots, abstained_slots, warnings.",
-        )
+        prompt = request["content"][0]["text"]
+        self.assertIn("return JSON only", prompt)
+        self.assertIn("Allowed slots: silhouette, neckline, sleeve, dress_length", prompt)
+        self.assertIn("If a slot is not clearly visible, put it in abstained_slots.", prompt)
+        self.assertIn("View label: front.", prompt)
+        self.assertIn("Do not infer subjective style labels.", prompt)
 
     def test_observe_image_raises_on_invalid_json(self) -> None:
         from temu_y2_women.errors import GenerationError

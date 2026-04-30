@@ -80,6 +80,7 @@ def _build_run_report(
         "observed_product_count": len(observations["products"]),
         "signal_bundle_count": len(bundle["signals"]),
         "structured_candidate_count": _structured_candidate_count(bundle),
+        "draft_element_count": _draft_element_count(ingestion_report),
         "coverage": _coverage(ingestion_report),
         "warnings": _observation_warnings(observations),
         "errors": [],
@@ -92,6 +93,13 @@ def _input_image_count(manifest: dict[str, Any]) -> int:
 
 def _structured_candidate_count(bundle: dict[str, Any]) -> int:
     return sum(len(signal.get("structured_candidates", [])) for signal in bundle["signals"])
+
+
+def _draft_element_count(ingestion_report: dict[str, Any]) -> int:
+    summary = ingestion_report.get("summary", {})
+    if isinstance(summary, dict):
+        return int(summary.get("draft_element_count", 0))
+    return 0
 
 
 def _coverage(ingestion_report: dict[str, Any]) -> dict[str, Any]:

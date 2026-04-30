@@ -6,6 +6,7 @@
   "observed_product_count": 1,
   "signal_bundle_count": 1,
   "structured_candidate_count": 3,
+  "draft_element_count": 3,
   "coverage": {
     "matched_signals": 1,
     "unmatched_signal_ids": []
