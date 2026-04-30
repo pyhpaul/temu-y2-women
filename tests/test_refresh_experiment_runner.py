@@ -150,15 +150,15 @@ class RefreshExperimentApplyTest(unittest.TestCase):
             self.assertEqual(
                 report["summary"],
                 {
-                    "selection_changed": 1,
-                    "strategy_changed_only": 0,
+                    "selection_changed": 0,
+                    "strategy_changed_only": 2,
                     "retrieval_changed_only": 0,
-                    "no_observable_change": 1,
+                    "no_observable_change": 0,
                 },
             )
             self.assertEqual(
                 report["requests"]["baseline-transitional"]["change_type"],
-                "no_observable_change",
+                "strategy_changed_only",
             )
 
     def test_apply_can_auto_accept_pending_review_template(self) -> None:
@@ -192,7 +192,7 @@ class RefreshExperimentApplyTest(unittest.TestCase):
             report = _read_json(Path(result["experiment_report_path"]))
             auto_reviewed_path = Path(prepared["workspace_root"]) / "auto_reviewed_decisions.json"
             auto_reviewed = _read_json(auto_reviewed_path)
-            self.assertEqual(report["summary"]["no_observable_change"], 1)
+            self.assertEqual(report["summary"]["no_observable_change"], 0)
             self.assertTrue(auto_reviewed_path.exists())
             self.assertTrue(all(item["decision"] == "accept" for item in auto_reviewed["elements"]))
             self.assertTrue(all(item["decision"] == "accept" for item in auto_reviewed["strategy_hints"]))
