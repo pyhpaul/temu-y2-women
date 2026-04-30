@@ -1,6 +1,8 @@
 # Image Structured Signal Ingestion Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Completion status: implemented on `main` and verified with `python -m pytest tests` on 2026-04-30.
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]` / `- [x]`) syntax for tracking.
 
 **Goal:** 让公开商品卡图观察结果以结构化候选的形式直接进入 `signal_ingestion`，支持新 `value` 进入 `draft_elements`，同时保持现有文本 refresh / ingestion 主链兼容。
 
@@ -32,7 +34,7 @@
 - Modify: `tests/test_roundup_canonical_signal_builder.py`
 - Modify: `tests/fixtures/public_sources/dress/expected-whowhatwear-best-summer-dresses-2025-canonical-signals.json`
 
-- [ ] **Step 1: 先写 builder 失败测试，明确 `structured_candidates` contract**
+- [x] **Step 1: 先写 builder 失败测试，明确 `structured_candidates` contract**
 
 ```python
 def test_build_roundup_canonical_signals_attaches_structured_candidates(self) -> None:
@@ -69,7 +71,7 @@ def test_build_roundup_canonical_signals_attaches_structured_candidates(self) ->
     )
 ```
 
-- [ ] **Step 2: 运行聚焦 builder 测试，确认当前失败**
+- [x] **Step 2: 运行聚焦 builder 测试，确认当前失败**
 
 Run: `python -m unittest tests.test_roundup_canonical_signal_builder.RoundupCanonicalSignalBuilderTest.test_build_roundup_canonical_signals_attaches_structured_candidates -v`
 
@@ -77,7 +79,7 @@ Expected:
 - `FAIL`
 - `structured_candidates` 还不存在
 
-- [ ] **Step 3: 在 builder 中补结构化候选输出**
+- [x] **Step 3: 在 builder 中补结构化候选输出**
 
 在 `temu_y2_women/roundup_canonical_signal_builder.py` 中，为 `_build_signal(...)` 增加 `structured_candidates`，并新增两个 helper，保持单函数不超过 60 行：
 
@@ -129,7 +131,7 @@ def _build_signal(...) -> dict[str, Any]:
 
 同时更新 fixture `tests/fixtures/public_sources/dress/expected-whowhatwear-best-summer-dresses-2025-canonical-signals.json`，给唯一 signal 增加对应 `structured_candidates` 数组。
 
-- [ ] **Step 4: 重新运行 builder 测试，确认通过**
+- [x] **Step 4: 重新运行 builder 测试，确认通过**
 
 Run: `python -m unittest tests.test_roundup_canonical_signal_builder -v`
 
@@ -138,7 +140,7 @@ Expected:
 - 现有聚合断言继续通过
 - 新增 `structured_candidates` 断言通过
 
-- [ ] **Step 5: 提交 builder contract 改动**
+- [x] **Step 5: 提交 builder contract 改动**
 
 ```bash
 git add \
@@ -154,7 +156,7 @@ git commit -m "feat: add structured candidates to roundup signals"
 - Modify: `temu_y2_women/public_signal_refresh.py`
 - Modify: `tests/test_public_signal_refresh.py`
 
-- [ ] **Step 1: 先写 refresh 失败测试，证明 bundle 会保留结构化候选**
+- [x] **Step 1: 先写 refresh 失败测试，证明 bundle 会保留结构化候选**
 
 ```python
 def test_run_public_signal_refresh_copies_structured_candidates_to_signal_bundle(self) -> None:
@@ -184,7 +186,7 @@ def test_run_public_signal_refresh_copies_structured_candidates_to_signal_bundle
     self.assertEqual(roundup_signal["structured_candidates"][0]["candidate_source"], "roundup_card_image_aggregation")
 ```
 
-- [ ] **Step 2: 运行聚焦 refresh 测试，确认当前失败**
+- [x] **Step 2: 运行聚焦 refresh 测试，确认当前失败**
 
 Run: `python -m unittest tests.test_public_signal_refresh.PublicSignalRefreshTest.test_run_public_signal_refresh_copies_structured_candidates_to_signal_bundle -v`
 
@@ -192,7 +194,7 @@ Expected:
 - `FAIL`
 - `signal_bundle.json` 里的 roundup signal 当前不包含 `structured_candidates`
 
-- [ ] **Step 3: 在 refresh 层透传候选，并补最小 report 统计**
+- [x] **Step 3: 在 refresh 层透传候选，并补最小 report 统计**
 
 在 `temu_y2_women/public_signal_refresh.py` 中新增两个 helper，并在 `_signal_bundle_record(...)` 中使用它们：
 
@@ -248,7 +250,7 @@ def _signal_bundle_record(signal: dict[str, Any]) -> dict[str, Any]:
 ),
 ```
 
-- [ ] **Step 4: 运行 refresh 聚焦测试，确认通过**
+- [x] **Step 4: 运行 refresh 聚焦测试，确认通过**
 
 Run: `python -m unittest tests.test_public_signal_refresh -v`
 
@@ -257,7 +259,7 @@ Expected:
 - 现有 mixed-source refresh 断言继续通过
 - 新增 bundle 透传断言通过
 
-- [ ] **Step 5: 提交 refresh 透传改动**
+- [x] **Step 5: 提交 refresh 透传改动**
 
 ```bash
 git add \
@@ -272,7 +274,7 @@ git commit -m "feat: pass structured candidates through refresh bundle"
 - Modify: `temu_y2_women/signal_ingestion.py`
 - Modify: `tests/test_signal_ingestion.py`
 
-- [ ] **Step 1: 先写两个 ingestion 失败测试：接受合法 structured candidates、拒绝非法 structured candidates**
+- [x] **Step 1: 先写两个 ingestion 失败测试：接受合法 structured candidates、拒绝非法 structured candidates**
 
 ```python
 def test_ingest_dress_signals_accepts_structured_candidates(self) -> None:
@@ -371,7 +373,7 @@ def test_ingest_dress_signals_rejects_invalid_structured_candidates(self) -> Non
     self.assertEqual(result["error"]["code"], "INVALID_SIGNAL_INPUT")
 ```
 
-- [ ] **Step 2: 运行这两个聚焦测试，确认当前行为未覆盖**
+- [x] **Step 2: 运行这两个聚焦测试，确认当前行为未覆盖**
 
 Run: `python -m unittest tests.test_signal_ingestion.SignalIngestionTest.test_ingest_dress_signals_accepts_structured_candidates tests.test_signal_ingestion.SignalIngestionTest.test_ingest_dress_signals_rejects_invalid_structured_candidates -v`
 
@@ -379,7 +381,7 @@ Expected:
 - 第一个测试 `FAIL`，因为 structured candidates 还未被消费
 - 第二个测试 `FAIL` 或报错位置不正确，说明校验路径尚未建立
 
-- [ ] **Step 3: 在 ingestion 中建立结构化候选校验与 normalization**
+- [x] **Step 3: 在 ingestion 中建立结构化候选校验与 normalization**
 
 在 `temu_y2_women/signal_ingestion.py` 中新增一个 required-field 集和四个 helper：
 
@@ -450,7 +452,7 @@ _validate_structured_candidates(path, index, signal, taxonomy)
 normalized["structured_candidates"] = _normalize_structured_candidates(signal)
 ```
 
-- [ ] **Step 4: 重新运行 ingestion 聚焦测试，确认通过**
+- [x] **Step 4: 重新运行 ingestion 聚焦测试，确认通过**
 
 Run: `python -m unittest tests.test_signal_ingestion -v`
 
@@ -459,7 +461,7 @@ Expected:
 - 旧的 phrase-rule 测试不回归
 - 新增 structured candidate 校验/normalization 测试通过
 
-- [ ] **Step 5: 提交 ingestion 校验与 normalization 改动**
+- [x] **Step 5: 提交 ingestion 校验与 normalization 改动**
 
 ```bash
 git add \
@@ -474,7 +476,7 @@ git commit -m "feat: validate and normalize structured signal candidates"
 - Modify: `temu_y2_women/signal_ingestion.py`
 - Modify: `tests/test_signal_ingestion.py`
 
-- [ ] **Step 1: 先写两个失败测试：新 value 进入 draft、text + structured 同值合并**
+- [x] **Step 1: 先写两个失败测试：新 value 进入 draft、text + structured 同值合并**
 
 ```python
 def test_ingest_dress_signals_emits_new_value_from_structured_candidates(self) -> None:
@@ -594,7 +596,7 @@ def test_ingest_dress_signals_merges_text_and_structured_candidates(self) -> Non
     self.assertEqual(neckline[0]["extraction_provenance"]["kind"], "hybrid-signal-candidate")
 ```
 
-- [ ] **Step 2: 运行聚焦测试，确认当前失败**
+- [x] **Step 2: 运行聚焦测试，确认当前失败**
 
 Run: `python -m unittest tests.test_signal_ingestion.SignalIngestionTest.test_ingest_dress_signals_emits_new_value_from_structured_candidates tests.test_signal_ingestion.SignalIngestionTest.test_ingest_dress_signals_merges_text_and_structured_candidates -v`
 
@@ -603,7 +605,7 @@ Expected:
 - structured channel 还不会产出 raw candidates
 - hybrid 聚合与 provenance 还不存在
 
-- [ ] **Step 3: 实现结构化候选抽取、聚合和 provenance**
+- [x] **Step 3: 实现结构化候选抽取、聚合和 provenance**
 
 在 `temu_y2_women/signal_ingestion.py` 中把现有 `_extract_draft_elements(...)` 拆成文本路与结构化路，并补 tags lookup / score / provenance helper：
 
@@ -678,7 +680,7 @@ def _draft_provenance_kind(group: dict[str, Any]) -> str:
 - `suggested_base_score`
 - hybrid / structured-only `evidence_summary`
 
-- [ ] **Step 4: 运行完整 ingestion 测试，确认全部通过**
+- [x] **Step 4: 运行完整 ingestion 测试，确认全部通过**
 
 Run: `python -m unittest tests.test_signal_ingestion -v`
 
@@ -687,7 +689,7 @@ Expected:
 - 旧的 phrase-rule 回归继续通过
 - 新 value / hybrid / matched_channels 断言通过
 
-- [ ] **Step 5: 提交双通道抽取改动**
+- [x] **Step 5: 提交双通道抽取改动**
 
 ```bash
 git add \
@@ -706,7 +708,7 @@ git commit -m "feat: merge structured and text signal candidates"
 - Modify: `tests/fixtures/public_refresh/dress/expected-ingestion-report.json`
 - Modify: `tests/fixtures/public_refresh/dress/expected-refresh-report.json`
 
-- [ ] **Step 1: 先写 mixed-source 集成失败测试**
+- [x] **Step 1: 先写 mixed-source 集成失败测试**
 
 ```python
 def test_run_public_signal_refresh_promotes_new_structured_value_into_drafts(self) -> None:
@@ -736,7 +738,7 @@ def test_run_public_signal_refresh_promotes_new_structured_value_into_drafts(sel
     self.assertEqual(outcome["matched_channels"], ["structured_candidate"])
 ```
 
-- [ ] **Step 2: 跑聚焦 refresh 集成测试，确认当前失败**
+- [x] **Step 2: 跑聚焦 refresh 集成测试，确认当前失败**
 
 Run: `python -m unittest tests.test_public_signal_refresh.PublicSignalRefreshTest.test_run_public_signal_refresh_promotes_new_structured_value_into_drafts -v`
 
@@ -744,7 +746,7 @@ Expected:
 - `FAIL`
 - 当前 refresh run 还无法让新 value 只靠 structured channel 入 draft
 
-- [ ] **Step 3: 更新 fake observer 与 refresh fixture，固定最终闭环产物**
+- [x] **Step 3: 更新 fake observer 与 refresh fixture，固定最终闭环产物**
 
 在 `tests/test_public_signal_refresh.py` 中新增一个专用 fake observer：
 
@@ -775,7 +777,7 @@ def _fake_card_observer_with_new_value(card: dict[str, object]) -> dict[str, obj
 - `ingestion_report.json` 对该 signal 记录 `matched_channels=["structured_candidate"]`
 - `refresh_report.json` coverage / warnings 与新 signal 计数一致
 
-- [ ] **Step 4: 运行 refresh 测试与关键回归**
+- [x] **Step 4: 运行 refresh 测试与关键回归**
 
 Run: `python -m unittest tests.test_public_signal_refresh tests.test_roundup_canonical_signal_builder tests.test_signal_ingestion -v`
 
@@ -784,7 +786,7 @@ Expected:
 - mixed-source 新 value 集成测试通过
 - builder / ingestion / refresh 三段回归全部通过
 
-- [ ] **Step 5: 提交集成闭环与 fixture 更新**
+- [x] **Step 5: 提交集成闭环与 fixture 更新**
 
 ```bash
 git add \
@@ -813,7 +815,7 @@ git commit -m "test: cover structured image candidate refresh flow"
 - Modify: `tests/fixtures/public_refresh/dress/expected-ingestion-report.json`
 - Modify: `tests/fixtures/public_refresh/dress/expected-refresh-report.json`
 
-- [ ] **Step 1: 运行目标测试组**
+- [x] **Step 1: 运行目标测试组**
 
 Run: `python -m unittest tests.test_roundup_canonical_signal_builder tests.test_public_signal_refresh tests.test_signal_ingestion -v`
 
@@ -821,7 +823,7 @@ Expected:
 - `PASS`
 - 结构化候选 builder / refresh / ingestion 三段测试全部通过
 
-- [ ] **Step 2: 运行全量单测**
+- [x] **Step 2: 运行全量单测**
 
 Run: `python -m unittest -v`
 
@@ -829,7 +831,7 @@ Expected:
 - `PASS`
 - 全仓测试无回归
 
-- [ ] **Step 3: 运行仓库规则校验**
+- [x] **Step 3: 运行仓库规则校验**
 
 Run: `python validate_python_function_length.py .`
 Expected: `OK`
@@ -837,7 +839,7 @@ Expected: `OK`
 Run: `python validate_forbidden_patterns.py .`
 Expected: `OK`
 
-- [ ] **Step 4: 提交最终集成结果**
+- [x] **Step 4: 提交最终集成结果**
 
 ```bash
 git add \
