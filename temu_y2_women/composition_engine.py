@@ -29,7 +29,7 @@ def compose_concept(
     selected = _select_required_slots(parsed_candidates)
     optional_selected, optional_notes = _select_standard_optional_slots(parsed_candidates, selected)
     selected.update(optional_selected)
-    surface_selected, evaluation = _select_surface_group(parsed_candidates, rules)
+    surface_selected, evaluation = _select_surface_group(request, parsed_candidates, rules)
     selected.update(surface_selected)
     constraint_notes = [*_must_have_notes(request, selected), *optional_notes, *evaluation.compatibility_notes]
     concept_score = _concept_score(selected, evaluation)
@@ -122,12 +122,12 @@ def _has_structural_conflict(
 
 
 def _select_surface_group(
+    request: NormalizedRequest,
     parsed_candidates: dict[str, list[CandidateElement]],
     rules: tuple[CompatibilityRule, ...],
 ) -> tuple[dict[str, CandidateElement], CompatibilityEvaluation]:
     best_selected: dict[str, CandidateElement] = {}
     best_evaluation = CompatibilityEvaluation((), (), 0.0, ())
-    best_rank = _selection_rank(best_selected, best_evaluation)
     skipped_conflicts: list[tuple[dict[str, CandidateElement], CompatibilityEvaluation]] = []
     pattern_options = [None, *_top_candidates(parsed_candidates.get("pattern", []))]
     detail_options = [None, *_top_candidates(parsed_candidates.get("detail", []))]
@@ -140,9 +140,8 @@ def _select_surface_group(
                 if evaluation.hard_conflicts:
                     skipped_conflicts.append((current, evaluation))
                     continue
-                rank = _selection_rank(current, evaluation)
-                if rank > best_rank:
-                    best_selected, best_evaluation, best_rank = current, evaluation, rank
+                if _is_better_selection(request, current, evaluation, best_selected, best_evaluation):
+                    best_selected, best_evaluation = current, evaluation
     return best_selected, _merge_avoided_conflict_notes(best_selected, best_evaluation, skipped_conflicts)
 
 
@@ -205,7 +204,34 @@ def _concept_score(
     return round(_selection_score(selected, evaluation) / len(selected), 4)
 
 
-def _selection_rank(
+def _is_better_selection(
+    request: NormalizedRequest,
+    current: dict[str, CandidateElement],
+    current_evaluation: CompatibilityEvaluation,
+    best: dict[str, CandidateElement],
+    best_evaluation: CompatibilityEvaluation,
+) -> bool:
+    if set(current) == set(best):
+        return _same_slot_selection_rank(request, current, current_evaluation) > _same_slot_selection_rank(
+            request,
+            best,
+            best_evaluation,
+        )
+    return _base_selection_rank(current, current_evaluation) > _base_selection_rank(best, best_evaluation)
+
+
+def _same_slot_selection_rank(
+    request: NormalizedRequest,
+    selected: dict[str, CandidateElement],
+    evaluation: CompatibilityEvaluation,
+) -> tuple[int, float, int, str, str, str]:
+    return (
+        _must_have_match_count(request, selected),
+        *_base_selection_rank(selected, evaluation),
+    )
+
+
+def _base_selection_rank(
     selected: dict[str, CandidateElement],
     evaluation: CompatibilityEvaluation,
 ) -> tuple[float, int, str, str, str]:
@@ -216,6 +242,13 @@ def _selection_rank(
         _selected_element_id(selected, "print_scale"),
         _selected_element_id(selected, "detail"),
     )
+
+
+def _must_have_match_count(request: NormalizedRequest, selected: dict[str, CandidateElement]) -> int:
+    if not request.must_have_tags:
+        return 0
+    available_tags = {tag for candidate in selected.values() for tag in candidate.tags}
+    return len(set(request.must_have_tags).intersection(available_tags))
 
 
 def _selected_surface(
