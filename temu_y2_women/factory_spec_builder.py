@@ -25,6 +25,10 @@ _FABRIC_REVIEW_RULES = {
         "confirm crisp texture, opacity, and print clarity for cotton poplin",
         "check drape stays light and controlled rather than clingy",
     ),
+    "linen blend": (
+        "confirm linen-blend texture, breathable handfeel, and stable color clarity",
+        "check drape stays airy and separated without reading stiff or collapsed",
+    ),
 }
 _DETAIL_REVIEW_RULES = {
     "smocked bodice": (
@@ -34,6 +38,14 @@ _DETAIL_REVIEW_RULES = {
     "neck scarf": (
         "verify neck scarf attachment, width consistency, and clean turning",
         "confirm neck scarf placement frames the neckline without twisting or collapse",
+    ),
+    "bubble hem": (
+        "verify bubble-hem turnback stays even, full, and repeatable around the skirt",
+        "confirm bubble-hem volume stays balanced without torque or collapse",
+    ),
+    "slip dress": (
+        "verify slip-dress panel joins stay clean and low-bulk through the body",
+        "confirm slip-dress drape stays fluid without twisting or dragging at the hem",
     ),
 }
 _OPEN_QUESTIONS = (
@@ -119,6 +131,8 @@ def _fit_intent_notes(
         notes.append("non-bodycon fit requested by avoid_tags")
     if _selected_value(concept, "silhouette") == "a-line":
         notes.append("a-line silhouette supports easy skirt volume and commercial mobility")
+    if _selected_value(concept, "silhouette") == "babydoll":
+        notes.append("babydoll silhouette should keep easy high-waist volume without looking oversized")
     if _selected_value(concept, "detail") == "smocked bodice":
         notes.append("smocked bodice should keep waist shaping flexible rather than restrictive")
     if notes:
@@ -238,6 +252,8 @@ def _fit_review_cues(
         cues.append("fit cue: protect non-bodycon ease through bust, waist, and skirt sweep")
     if _selected_value(concept, "silhouette") == "a-line":
         cues.append("fit cue: keep a-line volume easy and mobile instead of collapsing into a narrow shape")
+    if _selected_value(concept, "silhouette") == "babydoll":
+        cues.append("fit cue: keep babydoll volume lifted and easy without turning boxy through the body")
     if _selected_value(concept, "waistline") == "drop waist":
         cues.append("fit cue: confirm drop-waist placement does not collapse the skirt balance")
     if _selected_value(concept, "dress_length") == "mini":
@@ -310,6 +326,8 @@ def _fabric_watchpoint(concept: ComposedConcept) -> str:
     fabric = _selected_value(concept, "fabric")
     if fabric == "cotton poplin":
         return "sample review: confirm cotton poplin keeps crisp opacity and breathable structure in the finished dress"
+    if fabric == "linen blend":
+        return "sample review: confirm linen blend keeps airy texture, breathable separation, and stable drape in the finished dress"
     return f"sample review: confirm {fabric or 'selected fabric'} keeps stable texture, opacity, and commercial drape"
 
 
@@ -318,6 +336,10 @@ def _detail_qa_note(detail: str) -> str:
         return "qa review: check smocking rows for even tension, secure attachment, and balanced visual spacing"
     if detail == "neck scarf":
         return "qa review: check neck scarf attachment, symmetry, and edge finish for clean repeatability"
+    if detail == "bubble hem":
+        return "qa review: check bubble-hem turnback, fullness, and seam balance for a stable rounded shape"
+    if detail == "slip dress":
+        return "qa review: check slip-dress seams and edge finishing for low bulk and clean drape"
     return "qa review: check visible detail attachment stays secure, even, and repeatable"
 
 
@@ -326,12 +348,18 @@ def _detail_visible_check(detail: str) -> str:
         return "visible check: confirm smocked bodice construction stays consistent across the front bodice"
     if detail == "neck scarf":
         return "visible check: confirm neck scarf attachment stays clean and balanced around the neckline"
+    if detail == "bubble hem":
+        return "visible check: confirm bubble-hem volume reads even and rounded across the skirt"
+    if detail == "slip dress":
+        return "visible check: confirm slip-dress drape stays fluid and low-bulk through the body"
     return "visible check: confirm visible detail construction stays clean and balanced"
 
 
 def _detail_visible_label(detail: str) -> str:
     if detail == "smocked bodice":
         return "smocked detail"
+    if detail == "slip dress":
+        return "slip-dress detail"
     return detail or "detail"
 
 
