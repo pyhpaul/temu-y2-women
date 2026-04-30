@@ -1,6 +1,8 @@
 # Product Image Structured Signal Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Completion status: implemented on `main` and verified with `python -m pytest tests` on 2026-04-30.
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]` / `- [x]`) syntax for tracking.
 
 **Goal:** 把用户提交的单款/多款商品图转成 `structured_candidates` 并进入现有 `signal_ingestion -> draft_elements -> review` 主链，且默认不依赖商品标题文本命中。
 
@@ -37,7 +39,7 @@
 - Create: `tests/fixtures/product_image_signals/dress/input-manifest.json`
 - Create: `tests/fixtures/product_image_signals/dress/expected-image-observations.json`
 
-- [ ] **Step 1: 先写失败测试，固定 manifest 与 observation 输出 shape**
+- [x] **Step 1: 先写失败测试，固定 manifest 与 observation 输出 shape**
 
 Create `tests/test_product_image_observer.py`:
 
@@ -198,7 +200,7 @@ Create `tests/fixtures/product_image_signals/dress/expected-image-observations.j
 }
 ```
 
-- [ ] **Step 2: 运行聚焦测试，确认当前失败**
+- [x] **Step 2: 运行聚焦测试，确认当前失败**
 
 Run: `python -m unittest tests.test_product_image_observer -v`
 
@@ -206,7 +208,7 @@ Expected:
 - `FAIL`
 - `ModuleNotFoundError: No module named 'temu_y2_women.product_image_observer'`
 
-- [ ] **Step 3: 实现 manifest 校验与商品图观察模块**
+- [x] **Step 3: 实现 manifest 校验与商品图观察模块**
 
 Create `temu_y2_women/product_image_observer.py`:
 
@@ -340,7 +342,7 @@ def _normalized_abstained_slots(payload: dict[str, Any]) -> list[str]:
     return [str(slot) for slot in payload.get("abstained_slots", []) if str(slot) in _ALLOWED_SLOTS]
 ```
 
-- [ ] **Step 4: 重新运行测试，确认 contract 固定**
+- [x] **Step 4: 重新运行测试，确认 contract 固定**
 
 Run: `python -m unittest tests.test_product_image_observer -v`
 
@@ -349,7 +351,7 @@ Expected:
 - 仅保留白名单 slots
 - 本地图片路径、view_label、warnings 都被保留
 
-- [ ] **Step 5: 提交 contract 基础模块**
+- [x] **Step 5: 提交 contract 基础模块**
 
 ```bash
 git add \
@@ -366,7 +368,7 @@ git commit -m "feat: add product image observation contract"
 - Create: `temu_y2_women/product_image_observer_openai.py`
 - Create: `tests/test_product_image_observer_openai.py`
 
-- [ ] **Step 1: 先写失败测试，锁定配置校验与 data URL 输入行为**
+- [x] **Step 1: 先写失败测试，锁定配置校验与 data URL 输入行为**
 
 Create `tests/test_product_image_observer_openai.py`:
 
@@ -420,7 +422,7 @@ class ProductImageObserverOpenAITest(unittest.TestCase):
         self.assertTrue(request["content"][1]["image_url"].startswith("data:image/jpeg;base64,"))
 ```
 
-- [ ] **Step 2: 运行聚焦测试，确认当前失败**
+- [x] **Step 2: 运行聚焦测试，确认当前失败**
 
 Run: `python -m unittest tests.test_product_image_observer_openai -v`
 
@@ -428,7 +430,7 @@ Expected:
 - `FAIL`
 - `ModuleNotFoundError: No module named 'temu_y2_women.product_image_observer_openai'`
 
-- [ ] **Step 3: 实现 live observer，支持本地文件读取与 JSON-only 返回**
+- [x] **Step 3: 实现 live observer，支持本地文件读取与 JSON-only 返回**
 
 Create `temu_y2_women/product_image_observer_openai.py`:
 
@@ -526,7 +528,7 @@ def _response_payload(output_text: str, image_id: str) -> dict[str, Any]:
         ) from error
 ```
 
-- [ ] **Step 4: 重新运行 live observer 测试**
+- [x] **Step 4: 重新运行 live observer 测试**
 
 Run: `python -m unittest tests.test_product_image_observer_openai -v`
 
@@ -535,7 +537,7 @@ Expected:
 - 缺失配置时报 `INVALID_PRODUCT_IMAGE_OBSERVER_CONFIG`
 - 本地图片会被编码成 data URL 送入 `responses.create(...)`
 
-- [ ] **Step 5: 提交 live observer**
+- [x] **Step 5: 提交 live observer**
 
 ```bash
 git add \
@@ -551,7 +553,7 @@ git commit -m "feat: add openai product image observer"
 - Create: `tests/test_product_image_signal_builder.py`
 - Create: `tests/fixtures/product_image_signals/dress/expected-signal-bundle.json`
 
-- [ ] **Step 1: 先写失败测试，锁定 neutral text + structured candidates 聚合行为**
+- [x] **Step 1: 先写失败测试，锁定 neutral text + structured candidates 聚合行为**
 
 Create `tests/test_product_image_signal_builder.py`:
 
@@ -667,7 +669,7 @@ Create `tests/fixtures/product_image_signals/dress/expected-signal-bundle.json`:
 }
 ```
 
-- [ ] **Step 2: 运行聚焦测试，确认当前失败**
+- [x] **Step 2: 运行聚焦测试，确认当前失败**
 
 Run: `python -m unittest tests.test_product_image_signal_builder -v`
 
@@ -675,7 +677,7 @@ Expected:
 - `FAIL`
 - `ModuleNotFoundError: No module named 'temu_y2_women.product_image_signal_builder'`
 
-- [ ] **Step 3: 实现 signal bundle 聚合器，默认隔离文本通道**
+- [x] **Step 3: 实现 signal bundle 聚合器，默认隔离文本通道**
 
 Create `temu_y2_women/product_image_signal_builder.py`:
 
@@ -762,7 +764,7 @@ def _structured_candidates(images: list[dict[str, Any]], observation_model: str)
 
 这里要明确保留一个设计边界：`product_title` 只允许在 observer prompt 中作为上下文，不写回 `signal_bundle.title/summary`，否则又会重新引入 title phrase match 污染。
 
-- [ ] **Step 4: 重新运行 builder 测试**
+- [x] **Step 4: 重新运行 builder 测试**
 
 Run: `python -m unittest tests.test_product_image_signal_builder -v`
 
@@ -771,7 +773,7 @@ Expected:
 - signal bundle 可被现有 `signal_ingestion` 直接消费
 - `title/summary` 保持 neutral，不承载具体元素词
 
-- [ ] **Step 5: 提交 builder**
+- [x] **Step 5: 提交 builder**
 
 ```bash
 git add \
@@ -790,7 +792,7 @@ git commit -m "feat: build structured signal bundle from product images"
 - Modify: `tests/test_signal_ingestion.py`
 - Create: `tests/fixtures/product_image_signals/dress/expected-run-report.json`
 
-- [ ] **Step 1: 先写两个失败测试：新 candidate_source 可被 ingestion 接受，run 会落 staged artifacts**
+- [x] **Step 1: 先写两个失败测试：新 candidate_source 可被 ingestion 接受，run 会落 staged artifacts**
 
 Append to `tests/test_signal_ingestion.py`:
 
@@ -927,7 +929,7 @@ Create `tests/fixtures/product_image_signals/dress/expected-run-report.json`:
 }
 ```
 
-- [ ] **Step 2: 运行聚焦测试，确认当前失败**
+- [x] **Step 2: 运行聚焦测试，确认当前失败**
 
 Run: `python -m unittest tests.test_signal_ingestion.SignalIngestionTest.test_ingest_dress_signals_accepts_product_image_structured_candidates tests.test_product_image_signal_run -v`
 
@@ -935,7 +937,7 @@ Expected:
 - ingestion 测试 `FAIL`，因为 `candidate_source=product_image_view_aggregation` 尚未允许
 - run 测试 `FAIL`，因为 `product_image_signal_run.py` 还不存在
 
-- [ ] **Step 3: 扩 `signal_ingestion` 的 source whitelist，并新增 run orchestration**
+- [x] **Step 3: 扩 `signal_ingestion` 的 source whitelist，并新增 run orchestration**
 
 Modify `temu_y2_women/signal_ingestion.py`:
 
@@ -1063,7 +1065,7 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 ```
 
-- [ ] **Step 4: 重新运行 run 与 ingestion 测试**
+- [x] **Step 4: 重新运行 run 与 ingestion 测试**
 
 Run: `python -m unittest tests.test_signal_ingestion tests.test_product_image_signal_run -v`
 
@@ -1072,7 +1074,7 @@ Expected:
 - `draft_elements.json` 中出现 `square neckline`、`mini`、`smocked bodice`
 - `matched_channels` 只有 `structured_candidate`
 
-- [ ] **Step 5: 提交 run 闭环**
+- [x] **Step 5: 提交 run 闭环**
 
 ```bash
 git add \
@@ -1090,7 +1092,7 @@ git commit -m "feat: stage product image structured signals"
 - Create: `temu_y2_women/product_image_signal_cli.py`
 - Create: `tests/test_product_image_signal_cli.py`
 
-- [ ] **Step 1: 先写 CLI 失败测试，锁定命令行契约**
+- [x] **Step 1: 先写 CLI 失败测试，锁定命令行契约**
 
 Create `tests/test_product_image_signal_cli.py`:
 
@@ -1168,7 +1170,7 @@ class ProductImageSignalCliTest(unittest.TestCase):
         self.assertEqual(json.loads(stdout.getvalue())["error"]["code"], "INVALID_PRODUCT_IMAGE_INPUT")
 ```
 
-- [ ] **Step 2: 运行聚焦 CLI 测试，确认当前失败**
+- [x] **Step 2: 运行聚焦 CLI 测试，确认当前失败**
 
 Run: `python -m unittest tests.test_product_image_signal_cli -v`
 
@@ -1176,7 +1178,7 @@ Expected:
 - `FAIL`
 - `ModuleNotFoundError: No module named 'temu_y2_women.product_image_signal_cli'`
 
-- [ ] **Step 3: 实现 CLI，并明确后续 review 命令衔接**
+- [x] **Step 3: 实现 CLI，并明确后续 review 命令衔接**
 
 Create `temu_y2_women/product_image_signal_cli.py`:
 
@@ -1226,7 +1228,7 @@ python -m temu_y2_women.evidence_promotion_cli prepare \
   --output data/product_images/dress/runs/2026-04-29T00-00-00Z-1products-7529b1/promotion_review.json
 ```
 
-- [ ] **Step 4: 运行目标测试 + 全量验证**
+- [x] **Step 4: 运行目标测试 + 全量验证**
 
 Run: `python -m unittest tests.test_product_image_observer tests.test_product_image_observer_openai tests.test_product_image_signal_builder tests.test_product_image_signal_run tests.test_product_image_signal_cli tests.test_signal_ingestion -v`
 
@@ -1243,7 +1245,7 @@ Expected: `OK`
 Run: `python validate_forbidden_patterns.py .`
 Expected: `OK`
 
-- [ ] **Step 5: 提交 CLI 与最终集成**
+- [x] **Step 5: 提交 CLI 与最终集成**
 
 ```bash
 git add \
