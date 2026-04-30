@@ -107,6 +107,35 @@ class OrchestratorTest(unittest.TestCase):
             "tailored seam panel",
         )
 
+    def test_explicit_party_fitted_flow_uses_party_specific_slots(self) -> None:
+        from temu_y2_women.orchestrator import generate_dress_concept
+
+        result = generate_dress_concept(
+            {
+                "category": "dress",
+                "target_market": "US",
+                "target_launch_date": "2026-06-15",
+                "mode": "A",
+                "price_band": "mid",
+                "occasion_tags": ["party"],
+                "style_family": "party-fitted",
+            }
+        )
+
+        self.assertEqual(result["selected_style_family"]["style_family_id"], "party-fitted")
+        self.assertEqual(
+            result["composed_concept"]["selected_elements"]["sleeve"]["value"],
+            "sleeveless",
+        )
+        self.assertEqual(
+            result["composed_concept"]["selected_elements"]["detail"]["value"],
+            "ruched side seam",
+        )
+        self.assertIn(
+            result["composed_concept"]["selected_elements"]["neckline"]["value"],
+            {"sweetheart neckline", "halter neckline", "bandeau neckline"},
+        )
+
     def test_successful_mode_b_flow(self) -> None:
         from temu_y2_women.orchestrator import generate_dress_concept
 

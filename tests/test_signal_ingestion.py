@@ -10,6 +10,19 @@ _SIGNAL_FIXTURE_DIR = Path("tests/fixtures/signals/dress")
 
 
 class SignalIngestionTest(unittest.TestCase):
+    def test_phrase_rules_cover_expanded_2026_element_values(self) -> None:
+        rules = _read_json(Path("data/ingestion/dress/signal_phrase_rules.json"))
+        by_value = {str(rule["value"]): rule for rule in rules["slot_value_rules"]}
+
+        self.assertIn("scarf prints", by_value["scarf print"]["phrases"])
+        self.assertIn("stripes", by_value["stripe print"]["phrases"])
+        self.assertIn("lace-trimmed", by_value["lace trim"]["phrases"])
+        self.assertIn("fringe dresses", by_value["fringe hem"]["phrases"])
+        self.assertIn("chic draping", by_value["draped bodice"]["phrases"])
+        self.assertIn("asymmetric waists", by_value["asymmetric waist"]["phrases"])
+        self.assertIn("bold blue", by_value["blue"]["phrases"])
+        self.assertIn("silk minidresses", by_value["silk satin"]["phrases"])
+
     def test_ingest_dress_signals_writes_expected_staged_artifacts(self) -> None:
         from temu_y2_women.signal_ingestion import ingest_dress_signals
 

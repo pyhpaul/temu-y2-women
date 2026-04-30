@@ -86,6 +86,34 @@
       "status": "active"
     },
     {
+      "element_id": "dress-fabric-linen-blend-001",
+      "category": "dress",
+      "slot": "fabric",
+      "value": "linen blend",
+      "tags": ["breathable", "lightweight", "summer"],
+      "base_score": 0.81,
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation", "casual"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Linen blend adds a breezier warm-weather fabric option without drifting away from commercial dress construction.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-fabric-silk-satin-001",
+      "category": "dress",
+      "slot": "fabric",
+      "value": "silk satin",
+      "tags": ["dress", "evening", "sleek"],
+      "base_score": 0.78,
+      "price_bands": ["mid"],
+      "occasion_tags": ["party"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Silk satin adds a cleaner occasion fabric read pulled from current 2026 dress trend coverage.",
+      "status": "active"
+    },
+    {
       "element_id": "dress-fabric-compact-poplin-001",
       "category": "dress",
       "slot": "fabric",
@@ -170,6 +198,34 @@
       "status": "active"
     },
     {
+      "element_id": "dress-neckline-halter-001",
+      "category": "dress",
+      "slot": "neckline",
+      "value": "halter neckline",
+      "tags": ["evening", "feminine", "party"],
+      "base_score": 0.79,
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation", "party"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Halter necklines add a stronger warm-weather focal point with public-trend support across vacation and party dressing.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-neckline-bandeau-001",
+      "category": "dress",
+      "slot": "neckline",
+      "value": "bandeau neckline",
+      "tags": ["evening", "fitted", "party"],
+      "base_score": 0.76,
+      "price_bands": ["mid"],
+      "occasion_tags": ["party"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Bandeau necklines introduce a strapless party option that reads materially different from square and sweetheart shapes.",
+      "status": "active"
+    },
+    {
       "element_id": "dress-neckline-boat-001",
       "category": "dress",
       "slot": "neckline",
@@ -226,6 +282,20 @@
       "status": "active"
     },
     {
+      "element_id": "dress-sleeve-short-puff-001",
+      "category": "dress",
+      "slot": "sleeve",
+      "value": "short puff sleeve",
+      "tags": ["airy", "feminine", "summer"],
+      "base_score": 0.75,
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation", "casual"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Short puff sleeves add visible volume contrast while staying realistic for easy summer dress production.",
+      "status": "active"
+    },
+    {
       "element_id": "dress-sleeve-sleeveless-001",
       "category": "dress",
       "slot": "sleeve",
@@ -268,6 +338,20 @@
       "status": "active"
     },
     {
+      "element_id": "dress-dress_length-maxi-001",
+      "category": "dress",
+      "slot": "dress_length",
+      "value": "maxi",
+      "tags": ["dress", "feminine", "summer"],
+      "base_score": 0.76,
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation", "casual"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Maxi length expands the assortment beyond shorter hemlines while staying grounded in current warm-weather dress demand.",
+      "status": "active"
+    },
+    {
       "element_id": "dress-waistline-natural-waist-001",
       "category": "dress",
       "slot": "waistline",
@@ -293,6 +377,34 @@
       "season_tags": ["spring", "summer"],
       "risk_flags": [],
       "evidence_summary": "Drop-waist structure is resurfacing as a visible silhouette update in current dress editorials.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-waistline-empire-waist-001",
+      "category": "dress",
+      "slot": "waistline",
+      "value": "empire waist",
+      "tags": ["dress", "romantic", "summer"],
+      "base_score": 0.75,
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation", "casual"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Empire waist placement gives the library a softer proportion break with direct trend evidence in vacation-led dress edits.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-waistline-asymmetric-001",
+      "category": "dress",
+      "slot": "waistline",
+      "value": "asymmetric waist",
+      "tags": ["dress", "polished", "structured"],
+      "base_score": 0.7,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual", "party"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Asymmetric waist brings a newer seam-placement signal into the pool without changing the whole silhouette.",
       "status": "active"
     },
     {
@@ -366,6 +478,34 @@
       "status": "active"
     },
     {
+      "element_id": "dress-color-family-brown-001",
+      "category": "dress",
+      "slot": "color_family",
+      "value": "brown",
+      "tags": ["city", "neutral", "summer"],
+      "base_score": 0.77,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual", "party"],
+      "season_tags": ["spring", "summer", "fall"],
+      "risk_flags": [],
+      "evidence_summary": "Brown adds a trend-backed neutral color option that separates the palette from default white, black, and navy coverage.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-color-family-blue-001",
+      "category": "dress",
+      "slot": "color_family",
+      "value": "blue",
+      "tags": ["polished", "summer", "vacation"],
+      "base_score": 0.76,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual", "vacation"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Blue adds a current 2026 directional color option that stays easier to commercialize than louder brights.",
+      "status": "active"
+    },
+    {
       "element_id": "dress-pattern-floral-001",
       "category": "dress",
       "slot": "pattern",
@@ -391,6 +531,48 @@
       "season_tags": ["spring", "summer"],
       "risk_flags": [],
       "evidence_summary": "Polka dots have direct editorial momentum and create a clear visual break from floral coverage.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-pattern-gingham-check-001",
+      "category": "dress",
+      "slot": "pattern",
+      "value": "gingham check",
+      "tags": ["feminine", "summer", "vacation"],
+      "base_score": 0.75,
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation", "casual"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Gingham check introduces a second trend-backed summer print family with stronger visual separation from floral motifs.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-pattern-scarf-print-001",
+      "category": "dress",
+      "slot": "pattern",
+      "value": "scarf print",
+      "tags": ["scarf", "summer", "vacation"],
+      "base_score": 0.78,
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation", "casual"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Scarf print gives the pool a hotter resort-facing pattern family with stronger separation from florals.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-pattern-stripe-print-001",
+      "category": "dress",
+      "slot": "pattern",
+      "value": "stripe print",
+      "tags": ["polished", "structured", "summer"],
+      "base_score": 0.73,
+      "price_bands": ["mid"],
+      "occasion_tags": ["casual"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Stripe print adds a cleaner commercial pattern route for city and minimal-adjacent dress directions.",
       "status": "active"
     },
     {
@@ -503,6 +685,48 @@
       "season_tags": ["spring", "summer"],
       "risk_flags": [],
       "evidence_summary": "Ruched side seams create a direct fitted-party signal while remaining production-feasible.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-detail-lace-trim-001",
+      "category": "dress",
+      "slot": "detail",
+      "value": "lace trim",
+      "tags": ["dress", "feminine", "romantic"],
+      "base_score": 0.7,
+      "price_bands": ["mid"],
+      "occasion_tags": ["vacation", "casual"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Lace trim adds a realistic romantic finish backed by current 2026 dress trend editorials.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-detail-fringe-hem-001",
+      "category": "dress",
+      "slot": "detail",
+      "value": "fringe hem",
+      "tags": ["dress", "party", "summer"],
+      "base_score": 0.68,
+      "price_bands": ["mid"],
+      "occasion_tags": ["party", "casual"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Fringe hem adds motion-led detail variety from current spring 2026 dress coverage.",
+      "status": "active"
+    },
+    {
+      "element_id": "dress-detail-draped-bodice-001",
+      "category": "dress",
+      "slot": "detail",
+      "value": "draped bodice",
+      "tags": ["evening", "polished", "structured"],
+      "base_score": 0.7,
+      "price_bands": ["mid"],
+      "occasion_tags": ["party", "casual"],
+      "season_tags": ["spring", "summer"],
+      "risk_flags": [],
+      "evidence_summary": "Draped bodice adds a current 2026 focal detail that can shift a dress toward polished or evening reads.",
       "status": "active"
     }
   ]
