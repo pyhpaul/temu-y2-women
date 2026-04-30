@@ -48,6 +48,28 @@ class CompositionEngineTest(unittest.TestCase):
 
         self.assertEqual(error_context.exception.code, "CONSTRAINT_CONFLICT")
 
+    def test_prefers_available_surface_candidate_that_satisfies_must_have_tags(self) -> None:
+        from temu_y2_women.composition_engine import compose_concept
+
+        request = _request(must_have_tags=("floral",))
+        candidates = {
+            "silhouette": [
+                _candidate("dress-silhouette-a-line-001", "silhouette", "a-line", 0.91, ("summer",)),
+            ],
+            "fabric": [
+                _candidate("dress-fabric-cotton-poplin-001", "fabric", "cotton poplin", 0.89, ("lightweight",)),
+            ],
+            "pattern": [
+                _candidate("dress-pattern-polka-dot-001", "pattern", "polka dot", 0.92, ("polka-dot",)),
+                _candidate("dress-pattern-floral-001", "pattern", "floral print", 0.65, ("floral", "vacation")),
+            ],
+        }
+
+        concept = compose_concept(request, candidates)
+
+        self.assertEqual(concept.selected_elements["pattern"].value, "floral print")
+        self.assertIn("must_have_tags satisfied: floral", concept.constraint_notes)
+
     def test_fail_when_required_slot_is_missing(self) -> None:
         from temu_y2_women.composition_engine import compose_concept
         from temu_y2_women.errors import GenerationError

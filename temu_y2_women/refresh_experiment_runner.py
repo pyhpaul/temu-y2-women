@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import hashlib
 import json
 from pathlib import Path
 import shutil
@@ -17,10 +16,12 @@ from temu_y2_women.refresh_run_promotion import (
     prepare_dress_promotion_from_refresh_run,
 )
 
-_REQUEST_SET_SCHEMA_VERSION = "refresh-experiment-request-set-v1"
-_MANIFEST_SCHEMA_VERSION = "refresh-experiment-manifest-v1"
-_COMPARE_SCHEMA_VERSION = "refresh-experiment-compare-v1"
-_REPORT_SCHEMA_VERSION = "refresh-experiment-report-v1"
+_REQUIRED_RUN_FILES = (
+    "draft_elements.json",
+    "draft_strategy_hints.json",
+    "ingestion_report.json",
+    "refresh_report.json",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,113 +37,123 @@ def prepare_refresh_experiment(
     source_paths: RefreshExperimentSourcePaths | None = None,
 ) -> dict[str, Any]:
     try:
-        source = source_paths or RefreshExperimentSourcePaths(evidence_paths=EvidencePaths.defaults())
-        request_set = _load_request_set_manifest(request_set_path)
-        request_entries = _resolve_request_entries(request_set_path, request_set["requests"])
+        request_set = _load_request_set(request_set_path)
+        source = source_paths or RefreshExperimentSourcePaths(EvidencePaths.defaults())
         experiment_id = _next_experiment_id()
         workspace_root = _resolve_workspace_root(experiment_root, workspace_name, experiment_id)
         workspace_paths = _workspace_paths(workspace_root)
-        _copy_workspace_inputs(source.evidence_paths, workspace_paths["evidence_paths"])
-        review_path = workspace_root / "promotion_review.json"
-        promotion_review = prepare_dress_promotion_from_refresh_run(
-            run_dir=run_dir,
+        _copy_workspace_inputs(run_dir, source.evidence_paths, workspace_paths)
+        baseline = _run_request_set(request_set_path, request_set, workspace_paths["evidence_paths"])
+        baseline_path = workspace_root / "baseline_results.json"
+        _write_json(baseline_path, baseline)
+        review = prepare_dress_promotion_from_refresh_run(
+            run_dir=workspace_paths["run_dir"],
             active_elements_path=workspace_paths["evidence_paths"].elements_path,
             active_strategies_path=workspace_paths["evidence_paths"].strategies_path,
-            output_path=review_path,
             taxonomy_path=workspace_paths["evidence_paths"].taxonomy_path,
         )
-        _raise_on_error_payload(promotion_review)
-        request_records = _prepare_baseline_records(request_entries, workspace_paths["baseline_dir"], workspace_paths["evidence_paths"])
+        if "error" in review:
+            return review
         manifest_path = workspace_root / "experiment_manifest.json"
-        _write_json(
-            manifest_path,
-            _manifest_payload(experiment_id, run_dir, request_set, workspace_root, workspace_paths["evidence_paths"], review_path, request_records),
-        )
-        return _prepare_result(experiment_id, workspace_root, manifest_path, review_path, workspace_paths["baseline_dir"])
+        _write_json(manifest_path, _manifest_payload(experiment_id, request_set_path, workspace_root, workspace_paths, baseline_path))
+        return _prepare_result(experiment_id, workspace_root, manifest_path, baseline_path, workspace_paths["run_dir"] / "promotion_review.json")
     except GenerationError as error:
         return error.to_dict()
     except OSError as error:
-        return _io_error("failed to read or write refresh experiment artifacts", error).to_dict()
+        return _io_error(error).to_dict()
 
 
 def apply_refresh_experiment(
     manifest_path: Path,
     reviewed_path: Path | None = None,
+    auto_accept_pending: bool = False,
 ) -> dict[str, Any]:
     try:
-        manifest_file = manifest_path.resolve()
-        manifest = _load_json_object(manifest_file, "INVALID_REFRESH_EXPERIMENT_INPUT")
-        context = _validated_manifest_context(manifest, manifest_file)
-        workspace_root = context["workspace_root"]
-        workspace_paths = context["evidence_paths"]
-        resolved_reviewed_path = reviewed_path or context["promotion_review_path"]
-        promotion_report_path = workspace_root / "promotion_report.json"
-        apply_report = apply_reviewed_dress_promotion_from_refresh_run(
-            run_dir=context["run_dir"],
-            active_elements_path=workspace_paths.elements_path,
-            active_strategies_path=workspace_paths.strategies_path,
-            reviewed_path=resolved_reviewed_path,
-            report_path=promotion_report_path,
-            taxonomy_path=workspace_paths.taxonomy_path,
+        manifest = _load_json_object(manifest_path)
+        workspace_root = Path(manifest["workspace_root"])
+        workspace_paths = _manifest_workspace_paths(manifest)
+        resolved_reviewed_path = _resolve_apply_reviewed_path(
+            workspace_root,
+            workspace_paths["run_dir"],
+            reviewed_path,
+            auto_accept_pending,
         )
-        _raise_on_error_payload(apply_report)
-        compare_records = _build_compare_records(context["requests"], workspace_paths, _accepted_evidence_summary(apply_report))
-        experiment_report = _build_experiment_report(manifest, compare_records, apply_report)
-        output_paths = _write_apply_outputs(workspace_root, compare_records, experiment_report)
-        experiment_report_path = output_paths["experiment_report_path"]
-        return _apply_result(manifest, promotion_report_path, experiment_report_path, output_paths)
+        apply_report = apply_reviewed_dress_promotion_from_refresh_run(
+            run_dir=workspace_paths["run_dir"],
+            active_elements_path=workspace_paths["evidence_paths"].elements_path,
+            active_strategies_path=workspace_paths["evidence_paths"].strategies_path,
+            reviewed_path=resolved_reviewed_path,
+            report_path=workspace_root / "promotion_report.json",
+            taxonomy_path=workspace_paths["evidence_paths"].taxonomy_path,
+        )
+        if "error" in apply_report:
+            return apply_report
+        request_set_path = Path(manifest["request_set_path"])
+        request_set = _load_request_set(request_set_path)
+        post_apply = _run_request_set(request_set_path, request_set, workspace_paths["evidence_paths"])
+        post_apply_path = workspace_root / "post_apply_results.json"
+        _write_json(post_apply_path, post_apply)
+        report_path = workspace_root / "experiment_report.json"
+        report = _build_experiment_report(manifest, _load_json_object(Path(manifest["baseline_results_path"])), post_apply, apply_report)
+        _write_json(report_path, report)
+        return _apply_result(manifest, post_apply_path, workspace_root / "promotion_report.json", report_path)
     except GenerationError as error:
         return error.to_dict()
     except OSError as error:
-        return _io_error("failed to read or write refresh experiment artifacts", error).to_dict()
+        return _io_error(error).to_dict()
 
 
-def _load_request_set_manifest(path: Path) -> dict[str, Any]:
-    payload = _load_json_object(path, "INVALID_REFRESH_EXPERIMENT_INPUT")
-    if payload.get("schema_version") != _REQUEST_SET_SCHEMA_VERSION:
-        raise _experiment_input_error(path, "schema_version", "unsupported request set schema version")
-    if payload.get("category") != "dress":
-        raise _experiment_input_error(path, "category", "refresh experiment currently supports dress only")
+def _resolve_apply_reviewed_path(
+    workspace_root: Path,
+    run_dir: Path,
+    reviewed_path: Path | None,
+    auto_accept_pending: bool,
+) -> Path | None:
+    if not auto_accept_pending:
+        return reviewed_path
+    source_path = reviewed_path or _default_reviewed_path(run_dir)
+    if source_path is None:
+        return None
+    output_path = workspace_root / "auto_reviewed_decisions.json"
+    _write_json(output_path, _auto_accept_review_bundle(_load_json_object(source_path)))
+    return output_path
+
+
+def _default_reviewed_path(run_dir: Path) -> Path | None:
+    for name in ("promotion_review.json", "reviewed_decisions.json"):
+        path = run_dir / name
+        if path.exists():
+            return path
+    return None
+
+
+def _auto_accept_review_bundle(review: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **review,
+        "elements": [_auto_accept_review_record(item) for item in review.get("elements", [])],
+        "strategy_hints": [_auto_accept_review_record(item) for item in review.get("strategy_hints", [])],
+    }
+
+
+def _auto_accept_review_record(record: dict[str, Any]) -> dict[str, Any]:
+    updated = dict(record)
+    if updated.get("decision") == "pending":
+        updated["decision"] = "accept"
+    return updated
+
+
+def _load_request_set(path: Path) -> dict[str, Any]:
+    payload = _load_json_object(path)
+    if payload.get("schema_version") != "refresh-experiment-request-set-v1":
+        raise _experiment_error(path, "schema_version", "request set schema_version is unsupported")
     requests = payload.get("requests")
-    if not isinstance(requests, list) or not requests:
-        raise _experiment_input_error(path, "requests", "request set must contain at least one request")
-    _validate_request_entries(path, requests)
-    return payload
-
-
-def _validate_request_entries(path: Path, entries: list[Any]) -> None:
-    seen_ids: set[str] = set()
-    for entry in entries:
-        if not isinstance(entry, dict):
-            raise _experiment_input_error(path, "requests", "each request entry must be an object")
-        request_id = entry.get("request_id")
-        request_path = entry.get("request_path")
-        if not isinstance(request_id, str) or not request_id:
-            raise _experiment_input_error(path, "request_id", "request_id must be a non-empty string")
-        if request_id in seen_ids:
-            raise _experiment_input_error(path, "request_id", "request_id values must be unique")
-        if not isinstance(request_path, str) or not request_path:
-            raise _experiment_input_error(path, "request_path", "request_path must be a non-empty string")
-        seen_ids.add(request_id)
-
-
-def _resolve_request_entries(request_set_path: Path, entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    resolved: list[dict[str, Any]] = []
-    for entry in entries:
-        request_path = Path(entry["request_path"])
-        if not request_path.is_absolute():
-            request_path = (request_set_path.parent / request_path).resolve()
-        if not request_path.is_file():
-            raise _experiment_input_error(request_set_path, "request_path", "request file does not exist")
-        resolved.append({"request_id": entry["request_id"], "request_path": request_path})
-    return resolved
+    if isinstance(requests, list) and requests:
+        return payload
+    raise _experiment_error(path, "requests", "request set must contain a non-empty requests list")
 
 
 def _resolve_workspace_root(experiment_root: Path, workspace_name: str | None, experiment_id: str) -> Path:
-    base_root = experiment_root.resolve()
-    workspace_root = (base_root / (workspace_name or experiment_id)).resolve()
-    if not _path_is_within(workspace_root, base_root):
-        raise _experiment_input_error(base_root, "workspace_name", "workspace_name must stay within experiment_root")
+    workspace_root = experiment_root / (workspace_name or experiment_id)
     workspace_root.mkdir(parents=True, exist_ok=False)
     return workspace_root
 
@@ -150,83 +161,85 @@ def _resolve_workspace_root(experiment_root: Path, workspace_name: str | None, e
 def _workspace_paths(workspace_root: Path) -> dict[str, Any]:
     evidence_root = workspace_root / "data" / "mvp" / "dress"
     return {
+        "run_dir": workspace_root / "refresh_run",
         "evidence_paths": EvidencePaths(
             elements_path=evidence_root / "elements.json",
             strategies_path=evidence_root / "strategy_templates.json",
             taxonomy_path=evidence_root / "evidence_taxonomy.json",
         ),
-        "baseline_dir": workspace_root / "baseline",
     }
 
 
-def _manifest_workspace_paths(manifest: dict[str, Any]) -> EvidencePaths:
-    return EvidencePaths(
-        elements_path=Path(manifest["active_elements_path"]),
-        strategies_path=Path(manifest["active_strategies_path"]),
-        taxonomy_path=Path(manifest["taxonomy_path"]),
-    )
+def _copy_workspace_inputs(run_dir: Path, source: EvidencePaths, workspace_paths: dict[str, Any]) -> None:
+    evidence_paths = workspace_paths["evidence_paths"]
+    evidence_paths.elements_path.parent.mkdir(parents=True, exist_ok=True)
+    workspace_paths["run_dir"].mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source.elements_path, evidence_paths.elements_path)
+    shutil.copyfile(source.strategies_path, evidence_paths.strategies_path)
+    shutil.copyfile(source.taxonomy_path, evidence_paths.taxonomy_path)
+    for name in _REQUIRED_RUN_FILES:
+        shutil.copyfile(run_dir / name, workspace_paths["run_dir"] / name)
 
 
-def _copy_workspace_inputs(source_paths: EvidencePaths, destination_paths: EvidencePaths) -> None:
-    destination_paths.elements_path.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(source_paths.elements_path, destination_paths.elements_path)
-    shutil.copyfile(source_paths.strategies_path, destination_paths.strategies_path)
-    shutil.copyfile(source_paths.taxonomy_path, destination_paths.taxonomy_path)
-
-
-def _prepare_baseline_records(
-    request_entries: list[dict[str, Any]],
-    baseline_dir: Path,
+def _run_request_set(
+    request_set_path: Path,
+    request_set: dict[str, Any],
     evidence_paths: EvidencePaths,
-) -> list[dict[str, Any]]:
-    baseline_dir.mkdir(parents=True, exist_ok=False)
-    records: list[dict[str, Any]] = []
-    for entry in request_entries:
-        request_payload = _load_json_object(entry["request_path"], "INVALID_REFRESH_EXPERIMENT_INPUT")
-        result = generate_dress_concept(request_payload, evidence_paths=evidence_paths)
-        _raise_on_generation_error(result, entry["request_id"], "baseline")
-        baseline_path = baseline_dir / f"{entry['request_id']}.json"
-        _write_json(baseline_path, result)
-        records.append(_request_record(entry["request_id"], entry["request_path"], baseline_path, request_payload))
-    return records
-
-
-def _request_record(
-    request_id: str,
-    request_path: Path,
-    baseline_result_path: Path,
-    request_payload: dict[str, Any],
 ) -> dict[str, Any]:
+    results: dict[str, Any] = {}
+    for item in request_set["requests"]:
+        request_id = _request_id(request_set_path, item)
+        request_payload = _load_json_object(_request_path(request_set_path, item))
+        results[request_id] = _result_snapshot(generate_dress_concept(request_payload, evidence_paths=evidence_paths), request_id)
+    return {"schema_version": "refresh-experiment-results-v1", "results": results}
+
+
+def _request_id(request_set_path: Path, item: Any) -> str:
+    if isinstance(item, dict) and isinstance(item.get("request_id"), str) and item["request_id"].strip():
+        return str(item["request_id"])
+    raise _experiment_error(request_set_path, "request_id", "request set item is missing request_id")
+
+
+def _request_path(request_set_path: Path, item: Any) -> Path:
+    request_path = item.get("request_path") if isinstance(item, dict) else None
+    if isinstance(request_path, str) and request_path.strip():
+        candidate = Path(request_path)
+        if candidate.is_absolute() or candidate.exists():
+            return candidate.resolve()
+        return (request_set_path.parent / request_path).resolve()
+    raise _experiment_error(request_set_path, "request_path", "request set item is missing request_path")
+
+
+def _result_snapshot(result: dict[str, Any], request_id: str) -> dict[str, Any]:
+    if "error" in result:
+        raise GenerationError(code="REFRESH_EXPERIMENT_FAILED", message="request replay failed", details={"request_id": request_id})
     return {
-        "request_id": request_id,
-        "request_path": str(request_path.resolve()),
-        "request_fingerprint": _request_fingerprint(request_payload),
-        "baseline_result_path": str(baseline_result_path.resolve()),
+        "selected_strategy_ids": [item["strategy_id"] for item in result["selected_strategies"]],
+        "selected_elements": result["composed_concept"]["selected_elements"],
+        "concept_score": result["composed_concept"]["concept_score"],
+        "retrieved_elements": result["retrieved_elements"],
     }
 
 
 def _manifest_payload(
     experiment_id: str,
-    run_dir: Path,
-    request_set: dict[str, Any],
+    request_set_path: Path,
     workspace_root: Path,
-    evidence_paths: EvidencePaths,
-    review_path: Path,
-    request_records: list[dict[str, Any]],
+    workspace_paths: dict[str, Any],
+    baseline_path: Path,
 ) -> dict[str, Any]:
+    evidence_paths = workspace_paths["evidence_paths"]
     return {
-        "schema_version": _MANIFEST_SCHEMA_VERSION,
+        "schema_version": "refresh-experiment-manifest-v1",
         "experiment_id": experiment_id,
-        "category": request_set["category"],
-        "request_set_schema_version": request_set["schema_version"],
-        "request_count": len(request_records),
-        "run_dir": str(run_dir.resolve()),
-        "workspace_root": str(workspace_root.resolve()),
-        "promotion_review_path": str(review_path.resolve()),
-        "active_elements_path": str(evidence_paths.elements_path.resolve()),
-        "active_strategies_path": str(evidence_paths.strategies_path.resolve()),
-        "taxonomy_path": str(evidence_paths.taxonomy_path.resolve()),
-        "requests": request_records,
+        "request_set_path": str(request_set_path.resolve()),
+        "workspace_root": str(workspace_root),
+        "baseline_results_path": str(baseline_path),
+        "promotion_review_path": str(workspace_paths["run_dir"] / "promotion_review.json"),
+        "refresh_run_dir": str(workspace_paths["run_dir"]),
+        "active_elements_path": str(evidence_paths.elements_path),
+        "active_strategies_path": str(evidence_paths.strategies_path),
+        "taxonomy_path": str(evidence_paths.taxonomy_path),
         "created_at": _current_timestamp(),
     }
 
@@ -235,482 +248,156 @@ def _prepare_result(
     experiment_id: str,
     workspace_root: Path,
     manifest_path: Path,
+    baseline_path: Path,
     review_path: Path,
-    baseline_dir: Path,
 ) -> dict[str, Any]:
     return {
         "experiment_id": experiment_id,
-        "workspace_root": str(workspace_root.resolve()),
-        "manifest_path": str(manifest_path.resolve()),
-        "promotion_review_path": str(review_path.resolve()),
-        "baseline_dir": str(baseline_dir.resolve()),
+        "workspace_root": str(workspace_root),
+        "manifest_path": str(manifest_path),
+        "baseline_results_path": str(baseline_path),
+        "promotion_review_path": str(review_path),
     }
 
 
-def _build_compare_records(
-    requests: list[dict[str, Any]],
-    evidence_paths: EvidencePaths,
-    accepted_evidence: dict[str, Any],
-) -> list[dict[str, Any]]:
-    records: list[dict[str, Any]] = []
-    for entry in requests:
-        baseline = _load_json_object(Path(entry["baseline_result_path"]), "INVALID_REFRESH_EXPERIMENT_INPUT")
-        request_payload = _load_json_object(Path(entry["request_path"]), "INVALID_REFRESH_EXPERIMENT_INPUT")
-        _validate_request_fingerprint(entry, request_payload)
-        rerun = generate_dress_concept(request_payload, evidence_paths=evidence_paths)
-        _raise_on_generation_error(rerun, entry["request_id"], "post_apply")
-        records.append(
-            {
-                "request_id": entry["request_id"],
-                "rerun": rerun,
-                "compare": _compare_payload(entry["request_id"], baseline, rerun, accepted_evidence),
-            }
-        )
-    return records
-
-
-def _compare_payload(
-    request_id: str,
-    baseline: dict[str, Any],
-    rerun: dict[str, Any],
-    accepted_evidence: dict[str, Any],
-) -> dict[str, Any]:
-    selected_changes = _selected_element_changes(baseline["composed_concept"]["selected_elements"], rerun["composed_concept"]["selected_elements"])
-    retrieval_changes = _retrieval_rank_changes(baseline["retrieved_elements"], rerun["retrieved_elements"], accepted_evidence["element_ids"])
-    score_delta = round(rerun["composed_concept"]["concept_score"] - baseline["composed_concept"]["concept_score"], 4)
-    factory_spec_changes = _factory_spec_changes(baseline["factory_spec"], rerun["factory_spec"])
+def _manifest_workspace_paths(manifest: dict[str, Any]) -> dict[str, Any]:
     return {
-        "schema_version": _COMPARE_SCHEMA_VERSION,
-        "request_id": request_id,
-        "change_type": _classify_change(selected_changes, retrieval_changes, score_delta, factory_spec_changes),
-        "baseline_summary": _result_summary(baseline),
-        "post_apply_summary": _result_summary(rerun),
-        "diff": {
-            "selected_element_changes": selected_changes,
-            "retrieval_rank_changes": retrieval_changes,
-            "concept_score_delta": score_delta,
-            "factory_spec_changes": factory_spec_changes,
-        },
-        "accepted_evidence": accepted_evidence,
+        "run_dir": Path(manifest["refresh_run_dir"]),
+        "evidence_paths": EvidencePaths(
+            elements_path=Path(manifest["active_elements_path"]),
+            strategies_path=Path(manifest["active_strategies_path"]),
+            taxonomy_path=Path(manifest["taxonomy_path"]),
+        ),
     }
-
-
-def _write_apply_outputs(
-    workspace_root: Path,
-    compare_records: list[dict[str, Any]],
-    experiment_report: dict[str, Any],
-) -> dict[str, Path]:
-    staging = _staging_apply_paths(workspace_root)
-    final_paths = _final_apply_paths(workspace_root)
-    try:
-        staging["post_apply_dir"].mkdir(parents=True, exist_ok=False)
-        staging["compare_dir"].mkdir(parents=True, exist_ok=False)
-        for record in compare_records:
-            request_id = record["request_id"]
-            _write_json(staging["post_apply_dir"] / f"{request_id}.json", record["rerun"])
-            _write_json(staging["compare_dir"] / f"{request_id}.json", record["compare"])
-        _write_json(staging["experiment_report_path"], experiment_report)
-        _replace_path(final_paths["post_apply_dir"], staging["post_apply_dir"])
-        _replace_path(final_paths["compare_dir"], staging["compare_dir"])
-        _replace_path(final_paths["experiment_report_path"], staging["experiment_report_path"])
-        return final_paths
-    except OSError:
-        _cleanup_path(final_paths["post_apply_dir"])
-        _cleanup_path(final_paths["compare_dir"])
-        _cleanup_path(final_paths["experiment_report_path"])
-        _cleanup_path(staging["post_apply_dir"])
-        _cleanup_path(staging["compare_dir"])
-        _cleanup_path(staging["experiment_report_path"])
-        raise
 
 
 def _build_experiment_report(
     manifest: dict[str, Any],
-    compare_records: list[dict[str, Any]],
+    baseline: dict[str, Any],
+    post_apply: dict[str, Any],
     apply_report: dict[str, Any],
 ) -> dict[str, Any]:
-    compare_payloads = [record["compare"] for record in compare_records]
+    request_ids = sorted(baseline["results"])
+    requests = {request_id: _request_compare(baseline["results"][request_id], post_apply["results"][request_id]) for request_id in request_ids}
     return {
-        "schema_version": _REPORT_SCHEMA_VERSION,
-        "experiment_id": manifest["experiment_id"],
-        "request_count": len(compare_payloads),
-        "change_summary": _change_summary(compare_payloads),
-        "score_summary": _score_summary(compare_payloads),
-        "slot_change_summary": _slot_change_summary(compare_payloads),
-        "accepted_evidence_summary": _accepted_evidence_summary(apply_report),
-        "request_reports": _request_reports(compare_payloads, Path(manifest["workspace_root"]) / "compare"),
+        "schema_version": "refresh-experiment-report-v1",
+        "experiment_id": str(manifest["experiment_id"]),
+        "request_count": len(request_ids),
+        "summary": _report_summary(requests),
+        "promotion_summary": apply_report.get("summary", {}),
+        "requests": requests,
+        "recorded_at": _current_timestamp(),
+    }
+
+
+def _request_compare(before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
+    strategy_changes = _selected_strategy_changes(before["selected_strategy_ids"], after["selected_strategy_ids"])
+    selected_changes = _selected_element_changes(before["selected_elements"], after["selected_elements"])
+    retrieval_changes = _retrieval_changes(before["retrieved_elements"], after["retrieved_elements"])
+    return {
+        "change_type": _classify_change(strategy_changes, selected_changes, retrieval_changes),
+        "selected_strategy_ids": strategy_changes,
+        "concept_score_before": before["concept_score"],
+        "concept_score_after": after["concept_score"],
+        "concept_score_delta": round(after["concept_score"] - before["concept_score"], 4),
+        "selected_element_changes": selected_changes,
+        "retrieval_changes": retrieval_changes,
+    }
+
+
+def _selected_strategy_changes(before: list[str], after: list[str]) -> dict[str, list[str]]:
+    return {"before": list(before), "after": list(after)}
+
+
+def _selected_element_changes(before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
+    changes: dict[str, Any] = {}
+    for slot in sorted(before):
+        if before[slot] != after.get(slot):
+            changes[slot] = {"before": before[slot], "after": after.get(slot)}
+    return changes
+
+
+def _retrieval_changes(before: list[dict[str, Any]], after: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    before_by_id = _retrieved_by_id(before)
+    after_by_id = _retrieved_by_id(after)
+    changes: list[dict[str, Any]] = []
+    for element_id in sorted(set(before_by_id) | set(after_by_id)):
+        left = before_by_id.get(element_id, {"rank": None, "effective_score": None})
+        right = after_by_id.get(element_id, {"rank": None, "effective_score": None})
+        if left == right:
+            continue
+        changes.append({"element_id": element_id, "before": left, "after": right})
+    return changes
+
+
+def _retrieved_by_id(items: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return {
+        item["element_id"]: {"rank": index, "effective_score": item["effective_score"]}
+        for index, item in enumerate(items, start=1)
+    }
+
+
+def _classify_change(
+    strategy_changes: dict[str, list[str]],
+    selected_changes: dict[str, Any],
+    retrieval_changes: list[dict[str, Any]],
+) -> str:
+    if selected_changes:
+        return "selection_changed"
+    if strategy_changes["before"] != strategy_changes["after"]:
+        return "strategy_changed_only"
+    if retrieval_changes:
+        return "retrieval_changed_only"
+    return "no_observable_change"
+
+
+def _report_summary(requests: dict[str, dict[str, Any]]) -> dict[str, int]:
+    return {
+        "selection_changed": sum(1 for item in requests.values() if item["change_type"] == "selection_changed"),
+        "strategy_changed_only": sum(1 for item in requests.values() if item["change_type"] == "strategy_changed_only"),
+        "retrieval_changed_only": sum(1 for item in requests.values() if item["change_type"] == "retrieval_changed_only"),
+        "no_observable_change": sum(1 for item in requests.values() if item["change_type"] == "no_observable_change"),
     }
 
 
 def _apply_result(
     manifest: dict[str, Any],
+    post_apply_path: Path,
     promotion_report_path: Path,
     experiment_report_path: Path,
-    output_paths: dict[str, Path],
 ) -> dict[str, Any]:
     return {
-        "experiment_id": manifest["experiment_id"],
-        "workspace_root": manifest["workspace_root"],
+        "experiment_id": str(manifest["experiment_id"]),
+        "post_apply_results_path": str(post_apply_path),
         "promotion_report_path": str(promotion_report_path),
-        "post_apply_dir": str(output_paths["post_apply_dir"]),
-        "compare_dir": str(output_paths["compare_dir"]),
         "experiment_report_path": str(experiment_report_path),
     }
 
 
-def _accepted_evidence_summary(apply_report: dict[str, Any]) -> dict[str, Any]:
-    element_ids = sorted({item["element_id"] for item in apply_report.get("elements", []) if item.get("decision") == "accept"})
-    strategy_ids = sorted({item["strategy_id"] for item in apply_report.get("strategy_hints", []) if item.get("decision") == "accept"})
-    source_signal_ids = sorted(
-        {
-            signal_id
-            for section in ("elements", "strategy_hints")
-            for item in apply_report.get(section, [])
-            if item.get("decision") == "accept"
-            for signal_id in item.get("source_signal_ids", [])
-        }
-    )
-    return {"element_ids": element_ids, "strategy_ids": strategy_ids, "source_signal_ids": source_signal_ids}
-
-
-def _selected_element_changes(
-    baseline_selected: dict[str, Any],
-    rerun_selected: dict[str, Any],
-) -> dict[str, dict[str, Any]]:
-    changes: dict[str, dict[str, Any]] = {}
-    for slot in sorted(set(baseline_selected) | set(rerun_selected)):
-        before = baseline_selected.get(slot)
-        after = rerun_selected.get(slot)
-        if before == after:
-            continue
-        changes[slot] = {"before": before, "after": after}
-    return changes
-
-
-def _retrieval_rank_changes(
-    baseline_retrieved: list[dict[str, Any]],
-    rerun_retrieved: list[dict[str, Any]],
-    accepted_element_ids: list[str],
-) -> list[dict[str, Any]]:
-    baseline_index = _retrieval_index(baseline_retrieved)
-    rerun_index = _retrieval_index(rerun_retrieved)
-    tracked_ids = sorted(set(accepted_element_ids) | set(baseline_index) | set(rerun_index))
-    changes: list[dict[str, Any]] = []
-    for element_id in tracked_ids:
-        before = baseline_index.get(element_id)
-        after = rerun_index.get(element_id)
-        if before == after:
-            continue
-        changes.append({"element_id": element_id, "before": before, "after": after})
-    return changes
-
-
-def _retrieval_index(retrieved: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    return {
-        item["element_id"]: {"rank": index, "effective_score": item["effective_score"]}
-        for index, item in enumerate(retrieved, start=1)
-    }
-
-
-def _factory_spec_changes(
-    baseline_factory_spec: dict[str, Any],
-    rerun_factory_spec: dict[str, Any],
-) -> dict[str, Any]:
-    baseline_known = baseline_factory_spec["known"]
-    rerun_known = rerun_factory_spec["known"]
-    changed_fields = sorted(field for field in set(baseline_known) | set(rerun_known) if baseline_known.get(field) != rerun_known.get(field))
-    slot_changes = sorted(
-        slot
-        for slot in set(baseline_known["selected_elements"]) | set(rerun_known["selected_elements"])
-        if baseline_known["selected_elements"].get(slot) != rerun_known["selected_elements"].get(slot)
-    )
-    return {
-        "changed": bool(changed_fields or baseline_factory_spec["unresolved"] != rerun_factory_spec["unresolved"]),
-        "known_field_changes": changed_fields,
-        "selected_element_slots_changed": slot_changes,
-        "unresolved_count_before": len(baseline_factory_spec["unresolved"]),
-        "unresolved_count_after": len(rerun_factory_spec["unresolved"]),
-    }
-
-
-def _classify_change(
-    selected_changes: dict[str, Any],
-    retrieval_changes: list[dict[str, Any]],
-    score_delta: float,
-    factory_spec_changes: dict[str, Any],
-) -> str:
-    if _is_detail_addition_only(selected_changes):
-        return "retrieval_changed_only"
-    if selected_changes:
-        return "selection_changed"
-    if retrieval_changes:
-        return "retrieval_changed_only"
-    if score_delta != 0:
-        return "score_changed_only"
-    if factory_spec_changes["changed"]:
-        return "factory_spec_changed_only"
-    return "no_observable_change"
-
-
-def _is_detail_addition_only(selected_changes: dict[str, Any]) -> bool:
-    if set(selected_changes) != {"detail"}:
-        return False
-    detail_change = selected_changes["detail"]
-    return detail_change["before"] is None and detail_change["after"] is not None
-
-
-def _result_summary(result: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "concept_score": result["composed_concept"]["concept_score"],
-        "selected_elements": result["composed_concept"]["selected_elements"],
-        "factory_spec": _factory_spec_summary(result["factory_spec"]),
-    }
-
-
-def _factory_spec_summary(factory_spec: dict[str, Any]) -> dict[str, Any]:
-    known = factory_spec["known"]
-    return {
-        "selected_strategy_ids": known["selected_strategy_ids"],
-        "selected_elements": known["selected_elements"],
-        "unresolved_count": len(factory_spec["unresolved"]),
-    }
-
-
-def _change_summary(compare_payloads: list[dict[str, Any]]) -> dict[str, int]:
-    summary = {
-        "selection_changed": 0,
-        "retrieval_changed_only": 0,
-        "score_changed_only": 0,
-        "factory_spec_changed_only": 0,
-        "no_observable_change": 0,
-    }
-    for payload in compare_payloads:
-        summary[payload["change_type"]] += 1
-    return summary
-
-
-def _score_summary(compare_payloads: list[dict[str, Any]]) -> dict[str, Any]:
-    deltas = [payload["diff"]["concept_score_delta"] for payload in compare_payloads]
-    changed = [delta for delta in deltas if delta != 0]
-    return {
-        "changed_request_count": len(changed),
-        "average_delta": round(sum(deltas) / len(deltas), 4) if deltas else 0.0,
-        "max_delta": max(deltas, default=0.0),
-        "min_delta": min(deltas, default=0.0),
-    }
-
-
-def _slot_change_summary(compare_payloads: list[dict[str, Any]]) -> dict[str, int]:
-    summary: dict[str, int] = {}
-    for payload in compare_payloads:
-        for slot in payload["diff"]["selected_element_changes"]:
-            summary[slot] = summary.get(slot, 0) + 1
-    return summary
-
-
-def _request_reports(compare_payloads: list[dict[str, Any]], compare_dir: Path) -> list[dict[str, Any]]:
-    return [
-        {
-            "request_id": payload["request_id"],
-            "change_type": payload["change_type"],
-            "compare_path": str(compare_dir / f"{payload['request_id']}.json"),
-        }
-        for payload in compare_payloads
-    ]
-
-
-def _load_json_object(path: Path, error_code: str) -> dict[str, Any]:
+def _load_json_object(path: Path) -> dict[str, Any]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:
         raise GenerationError(
-            code=error_code,
-            message="input file must contain valid JSON",
+            code="INVALID_REFRESH_EXPERIMENT_INPUT",
+            message="experiment input file must contain valid JSON",
             details={"path": str(path), "line": error.lineno, "column": error.colno},
         ) from error
     if isinstance(payload, dict):
         return payload
-    raise GenerationError(
-        code=error_code,
-        message="input root must be an object",
-        details={"path": str(path)},
-    )
-
-
-def _validated_manifest_context(manifest: dict[str, Any], manifest_path: Path) -> dict[str, Any]:
-    if manifest.get("schema_version") != _MANIFEST_SCHEMA_VERSION:
-        raise _experiment_input_error(manifest_path, "schema_version", "unsupported refresh experiment manifest schema version")
-    workspace_root = _absolute_manifest_path(manifest, manifest_path, "workspace_root")
-    context = {
-        "workspace_root": workspace_root,
-        "run_dir": _absolute_manifest_path(manifest, manifest_path, "run_dir"),
-        "promotion_review_path": _workspace_manifest_path(manifest, manifest_path, workspace_root, "promotion_review_path"),
-        "evidence_paths": EvidencePaths(
-            elements_path=_workspace_manifest_path(manifest, manifest_path, workspace_root, "active_elements_path"),
-            strategies_path=_workspace_manifest_path(manifest, manifest_path, workspace_root, "active_strategies_path"),
-            taxonomy_path=_workspace_manifest_path(manifest, manifest_path, workspace_root, "taxonomy_path"),
-        ),
-    }
-    context["requests"] = _validated_manifest_requests(manifest, manifest_path, workspace_root)
-    return context
-
-
-def _validated_manifest_requests(
-    manifest: dict[str, Any],
-    manifest_path: Path,
-    workspace_root: Path,
-) -> list[dict[str, Any]]:
-    requests = manifest.get("requests")
-    if not isinstance(requests, list) or not requests:
-        raise _experiment_input_error(manifest_path, "requests", "manifest must contain at least one request record")
-    records: list[dict[str, Any]] = []
-    for record in requests:
-        if not isinstance(record, dict):
-            raise _experiment_input_error(manifest_path, "requests", "manifest request record must be an object")
-        request_id = record.get("request_id")
-        if not isinstance(request_id, str) or not request_id:
-            raise _experiment_input_error(manifest_path, "request_id", "manifest request_id must be a non-empty string")
-        records.append(
-            {
-                "request_id": request_id,
-                "request_path": _absolute_record_path(record, manifest_path, "request_path"),
-                "baseline_result_path": _workspace_record_path(record, manifest_path, workspace_root, "baseline_result_path"),
-                "request_fingerprint": _request_fingerprint_value(record, manifest_path),
-            }
-        )
-    return records
-
-
-def _absolute_manifest_path(manifest: dict[str, Any], manifest_path: Path, field: str) -> Path:
-    value = manifest.get(field)
-    if not isinstance(value, str) or not value:
-        raise _experiment_input_error(manifest_path, field, "manifest field must be a non-empty path string")
-    path = Path(value)
-    if not path.is_absolute():
-        raise _experiment_input_error(manifest_path, field, "manifest path must be absolute")
-    return path
-
-
-def _workspace_manifest_path(manifest: dict[str, Any], manifest_path: Path, workspace_root: Path, field: str) -> Path:
-    path = _absolute_manifest_path(manifest, manifest_path, field)
-    if _path_is_within(path, workspace_root):
-        return path
-    raise _experiment_input_error(manifest_path, field, "manifest path must stay within workspace_root")
-
-
-def _absolute_record_path(record: dict[str, Any], manifest_path: Path, field: str) -> Path:
-    value = record.get(field)
-    if not isinstance(value, str) or not value:
-        raise _experiment_input_error(manifest_path, field, "manifest request field must be a non-empty path string")
-    path = Path(value)
-    if path.is_absolute():
-        return path
-    raise _experiment_input_error(manifest_path, field, "manifest request path must be absolute")
-
-
-def _workspace_record_path(record: dict[str, Any], manifest_path: Path, workspace_root: Path, field: str) -> Path:
-    path = _absolute_record_path(record, manifest_path, field)
-    if _path_is_within(path, workspace_root):
-        return path
-    raise _experiment_input_error(manifest_path, field, "manifest request path must stay within workspace_root")
-
-
-def _request_fingerprint_value(record: dict[str, Any], manifest_path: Path) -> str:
-    value = record.get("request_fingerprint")
-    if isinstance(value, str) and value:
-        return value
-    raise _experiment_input_error(manifest_path, "request_fingerprint", "manifest request fingerprint must be a non-empty string")
-
-
-def _validate_request_fingerprint(entry: dict[str, Any], request_payload: dict[str, Any]) -> None:
-    current = _request_fingerprint(request_payload)
-    if current == entry["request_fingerprint"]:
-        return
-    raise _experiment_input_error(Path(entry["request_path"]), "request_fingerprint", "request payload changed since prepare")
-
-
-def _path_is_within(path: Path, root: Path) -> bool:
-    try:
-        path.resolve().relative_to(root.resolve())
-    except ValueError:
-        return False
-    return True
-
-
-def _staging_apply_paths(workspace_root: Path) -> dict[str, Path]:
-    return {
-        "post_apply_dir": workspace_root / ".post_apply.staging",
-        "compare_dir": workspace_root / ".compare.staging",
-        "experiment_report_path": workspace_root / ".experiment_report.staging.json",
-    }
-
-
-def _final_apply_paths(workspace_root: Path) -> dict[str, Path]:
-    return {
-        "post_apply_dir": workspace_root / "post_apply",
-        "compare_dir": workspace_root / "compare",
-        "experiment_report_path": workspace_root / "experiment_report.json",
-    }
-
-
-def _replace_path(destination: Path, source: Path) -> None:
-    _cleanup_path(destination)
-    source.replace(destination)
-
-
-def _cleanup_path(path: Path) -> None:
-    if path.is_dir():
-        shutil.rmtree(path)
-        return
-    if path.exists():
-        path.unlink()
-
-
-def _raise_on_error_payload(payload: dict[str, Any]) -> None:
-    error = payload.get("error")
-    if error is None:
-        return
-    raise GenerationError(
-        code=error["code"],
-        message=error["message"],
-        details=error.get("details", {}),
-    )
-
-
-def _raise_on_generation_error(result: dict[str, Any], request_id: str, stage: str) -> None:
-    error = result.get("error")
-    if error is None:
-        return
-    raise GenerationError(
-        code="REFRESH_EXPERIMENT_FAILED",
-        message=f"{stage} generation failed for refresh experiment request",
-        details={"request_id": request_id, "stage": stage, "source_code": error["code"]},
-    )
-
-
-def _experiment_input_error(path: Path, field: str, message: str) -> GenerationError:
-    return GenerationError(
-        code="INVALID_REFRESH_EXPERIMENT_INPUT",
-        message=message,
-        details={"path": str(path), "field": field},
-    )
-
-
-def _io_error(message: str, error: OSError) -> GenerationError:
-    return GenerationError(
-        code="REFRESH_EXPERIMENT_FAILED",
-        message=message,
-        details={"path": str(getattr(error, "filename", ""))},
-    )
+    raise _experiment_error(path, "root", "experiment input root must be an object")
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def _request_fingerprint(payload: dict[str, Any]) -> str:
-    rendered = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(rendered.encode("utf-8")).hexdigest()
+def _experiment_error(path: Path, field: str, message: str) -> GenerationError:
+    return GenerationError(
+        code="INVALID_REFRESH_EXPERIMENT_INPUT",
+        message=message,
+        details={"path": str(path), "field": field},
+    )
 
 
 def _current_timestamp() -> str:
@@ -719,3 +406,11 @@ def _current_timestamp() -> str:
 
 def _next_experiment_id() -> str:
     return f"exp-{uuid4().hex[:12]}"
+
+
+def _io_error(error: OSError) -> GenerationError:
+    return GenerationError(
+        code="REFRESH_EXPERIMENT_IO_FAILED",
+        message="failed to read or write refresh experiment artifacts",
+        details={"path": str(getattr(error, "filename", ""))},
+    )

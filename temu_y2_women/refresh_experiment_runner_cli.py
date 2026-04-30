@@ -34,6 +34,11 @@ def _add_apply_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPa
     parser = subparsers.add_parser("apply", help="Apply reviewed promotion decisions in a refresh workspace.")
     parser.add_argument("--manifest", required=True, help="Path to the experiment manifest JSON.")
     parser.add_argument("--reviewed", help="Optional path to the reviewed promotion JSON.")
+    parser.add_argument(
+        "--auto-accept-pending",
+        action="store_true",
+        help="Auto-convert pending review decisions to accept before apply.",
+    )
 
 
 def _run_command(args: argparse.Namespace) -> dict[str, object]:
@@ -52,6 +57,7 @@ def _run_command(args: argparse.Namespace) -> dict[str, object]:
     return apply_refresh_experiment(
         manifest_path=Path(args.manifest),
         reviewed_path=Path(args.reviewed) if args.reviewed else None,
+        auto_accept_pending=bool(getattr(args, "auto_accept_pending", False)),
     )
 
 

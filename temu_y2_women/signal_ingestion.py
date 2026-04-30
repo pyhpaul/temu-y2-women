@@ -34,6 +34,7 @@ _STRUCTURED_CANDIDATE_REQUIRED_FIELDS = {
     "observation_model",
     "evidence_summary",
 }
+_MAX_DRAFT_SUMMARY_LENGTH = 140
 
 
 def ingest_dress_signals(
@@ -47,7 +48,11 @@ def ingest_dress_signals(
         rules = _load_phrase_rules(rules_path, taxonomy)
         signals = _load_signal_bundle(input_path, taxonomy)
         normalized_signals = [_normalize_signal(signal) for signal in signals]
-        draft_elements, signal_outcomes, warnings = _extract_draft_elements(normalized_signals, rules)
+        draft_elements, signal_outcomes, warnings = _extract_draft_elements(
+            normalized_signals,
+            rules,
+            taxonomy["base_score"],
+        )
         draft_strategy_hints = _build_draft_strategy_hints(draft_elements)
         report = _build_ingestion_report(
             normalized_signals,
@@ -240,6 +245,7 @@ def _validate_phrase_rule(path: Path, rule: Any, taxonomy: dict[str, Any]) -> di
 def _extract_draft_elements(
     normalized_signals: list[dict[str, Any]],
     rules: list[dict[str, Any]],
+    base_score_range: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str]]:
     rule_tags = _build_rule_tag_lookup(rules)
     raw_candidates: list[dict[str, Any]] = []
@@ -256,7 +262,7 @@ def _extract_draft_elements(
         raw_candidates.extend(
             _build_structured_candidate(signal, candidate, rule_tags) for candidate in structured_matches
         )
-    return _aggregate_draft_elements(raw_candidates), signal_outcomes, warnings
+    return _aggregate_draft_elements(raw_candidates, base_score_range), signal_outcomes, warnings
 
 
 def _matching_rules(signal: dict[str, Any], rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -292,13 +298,13 @@ def _build_text_rule_candidate(signal: dict[str, Any], rule: dict[str, Any]) -> 
     }
 
 
-def _aggregate_draft_elements(raw_candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _aggregate_draft_elements(raw_candidates: list[dict[str, Any]], base_score_range: dict[str, Any]) -> list[dict[str, Any]]:
     grouped: dict[tuple[str, str], dict[str, Any]] = {}
     for candidate in raw_candidates:
         key = (str(candidate["slot"]), str(candidate["value"]))
         grouped.setdefault(key, _empty_element_group(candidate))
         _merge_candidate_group(grouped[key], candidate)
-    draft_elements = [_build_draft_element(slot, value, group) for (slot, value), group in grouped.items()]
+    draft_elements = [_build_draft_element(slot, value, group, base_score_range) for (slot, value), group in grouped.items()]
     return sorted(draft_elements, key=lambda item: str(item["draft_id"]))
 
 
@@ -326,7 +332,12 @@ def _merge_candidate_group(group: dict[str, Any], candidate: dict[str, Any]) -> 
     group["matched_channels"].update(candidate["matched_channels"])
 
 
-def _build_draft_element(slot: str, value: str, group: dict[str, Any]) -> dict[str, Any]:
+def _build_draft_element(
+    slot: str,
+    value: str,
+    group: dict[str, Any],
+    base_score_range: dict[str, Any],
+) -> dict[str, Any]:
     signal_count = len(group["source_signal_ids"])
     evidence_count = _draft_evidence_count(group)
     return {
@@ -339,12 +350,19 @@ def _build_draft_element(slot: str, value: str, group: dict[str, Any]) -> dict[s
         "occasion_tags": sorted(group["occasion_tags"]),
         "season_tags": sorted(group["season_tags"]),
         "risk_flags": [],
-        "suggested_base_score": round(0.6 + (0.05 * evidence_count), 2),
+        "suggested_base_score": _suggested_base_score(evidence_count, base_score_range),
         "evidence_summary": _build_draft_element_summary(group, signal_count),
         "source_signal_ids": sorted(group["source_signal_ids"]),
         "extraction_provenance": _build_element_provenance(group),
         "status": "draft",
     }
+
+
+def _suggested_base_score(evidence_count: int, base_score_range: dict[str, Any]) -> float:
+    score = round(0.6 + (0.05 * evidence_count), 2)
+    minimum = float(base_score_range["min"])
+    maximum = float(base_score_range["max"])
+    return min(max(score, minimum), maximum)
 
 
 def _slugify(value: str) -> str:
@@ -370,7 +388,7 @@ def _build_draft_strategy_hints(draft_elements: list[dict[str, Any]]) -> list[di
     occasion_tags = sorted({tag for element in draft_elements for tag in element["occasion_tags"]})
     source_signal_ids = sorted({tag for element in draft_elements for tag in element["source_signal_ids"]})
     slot_preferences = _build_slot_preferences(draft_elements)
-    primary_season = season_tags[0] if season_tags else "all-season"
+    primary_season = _primary_season_tag(draft_elements, season_tags)
     return [
         {
             "hint_id": f"draft-strategy-us-{primary_season}-{'-'.join(occasion_tags)}",
@@ -387,6 +405,16 @@ def _build_draft_strategy_hints(draft_elements: list[dict[str, Any]]) -> list[di
             "status": "draft",
         }
     ]
+
+
+def _primary_season_tag(draft_elements: list[dict[str, Any]], season_tags: list[str]) -> str:
+    if not season_tags:
+        return "all-season"
+    counts = {
+        tag: sum(1 for element in draft_elements if tag in element["season_tags"])
+        for tag in season_tags
+    }
+    return max(season_tags, key=lambda tag: (counts[tag], tag))
 
 
 def _build_slot_preferences(draft_elements: list[dict[str, Any]]) -> dict[str, list[str]]:
@@ -452,16 +480,6 @@ def _build_signal_outcome(
     if emitted_draft_ids:
         return outcome
     return {**outcome, "reason": "no supported phrase rules matched normalized signal text"}
-
-
-def _draft_evidence_count(group: dict[str, Any]) -> int:
-    return max(len(group["source_signal_ids"]), _max_supporting_card_count(group["structured_candidate_matches"]))
-
-
-def _max_supporting_card_count(matches: list[dict[str, Any]]) -> int:
-    if not matches:
-        return 0
-    return max(int(match["supporting_card_count"]) for match in matches)
 
 
 def _build_coverage(signal_outcomes: list[dict[str, Any]]) -> dict[str, Any]:
@@ -603,12 +621,34 @@ def _build_structured_candidate(
 
 def _build_draft_element_summary(group: dict[str, Any], signal_count: int) -> str:
     if group["structured_candidate_matches"]:
-        return sorted(group["structured_candidate_matches"], key=_structured_summary_sort_key)[0]["evidence_summary"]
+        return _compact_structured_summary(
+            sorted(group["structured_candidate_matches"], key=_structured_summary_sort_key)[0]
+        )
     return f"Derived from {signal_count} signal{'s' if signal_count != 1 else ''} for US dress demand."
 
 
 def _structured_summary_sort_key(match: dict[str, Any]) -> tuple[int, str, str]:
     return -int(match["supporting_card_count"]), str(match["signal_id"]), str(match["candidate_source"])
+
+
+def _compact_structured_summary(match: dict[str, Any]) -> str:
+    summary = (
+        f"{match['supporting_card_count']} cards agree on "
+        f"{match['slot']}={match['value']}: {match['evidence_summary']}"
+    )
+    if len(summary) <= _MAX_DRAFT_SUMMARY_LENGTH:
+        return summary
+    return f"{summary[:_MAX_DRAFT_SUMMARY_LENGTH - 3].rstrip()}..."
+
+
+def _draft_evidence_count(group: dict[str, Any]) -> int:
+    return max(len(group["source_signal_ids"]), _max_supporting_card_count(group["structured_candidate_matches"]))
+
+
+def _max_supporting_card_count(matches: list[dict[str, Any]]) -> int:
+    if not matches:
+        return 0
+    return max(int(match["supporting_card_count"]) for match in matches)
 
 
 def _build_element_provenance(group: dict[str, Any]) -> dict[str, Any]:

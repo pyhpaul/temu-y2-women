@@ -1,0 +1,55 @@
+{
+  "schema_version": "public-roundup-source-snapshot-v1",
+  "source_id": "harpersbazaar-best-summer-dresses-2025",
+  "source_type": "public_roundup_web",
+  "source_url": "https://www.harpersbazaar.com/fashion/trends/g65192976/best-summer-dresses-for-women/",
+  "captured_at": "2025-06-30",
+  "fetched_at": "2026-04-30T00:00:00Z",
+  "target_market": "US",
+  "category": "dress",
+  "page_title": "The Best Summer Dresses to Beat the Heat in Style",
+  "page_context_tags": [
+    "summer",
+    "shopping",
+    "dress"
+  ],
+  "cards": [
+    {
+      "card_id": "harpersbazaar-best-summer-dresses-2025-card-001",
+      "rank": 1,
+      "title": "Drop-Waist Mixy Dress",
+      "image_url": "https://vader-prod.s3.amazonaws.com/1751032094-summerdresses-01-685ea1165451f.jpg",
+      "source_url": "https://www.jcrew.com/p/CJ497",
+      "price_text": "$58.99",
+      "brand_text": "J.Crew",
+      "badges": [
+        "The Drop-Waist Midi"
+      ]
+    },
+    {
+      "card_id": "harpersbazaar-best-summer-dresses-2025-card-002",
+      "rank": 2,
+      "title": "The Gauze Open-Back Dress",
+      "image_url": "https://vader-prod.s3.amazonaws.com/1751032116-summerdresses-02-685ea125a0c6f.jpg",
+      "source_url": "https://www.everlane.com/products/womens-gauze-open-back-dress-soft-orange?collection=womens-dresses",
+      "price_text": "$168.00",
+      "brand_text": "Everlane",
+      "badges": [
+        "The Tangerine Moment"
+      ]
+    },
+    {
+      "card_id": "harpersbazaar-best-summer-dresses-2025-card-003",
+      "rank": 3,
+      "title": "Amorette Dress",
+      "image_url": "https://vader-prod.s3.amazonaws.com/1751032136-summerdresses-04-685ea13ce9665.jpg",
+      "source_url": "https://www.shopdoen.com/products/amorette-dress-riviera-foulard",
+      "price_text": "$398.00",
+      "brand_text": "Dôen",
+      "badges": [
+        "The European Summer Midi"
+      ]
+    }
+  ],
+  "warnings": []
+}

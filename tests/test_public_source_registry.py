@@ -12,7 +12,7 @@ class PublicSourceRegistryTest(unittest.TestCase):
 
         result = load_public_source_registry(Path("data/refresh/dress/source_registry.json"))
 
-        self.assertEqual(len(result), 4)
+        self.assertEqual(len(result), 6)
         self.assertEqual(result[0]["source_id"], "whowhatwear-summer-2025-dress-trends")
         self.assertEqual(result[0]["adapter_id"], "whowhatwear_editorial_v1")
         self.assertEqual(result[0]["default_price_band"], "mid")
@@ -32,6 +32,31 @@ class PublicSourceRegistryTest(unittest.TestCase):
         self.assertEqual(roundup["aggregation_threshold"], 2)
         self.assertEqual(roundup["observation_model"], "gpt-4.1-mini")
 
+    def test_load_enabled_sources_includes_vogue_editorial_source(self) -> None:
+        from temu_y2_women.public_source_registry import load_public_source_registry
+
+        result = load_public_source_registry(Path("data/refresh/dress/source_registry.json"))
+
+        vogue = next(source for source in result if source["source_id"] == "vogue-spring-2025-dress-trends")
+        self.assertEqual(vogue["source_type"], "public_editorial_web")
+        self.assertEqual(vogue["adapter_id"], "vogue_editorial_v1")
+        self.assertEqual(vogue["pipeline_mode"], "editorial_text")
+        self.assertEqual(vogue["priority"], 85)
+        self.assertEqual(vogue["weight"], 0.8)
+
+    def test_load_enabled_sources_includes_hearst_roundup_source(self) -> None:
+        from temu_y2_women.public_source_registry import load_public_source_registry
+
+        result = load_public_source_registry(Path("data/refresh/dress/source_registry.json"))
+
+        roundup = next(source for source in result if source["source_id"] == "harpersbazaar-best-summer-dresses-2025")
+        self.assertEqual(roundup["source_type"], "public_roundup_web")
+        self.assertEqual(roundup["adapter_id"], "hearst_roundup_v1")
+        self.assertEqual(roundup["pipeline_mode"], "roundup_image_cards")
+        self.assertEqual(roundup["card_limit"], 12)
+        self.assertEqual(roundup["aggregation_threshold"], 2)
+        self.assertEqual(roundup["observation_model"], "gpt-4.1-mini")
+
     def test_select_public_sources_returns_all_enabled_sources_by_default(self) -> None:
         from temu_y2_women.public_source_registry import load_public_source_registry, select_public_sources
 
@@ -44,8 +69,10 @@ class PublicSourceRegistryTest(unittest.TestCase):
             [
                 "whowhatwear-summer-2025-dress-trends",
                 "whowhatwear-summer-dress-trends-2025",
+                "vogue-spring-2025-dress-trends",
                 "marieclaire-summer-2025-dress-trends",
                 "whowhatwear-best-summer-dresses-2025",
+                "harpersbazaar-best-summer-dresses-2025",
             ],
         )
 
