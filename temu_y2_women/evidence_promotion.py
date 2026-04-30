@@ -808,7 +808,7 @@ def _build_proposed_strategy_template(
         "priority": matched["priority"],
         "date_window": dict(matched["date_window"]),
         "occasion_tags": list(matched["occasion_tags"]),
-        "boost_tags": list(matched["boost_tags"]),
+        "boost_tags": _stable_union_strings(matched["boost_tags"], draft_strategy_hint["boost_tags"]),
         "suppress_tags": list(matched["suppress_tags"]),
         "slot_preferences": _merge_slot_preferences(matched["slot_preferences"], draft_strategy_hint["slot_preferences"]),
         "score_boost": matched["score_boost"],

@@ -128,7 +128,7 @@ class EvidencePromotionPrepareTest(unittest.TestCase):
         self.assertEqual(proposed["suppress_tags"], ["bodycon", "holiday"])
         self.assertEqual(
             proposed["boost_tags"],
-            ["airy", "breathable", "floral", "summer"],
+            ["airy", "breathable", "floral", "summer", "feminine", "lightweight", "vacation"],
         )
         self.assertEqual(
             proposed["prompt_hints"],
@@ -608,7 +608,10 @@ class EvidencePromotionApplyTest(unittest.TestCase):
             self.assertEqual(cotton_poplin["occasion_tags"], ["casual", "resort", "vacation"])
             self.assertEqual(summer_vacation["priority"], 8)
             self.assertEqual(summer_vacation["date_window"], {"start": "05-15", "end": "08-31"})
-            self.assertEqual(summer_vacation["boost_tags"], ["airy", "breathable", "floral", "summer"])
+            self.assertEqual(
+                summer_vacation["boost_tags"],
+                ["airy", "breathable", "floral", "summer", "feminine", "lightweight", "vacation"],
+            )
             self.assertEqual(summer_vacation["score_boost"], 0.09)
             self.assertEqual(summer_vacation["score_cap"], 0.15)
 
