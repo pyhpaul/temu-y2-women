@@ -26,6 +26,19 @@ _SECTION_RULES_BY_SOURCE = {
         ("lingerie-slips", "Lingerie Slips", ("summer",)),
         ("halterneck-dresses", "Halterneck Dresses", ("summer",)),
     ),
+    "whowhatwear-dress-trends-2026": (
+        ("cape-dresses", "Cape Dresses", ("summer",)),
+        ("modern-t-shirt-dresses", "Modern T-Shirt Dresses", ("summer",)),
+        ("ruffles", "Ruffles", ("summer",)),
+        ("asymmetric-waists", "Asymmetric Waists", ("summer",)),
+        ("silk-minidresses", "Silk Minidresses", ("summer",)),
+        ("bold-blue-dresses", "Bold Blue Dresses", ("summer",)),
+        ("chic-draping", "Chic Draping", ("summer",)),
+    ),
+    "whowhatwear-summer-2026-trend-predictions": (
+        ("tank-dresses", "Tank Dresses", ("summer",)),
+        ("scarf-prints", "Scarf Prints", ("summer",)),
+    ),
 }
 
 

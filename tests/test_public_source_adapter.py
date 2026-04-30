@@ -18,6 +18,16 @@ def _load_snapshot(name: str) -> dict[str, object]:
     return json.loads(_load_fixture(name))
 
 
+def _editorial_source(source_id: str, source_url: str) -> dict[str, object]:
+    return {
+        "source_id": source_id,
+        "source_type": "public_editorial_web",
+        "source_url": source_url,
+        "target_market": "US",
+        "category": "dress",
+    }
+
+
 class PublicSourceAdapterTest(unittest.TestCase):
     def test_resolve_public_source_adapter_returns_whowhatwear_parser(self) -> None:
         from temu_y2_women.public_source_adapter import resolve_public_source_adapter
@@ -92,6 +102,38 @@ class PublicSourceAdapterTest(unittest.TestCase):
             _load_snapshot("expected-whowhatwear-summer-dress-trends-2025-raw-source-snapshot.json"),
         )
 
+    def test_parse_whowhatwear_editorial_html_supports_2026_dress_trends(self) -> None:
+        from temu_y2_women.public_source_adapters.whowhatwear_editorial import parse_whowhatwear_editorial_html
+
+        result = parse_whowhatwear_editorial_html(
+            source=_editorial_source(
+                source_id="whowhatwear-dress-trends-2026",
+                source_url="https://www.whowhatwear.com/fashion/trends/dress-trends-2026",
+            ),
+            html=_load_fixture("whowhatwear-dress-trends-2026.html"),
+            fetched_at="2026-05-01T00:00:00Z",
+        )
+
+        self.assertEqual(result["captured_at"], "2026-04-20")
+        self.assertEqual(len(result["sections"]), 7)
+        self.assertEqual(result["sections"][3]["section_id"], "asymmetric-waists")
+        self.assertIn("Silk Minidresses", [section["heading"] for section in result["sections"]])
+
+    def test_parse_whowhatwear_editorial_html_supports_2026_summer_predictions(self) -> None:
+        from temu_y2_women.public_source_adapters.whowhatwear_editorial import parse_whowhatwear_editorial_html
+
+        result = parse_whowhatwear_editorial_html(
+            source=_editorial_source(
+                source_id="whowhatwear-summer-2026-trend-predictions",
+                source_url="https://www.whowhatwear.com/uk/fashion/summer/summer-2026-trend-predictions",
+            ),
+            html=_load_fixture("whowhatwear-summer-2026-trend-predictions.html"),
+            fetched_at="2026-05-01T00:00:00Z",
+        )
+
+        self.assertEqual(result["captured_at"], "2026-04-16")
+        self.assertEqual([section["section_id"] for section in result["sections"]], ["tank-dresses", "scarf-prints"])
+
     def test_parse_marieclaire_editorial_html_returns_expected_snapshot(self) -> None:
         from temu_y2_women.public_source_adapters.marieclaire_editorial import parse_marieclaire_editorial_html
 
@@ -108,6 +150,40 @@ class PublicSourceAdapterTest(unittest.TestCase):
         )
 
         self.assertEqual(result, _load_snapshot("expected-marieclaire-raw-source-snapshot.json"))
+
+    def test_parse_marieclaire_editorial_html_supports_2026_spring_source(self) -> None:
+        from temu_y2_women.public_source_adapters.marieclaire_editorial import parse_marieclaire_editorial_html
+
+        result = parse_marieclaire_editorial_html(
+            source=_editorial_source(
+                source_id="marieclaire-spring-2026-dress-trends",
+                source_url="https://www.marieclaire.com/fashion/spring-2026-dress-trends/",
+            ),
+            html=_load_fixture("marieclaire-spring-2026-dress-trends.html"),
+            fetched_at="2026-05-01T00:00:00Z",
+        )
+
+        self.assertEqual(result["captured_at"], "2026-04-18")
+        self.assertEqual(len(result["sections"]), 8)
+        self.assertEqual(result["sections"][4]["section_id"], "lace-trimmed-dresses")
+
+    def test_parse_whowhatwear_roundup_html_supports_2026_source(self) -> None:
+        from temu_y2_women.public_source_adapters.whowhatwear_roundup import parse_whowhatwear_roundup_html
+
+        result = parse_whowhatwear_roundup_html(
+            source={
+                "source_id": "whowhatwear-best-summer-dresses-2026",
+                "source_type": "public_roundup_web",
+                "source_url": "https://www.whowhatwear.com/fashion/shopping/best-summer-dresses-2026",
+                "target_market": "US",
+                "category": "dress",
+            },
+            html=_load_fixture("whowhatwear-best-summer-dresses-2026.html"),
+            fetched_at="2026-05-01T00:00:00Z",
+        )
+
+        self.assertEqual(result["captured_at"], "2026-04-17")
+        self.assertEqual([card["title"] for card in result["cards"]], ["Blue Satin Mini Dress", "Striped Midi Dress", "Asymmetric Waist Dress"])
 
     def test_parse_whowhatwear_editorial_html_rejects_missing_sections(self) -> None:
         from temu_y2_women.public_source_adapters.whowhatwear_editorial import parse_whowhatwear_editorial_html
