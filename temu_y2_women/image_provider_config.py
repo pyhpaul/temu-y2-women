@@ -20,7 +20,7 @@ _CODEX_HOME_ENV = "CODEX_HOME"
 class ProviderCliOptions:
     api_key: str | None = None
     base_url: str | None = None
-    model: str = "gpt-image-1"
+    model: str = "gpt-image-2"
     size: str = "1024x1536"
     quality: str = "high"
     background: str = "auto"
@@ -142,9 +142,9 @@ def _default_api_key_candidates(
     return (
         _normalized_text(options.api_key),
         _normalized_text(environ.get(_COMPAT_ANCHOR_API_KEY_ENV)),
-        _normalized_text(environ.get(_API_KEY_ENV)),
         _normalized_text(dotenv.get(_COMPAT_ANCHOR_API_KEY_ENV)),
         _normalized_text(dotenv.get(_API_KEY_ENV)),
+        _normalized_text(environ.get(_API_KEY_ENV)),
     )
 
 

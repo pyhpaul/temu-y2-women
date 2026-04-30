@@ -176,7 +176,13 @@ class SignalIngestionTest(unittest.TestCase):
         waist_tie = next(item for item in draft_elements if item["draft_id"] == "draft-detail-waist-tie")
         self.assertEqual(waist_tie["value"], "waist tie")
         self.assertEqual(waist_tie["tags"], [])
-        self.assertEqual(waist_tie["evidence_summary"], bundle["signals"][0]["structured_candidates"][0]["evidence_summary"])
+        self.assertEqual(
+            waist_tie["evidence_summary"],
+            (
+                "2 cards agree on detail=waist tie: "
+                "Waist ties give lightweight summer dresses a clear shape cue without losing vacation ease."
+            ),
+        )
         self.assertEqual(waist_tie["extraction_provenance"]["kind"], "structured-signal-candidate")
         self.assertEqual(waist_tie["extraction_provenance"]["matched_channels"], ["structured_candidate"])
         self.assertEqual(report["signal_outcomes"][0]["matched_channels"], ["structured_candidate", "text_rule"])
@@ -211,9 +217,44 @@ class SignalIngestionTest(unittest.TestCase):
         self.assertIn("rule_matches", fabric["extraction_provenance"])
         self.assertIn("structured_candidate_matches", fabric["extraction_provenance"])
 
+    def test_ingest_dress_signals_clamps_suggested_base_score_to_taxonomy_max(self) -> None:
+        from temu_y2_women.signal_ingestion import ingest_dress_signals
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            input_path = temp_root / "signals.json"
+            bundle = {
+                "schema_version": "signal-bundle-v1",
+                "signals": [_mini_signal(index) for index in range(1, 10)],
+            }
+            input_path.write_text(json.dumps(bundle), encoding="utf-8")
+            ingest_dress_signals(input_path=input_path, output_dir=temp_root / "staged")
+            draft_elements = _read_json(temp_root / "staged" / "draft_elements.json")["elements"]
+
+        mini = next(item for item in draft_elements if item["draft_id"] == "draft-dress_length-mini")
+        self.assertEqual(mini["suggested_base_score"], 1.0)
+
 
 def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _mini_signal(index: int) -> dict[str, object]:
+    return {
+        "signal_id": f"mini-signal-{index:03d}",
+        "source_type": "manual_import",
+        "source_url": f"https://example.com/source-{index:03d}",
+        "captured_at": "2026-04-22",
+        "target_market": "US",
+        "category": "dress",
+        "title": f"Mini dress signal {index}",
+        "summary": "Summer mini dress demand signal.",
+        "observed_price_band": "mid",
+        "observed_occasion_tags": ["vacation"],
+        "observed_season_tags": ["summer"],
+        "manual_tags": ["summer"],
+        "status": "active",
+    }
 
 
 def _expected_draft_elements_fixture() -> dict[str, object]:

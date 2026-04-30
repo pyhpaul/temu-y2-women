@@ -80,7 +80,7 @@ def _build_signal(
         "observed_price_band": default_price_band,
         "price_band_resolution": "source_default",
         "status": "active",
-        "extraction_provenance": _provenance(observations, aggregation_threshold, slot, value, cards),
+        "extraction_provenance": _provenance(snapshot, observations, aggregation_threshold, slot, value, cards),
     }
 
 
@@ -93,6 +93,7 @@ def _observed_season_tags(snapshot: dict[str, Any]) -> list[str]:
 
 
 def _provenance(
+    snapshot: dict[str, Any],
     observations: dict[str, Any],
     aggregation_threshold: int,
     slot: str,
@@ -107,10 +108,23 @@ def _provenance(
         "supporting_card_count": len(cards),
         "card_limit": observations["card_limit"],
         "aggregation_threshold": aggregation_threshold,
-        "adapter_version": "whowhatwear_roundup_v1",
+        "adapter_version": _adapter_version(snapshot, observations),
         "observation_model": observations["observation_model"],
         "warnings": _supporting_warnings(cards),
     }
+
+
+def _adapter_version(snapshot: dict[str, Any], observations: dict[str, Any]) -> str:
+    snapshot_adapter = snapshot.get("adapter_version")
+    if isinstance(snapshot_adapter, str) and snapshot_adapter.strip():
+        return snapshot_adapter
+    snapshot_adapter = observations.get("adapter_version")
+    if isinstance(snapshot_adapter, str) and snapshot_adapter.strip():
+        return snapshot_adapter
+    source_id = str(snapshot.get("source_id", observations.get("source_id", "")))
+    if source_id.startswith("harpersbazaar-"):
+        return "hearst_roundup_v1"
+    return "whowhatwear_roundup_v1"
 
 
 def _structured_candidate(

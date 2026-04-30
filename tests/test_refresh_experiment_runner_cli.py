@@ -84,6 +84,34 @@ class RefreshExperimentRunnerCliTest(unittest.TestCase):
         apply.assert_called_once_with(
             manifest_path=Path("data/experiments/batch-a/experiment_manifest.json"),
             reviewed_path=Path("data/experiments/batch-a/reviewed.json"),
+            auto_accept_pending=False,
+        )
+
+    def test_apply_passes_auto_accept_flag(self) -> None:
+        stdout = StringIO()
+        apply = Mock(return_value={"experiment_report_path": "C:/tmp/report.json"})
+
+        with patch.dict(
+            sys.modules,
+            {"temu_y2_women.refresh_experiment_runner": _runner_module(apply=apply)},
+        ), patch("sys.stdout", stdout):
+            from temu_y2_women.refresh_experiment_runner_cli import main
+
+            exit_code = main(
+                [
+                    "apply",
+                    "--manifest",
+                    "data/experiments/batch-a/experiment_manifest.json",
+                    "--auto-accept-pending",
+                ]
+            )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(json.loads(stdout.getvalue())["experiment_report_path"], "C:/tmp/report.json")
+        apply.assert_called_once_with(
+            manifest_path=Path("data/experiments/batch-a/experiment_manifest.json"),
+            reviewed_path=None,
+            auto_accept_pending=True,
         )
 
     def test_module_entrypoint_prepare_succeeds(self) -> None:

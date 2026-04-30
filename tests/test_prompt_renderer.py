@@ -84,6 +84,33 @@ class PromptRendererTest(unittest.TestCase):
         self.assertIn("micro print scale", detail_prompts["fabric_print_closeup"])
         self.assertIn("mini proportion", detail_prompts["hem_and_drape_closeup"])
 
+    def test_render_prompt_uses_editorial_value_specific_phrasing(self) -> None:
+        from temu_y2_women.prompt_renderer import render_prompt_bundle
+
+        bundle = render_prompt_bundle(
+            request=_request(mode="A"),
+            concept=_editorial_concept(),
+            selected_strategies=(_strategy(),),
+            selected_style_family=None,
+            warnings=(),
+        )
+
+        prompt = bundle["prompt"]
+        detail_prompts = {item["prompt_id"]: item["prompt"] for item in bundle["detail_prompts"]}
+        self.assertIn("babydoll silhouette with easy high-waist volume", prompt)
+        self.assertIn("linen-blend fabric", prompt)
+        self.assertIn("halter neckline with open shoulders", prompt)
+        self.assertIn("brown neutral color story", prompt)
+        self.assertIn("bubble hem finish", prompt)
+        self.assertIn("two-tone gingham check", prompt)
+        self.assertIn(
+            "keep the halter neckline with open shoulders, babydoll silhouette with easy high-waist volume, bubble hem finish, and two-tone gingham check clearly readable from first glance",
+            prompt,
+        )
+        self.assertIn("Zoom into the halter neckline with open shoulders, bubble hem finish", detail_prompts["construction_closeup"])
+        self.assertIn("Clearly show two-tone gingham check", detail_prompts["fabric_print_closeup"])
+        self.assertIn("babydoll silhouette with easy high-waist volume skirt volume", detail_prompts["hem_and_drape_closeup"])
+
     def test_render_mode_a_derived_hero_jobs_use_edit_instructions(self) -> None:
         from temu_y2_women.prompt_renderer import render_prompt_bundle
 
@@ -96,6 +123,7 @@ class PromptRendererTest(unittest.TestCase):
         )
 
         hero_jobs = {item["prompt_id"]: item for item in bundle["render_jobs"] if item["group"] == "hero"}
+
         self.assertIn("[商品主体]", hero_jobs["hero_front"]["prompt"])
         self.assertTrue(hero_jobs["hero_three_quarter"]["prompt"].startswith("Edit the reference image."))
         self.assertTrue(hero_jobs["hero_back"]["prompt"].startswith("Edit the reference image."))
@@ -301,6 +329,25 @@ def _objective_concept() -> ComposedConcept:
         },
         style_summary=("summer-ready", "vacation-oriented", "feminine silhouette"),
         constraint_notes=("must_have_tags satisfied: floral",),
+    )
+
+
+def _editorial_concept() -> ComposedConcept:
+    return ComposedConcept(
+        category="dress",
+        concept_score=0.93,
+        selected_elements={
+            "silhouette": ComposedElement("dress-silhouette-babydoll-001", "babydoll"),
+            "fabric": ComposedElement("dress-fabric-linen-blend-001", "linen blend"),
+            "neckline": ComposedElement("dress-neckline-halter-001", "halter neckline"),
+            "sleeve": ComposedElement("dress-sleeve-puff-001", "short puff sleeve"),
+            "dress_length": ComposedElement("dress-length-mini-001", "mini"),
+            "color_family": ComposedElement("dress-color-family-brown-001", "brown"),
+            "pattern": ComposedElement("dress-pattern-gingham-check-001", "gingham check"),
+            "detail": ComposedElement("dress-detail-bubble-hem-001", "bubble hem"),
+        },
+        style_summary=("editorial-trend-led", "summer-ready", "commercially grounded"),
+        constraint_notes=(),
     )
 
 

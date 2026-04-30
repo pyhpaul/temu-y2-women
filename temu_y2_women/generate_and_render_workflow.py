@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any, Callable
 
+from temu_y2_women.evidence_paths import EvidencePaths
 from temu_y2_women.errors import GenerationError
 from temu_y2_women.image_generation_output import ImageProvider
 from temu_y2_women.image_generation_workflow import render_dress_concept_image
@@ -19,10 +20,11 @@ def generate_and_render_dress_concept(
     request_path: Path,
     output_dir: Path,
     provider_factory: ImageProviderFactory,
+    evidence_paths: EvidencePaths | None = None,
 ) -> dict[str, Any]:
     try:
         payload = _load_request_payload(request_path)
-        concept_result = generate_dress_concept(payload)
+        concept_result = generate_dress_concept(payload, evidence_paths=evidence_paths)
         if "error" in concept_result:
             return concept_result
         result_path = _write_concept_result(output_dir, concept_result)

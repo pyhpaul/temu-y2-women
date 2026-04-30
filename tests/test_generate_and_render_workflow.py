@@ -6,6 +6,8 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest import mock
 
+from tests.test_public_signal_refresh import _fixture_fetcher_by_url
+
 
 _REQUEST_FIXTURE_PATH = Path("tests/fixtures/requests/dress-generation-mvp/success-summer-vacation-mode-a.json")
 
@@ -32,6 +34,10 @@ class GenerateAndRenderWorkflowSuccessTest(unittest.TestCase):
             self.assertEqual(result["source_result_path"], str(output_dir / "concept_result.json"))
             self.assertEqual(concept_result, expected_concept_result)
             self.assertEqual(concept_result["factory_spec"]["schema_version"], "factory-spec-v1")
+            self.assertEqual(concept_result["prompt_bundle"]["render_jobs"][0]["render_strategy"], "generate")
+            self.assertIsNone(concept_result["prompt_bundle"]["render_jobs"][0]["reference_prompt_id"])
+            self.assertEqual(concept_result["prompt_bundle"]["render_jobs"][1]["render_strategy"], "edit")
+            self.assertEqual(concept_result["prompt_bundle"]["render_jobs"][1]["reference_prompt_id"], "hero_front")
             self.assertEqual(
                 tuple(image["output_name"] for image in result["images"]),
                 (
@@ -53,6 +59,51 @@ class GenerateAndRenderWorkflowSuccessTest(unittest.TestCase):
             self.assertTrue((output_dir / "image_render_report.json").exists())
             self.assertEqual(_read_json(output_dir / "image_render_report.json"), result)
             self.assertFalse((output_dir / "concept_result.json.tmp").exists())
+
+    def test_generate_and_render_can_use_refresh_experiment_evidence_snapshot(self) -> None:
+        from temu_y2_women.generate_and_render_workflow import generate_and_render_dress_concept
+        from temu_y2_women.public_signal_refresh import run_public_signal_refresh
+        from temu_y2_women.refresh_experiment_runner import (
+            apply_refresh_experiment,
+            prepare_refresh_experiment,
+        )
+
+        with TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            refresh = run_public_signal_refresh(
+                registry_path=Path("data/refresh/dress/source_registry.json"),
+                output_root=temp_root,
+                fetched_at="2026-04-30T00:00:00Z",
+                fetcher=_fixture_fetcher_by_url(),
+            )
+            prepared = prepare_refresh_experiment(
+                run_dir=temp_root / refresh["run_id"],
+                request_set_path=Path("tests/fixtures/refresh_experiment/request_set.json"),
+                experiment_root=temp_root / "experiments",
+                workspace_name="render-workflow",
+            )
+            apply_refresh_experiment(
+                manifest_path=Path(prepared["manifest_path"]),
+                auto_accept_pending=True,
+            )
+            workspace_root = Path(prepared["workspace_root"])
+            output_dir = temp_root / "render-output"
+
+            result = generate_and_render_dress_concept(
+                request_path=_REQUEST_FIXTURE_PATH,
+                output_dir=output_dir,
+                provider_factory=lambda: _RecordingProvider(),
+                evidence_paths=_workspace_evidence_paths(workspace_root),
+            )
+
+            concept_result = _read_json(output_dir / "concept_result.json")
+            self.assertEqual(result["provider"], "recording")
+            self.assertEqual(concept_result["selected_strategies"][0]["strategy_id"], "dress-us-summer-vacation")
+            self.assertEqual(
+                concept_result["composed_concept"]["selected_elements"]["neckline"]["value"],
+                "v-neckline",
+            )
+            self.assertTrue((output_dir / "hero_front.png").exists())
 
 
 class GenerateAndRenderWorkflowFailureTest(unittest.TestCase):
@@ -190,9 +241,32 @@ class _ExplodingProvider:
         raise RuntimeError("provider boom")
 
 
+class _RecordingProvider:
+    def render(self, render_input: object) -> object:
+        from temu_y2_women.image_generation_output import ImageProviderResult
+
+        return ImageProviderResult(
+            image_bytes=b"recording-provider-output",
+            mime_type="image/png",
+            provider_name="recording",
+            model="recording-v1",
+        )
+
+
 def _raising_os_error_provider_factory() -> object:
     raise OSError(13, "provider factory failed", "provider-factory")
 
 
 def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _workspace_evidence_paths(workspace_root: Path):
+    from temu_y2_women.evidence_paths import EvidencePaths
+
+    evidence_root = workspace_root / "data" / "mvp" / "dress"
+    return EvidencePaths(
+        elements_path=evidence_root / "elements.json",
+        strategies_path=evidence_root / "strategy_templates.json",
+        taxonomy_path=evidence_root / "evidence_taxonomy.json",
+    )

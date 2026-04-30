@@ -30,6 +30,20 @@
       "enabled": true
     },
     {
+      "source_id": "vogue-spring-2025-dress-trends",
+      "source_type": "public_editorial_web",
+      "source_url": "https://www.vogue.com/article/spring-2025-dress-trends",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "vogue_editorial_v1",
+      "default_price_band": "mid",
+      "pipeline_mode": "editorial_text",
+      "priority": 85,
+      "weight": 0.8,
+      "enabled": true
+    },
+    {
       "source_id": "marieclaire-summer-2025-dress-trends",
       "source_type": "public_editorial_web",
       "source_url": "https://www.marieclaire.com/fashion/summer-fashion/summer-2025-dress-trends/",
@@ -58,6 +72,23 @@
       "observation_model": "gpt-4.1-mini",
       "priority": 70,
       "weight": 0.7,
+      "enabled": true
+    },
+    {
+      "source_id": "harpersbazaar-best-summer-dresses-2025",
+      "source_type": "public_roundup_web",
+      "source_url": "https://www.harpersbazaar.com/fashion/trends/g65192976/best-summer-dresses-for-women/",
+      "target_market": "US",
+      "category": "dress",
+      "fetch_mode": "html",
+      "adapter_id": "hearst_roundup_v1",
+      "default_price_band": "mid",
+      "pipeline_mode": "roundup_image_cards",
+      "card_limit": 12,
+      "aggregation_threshold": 2,
+      "observation_model": "gpt-4.1-mini",
+      "priority": 60,
+      "weight": 0.65,
       "enabled": true
     }
   ]
