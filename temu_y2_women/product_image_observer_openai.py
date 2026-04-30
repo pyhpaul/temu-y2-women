@@ -72,7 +72,15 @@ def _observer_input(image: dict[str, Any]) -> dict[str, Any]:
 
 
 def _observer_prompt(image: dict[str, Any]) -> str:
-    return "return JSON only with keys observed_slots, abstained_slots, warnings."
+    return (
+        "Observe this women's dress product image and return JSON only. "
+        "Use keys observed_slots, abstained_slots, warnings. "
+        "Allowed slots: silhouette, neckline, sleeve, dress_length, pattern, "
+        "color_family, waistline, print_scale, opacity_level, detail. "
+        "If a slot is not clearly visible, put it in abstained_slots. "
+        f"View label: {image.get('view_label', '')}. "
+        "Do not infer subjective style labels."
+    )
 
 
 def _image_data_url(path: Path) -> str:
