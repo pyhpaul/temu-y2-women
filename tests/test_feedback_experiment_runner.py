@@ -21,16 +21,16 @@ class EvidencePathOverrideTest(unittest.TestCase):
 
         with TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
-            source_paths = _seed_source_bundle(temp_root, v_neck_score=0.90)
+            source_paths = _seed_source_bundle(temp_root, jewel_score=0.90)
             payload = _read_json(_REQUEST_FIXTURE_PATH)
 
             result = generate_dress_concept(payload, evidence_paths=source_paths)
 
-        v_neckline = _find_retrieved(result, "dress-neckline-v-neckline-001")
-        self.assertEqual(v_neckline["effective_score"], 0.95)
+        jewel_neckline = _find_retrieved(result, "dress-neckline-jewel-001")
+        self.assertEqual(jewel_neckline["effective_score"], 0.95)
         self.assertEqual(
             result["composed_concept"]["selected_elements"]["neckline"]["element_id"],
-            "dress-neckline-v-neckline-001",
+            "dress-neckline-jewel-001",
         )
 
     def test_evidence_paths_defaults_are_repo_root_anchored(self) -> None:
@@ -49,7 +49,7 @@ class EvidencePathOverrideTest(unittest.TestCase):
 
         self.assertEqual(
             result["composed_concept"]["selected_elements"]["neckline"]["element_id"],
-            "dress-neckline-v-neckline-001",
+            "dress-neckline-jewel-001",
         )
 
 
@@ -65,7 +65,7 @@ class FeedbackExperimentPrepareTest(unittest.TestCase):
 
         with TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
-            source_bundle = _seed_full_source_bundle(temp_root, v_neck_score=0.90)
+            source_bundle = _seed_full_source_bundle(temp_root, jewel_score=0.90)
             experiment_root = temp_root / "experiments"
             with patch(
                 "temu_y2_women.feedback_experiment_runner._next_experiment_id",
@@ -96,7 +96,7 @@ class FeedbackExperimentPrepareTest(unittest.TestCase):
             self.assertEqual(review["schema_version"], "feedback-review-v1")
             self.assertEqual(
                 baseline["composed_concept"]["selected_elements"]["neckline"]["element_id"],
-                "dress-neckline-v-neckline-001",
+                "dress-neckline-jewel-001",
             )
             self.assertTrue((experiment_root / "baseline-v-neck" / "data" / "mvp" / "dress" / "elements.json").exists())
             self.assertTrue(
@@ -173,7 +173,11 @@ def _find_retrieved(result: dict[str, object], element_id: str) -> dict[str, obj
     raise AssertionError(f"retrieved element not found: {element_id}")
 
 
-def _seed_source_bundle(temp_root: Path, v_neck_score: float) -> "EvidencePaths":
+def _seed_source_bundle(
+    temp_root: Path,
+    v_neck_score: float | None = None,
+    jewel_score: float | None = None,
+) -> "EvidencePaths":
     from temu_y2_women.evidence_paths import EvidencePaths
 
     elements_path = temp_root / "elements.json"
@@ -183,8 +187,10 @@ def _seed_source_bundle(temp_root: Path, v_neck_score: float) -> "EvidencePaths"
 
     elements_payload = _read_json(_ACTIVE_ELEMENTS_PATH)
     for element in elements_payload["elements"]:
-        if element["element_id"] == "dress-neckline-v-neckline-001":
+        if element["element_id"] == "dress-neckline-v-neckline-001" and v_neck_score is not None:
             element["base_score"] = v_neck_score
+        if element["element_id"] == "dress-neckline-jewel-001" and jewel_score is not None:
+            element["base_score"] = jewel_score
 
     _write_json(elements_path, elements_payload)
     strategies_path.write_text(_ACTIVE_STRATEGIES_PATH.read_text(encoding="utf-8"), encoding="utf-8")
@@ -200,6 +206,7 @@ def _seed_source_bundle(temp_root: Path, v_neck_score: float) -> "EvidencePaths"
 def _seed_full_source_bundle(
     temp_root: Path,
     v_neck_score: float | None = None,
+    jewel_score: float | None = None,
     square_score: float | None = None,
 ) -> dict[str, Path]:
     bundle_root = temp_root / "source"
@@ -213,6 +220,8 @@ def _seed_full_source_bundle(
     for element in elements_payload["elements"]:
         if element["element_id"] == "dress-neckline-v-neckline-001" and v_neck_score is not None:
             element["base_score"] = v_neck_score
+        if element["element_id"] == "dress-neckline-jewel-001" and jewel_score is not None:
+            element["base_score"] = jewel_score
         if element["element_id"] == "dress-neckline-square-001" and square_score is not None:
             element["base_score"] = square_score
 

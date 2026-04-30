@@ -283,6 +283,8 @@ def _build_structured_review_context(draft_element: dict[str, Any]) -> dict[str,
         return None
     structured_matches = provenance.get("structured_matches")
     if not isinstance(structured_matches, list) or not structured_matches:
+        structured_matches = provenance.get("structured_candidate_matches")
+    if not isinstance(structured_matches, list) or not structured_matches:
         return None
     context = {
         "matched_channels": list(provenance.get("matched_channels", [])),

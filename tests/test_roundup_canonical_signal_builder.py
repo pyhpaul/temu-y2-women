@@ -54,6 +54,47 @@ class RoundupCanonicalSignalBuilderTest(unittest.TestCase):
         self.assertEqual(candidate["observation_model"], "fake-roundup-observer")
         self.assertIn("hemline ends above knee", candidate["evidence_summary"])
 
+    def test_build_roundup_canonical_signals_uses_snapshot_adapter_version_when_present(self) -> None:
+        from temu_y2_women.roundup_canonical_signal_builder import build_roundup_canonical_signals
+
+        snapshot = _read_json(_FIXTURE_DIR / "expected-harpersbazaar-best-summer-dresses-2025-raw-source-snapshot.json")
+        snapshot["adapter_version"] = "hearst_roundup_v1"
+        observations = {
+            "schema_version": "public-card-observations-v1",
+            "source_id": snapshot["source_id"],
+            "source_url": snapshot["source_url"],
+            "fetched_at": snapshot["fetched_at"],
+            "observation_model": "fake-roundup-observer",
+            "card_limit": 12,
+            "cards": [
+                {
+                    **snapshot["cards"][0],
+                    "observed_slots": [
+                        {"slot": "dress_length", "value": "mini", "evidence_summary": "hemline ends above knee"}
+                    ],
+                    "abstained_slots": [],
+                    "warnings": [],
+                },
+                {
+                    **snapshot["cards"][1],
+                    "observed_slots": [
+                        {"slot": "dress_length", "value": "mini", "evidence_summary": "hemline ends above knee"}
+                    ],
+                    "abstained_slots": [],
+                    "warnings": [],
+                },
+            ],
+        }
+
+        result = build_roundup_canonical_signals(
+            snapshot=snapshot,
+            observations=observations,
+            default_price_band="mid",
+            aggregation_threshold=2,
+        )
+
+        self.assertEqual(result["signals"][0]["extraction_provenance"]["adapter_version"], "hearst_roundup_v1")
+
 
 def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))

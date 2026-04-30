@@ -1,0 +1,13 @@
+{
+  "schema_version": "refresh-experiment-request-set-v1",
+  "requests": [
+    {
+      "request_id": "baseline-transitional",
+      "request_path": "tests/fixtures/requests/dress-generation-mvp/success-baseline-transitional-mode-a.json"
+    },
+    {
+      "request_id": "summer-vacation",
+      "request_path": "tests/fixtures/requests/dress-generation-mvp/success-summer-vacation-mode-a.json"
+    }
+  ]
+}

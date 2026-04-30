@@ -226,6 +226,27 @@ class CanonicalSignalBuilderTest(unittest.TestCase):
         self.assertEqual(signal["extraction_provenance"]["warnings"], ["custom warning"])
         self.assertEqual(signal["extraction_provenance"]["confidence"], 0.91)
 
+    def test_builds_profileless_editorial_source_from_section_metadata(self) -> None:
+        from temu_y2_women.canonical_signal_builder import build_canonical_signals
+
+        snapshot = json.loads(
+            (_FIXTURE_DIR / "expected-vogue-spring-2025-raw-source-snapshot.json").read_text(encoding="utf-8")
+        )
+        for section in snapshot["sections"]:
+            section["adapter_version"] = "vogue_editorial_v1"
+            section["confidence"] = 0.66
+
+        result = build_canonical_signals(snapshot=snapshot, default_price_band="mid")
+
+        self.assertEqual(len(result["signals"]), 10)
+        self.assertEqual(
+            result["signals"][0]["canonical_signal_id"],
+            "vogue-spring-2025-dress-trends-butter-yellow-dress-001",
+        )
+        self.assertEqual(result["signals"][0]["evidence_excerpt"], "If there's one color trend you should opt into, especially as a neutral enthusiast, it's butter yellow")
+        self.assertEqual(result["signals"][0]["extraction_provenance"]["adapter_version"], "vogue_editorial_v1")
+        self.assertEqual(result["signals"][0]["extraction_provenance"]["confidence"], 0.66)
+
 
 def _load_snapshot() -> dict[str, object]:
     return json.loads((_FIXTURE_DIR / "expected-whowhatwear-raw-source-snapshot.json").read_text(encoding="utf-8"))

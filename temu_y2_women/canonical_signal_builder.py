@@ -15,40 +15,149 @@ _CANONICAL_SCHEMA_VERSION = "canonical-signals-v1"
 _ALLOWED_PRICE_BANDS = {"low", "mid", "high"}
 _ALLOWED_SIGNAL_STATUS = {"active"}
 _ALLOWED_PRICE_BAND_RESOLUTION = {"observed", "source_default", "rule_fallback"}
-_SECTION_CONFIDENCE = {
-    "the-vacation-mini": 0.78,
-    "fairy-sleeves": 0.74,
-    "all-things-polka-dots": 0.68,
-    "the-exaggerated-drop-waist": 0.70,
-    "sheer-printed-midis": 0.69,
+_SOURCE_PROFILES = {
+    "whowhatwear-summer-2025-dress-trends": {
+        "adapter_version": "whowhatwear_editorial_v1",
+        "section_confidence": {
+            "the-vacation-mini": 0.78,
+            "fairy-sleeves": 0.74,
+            "all-things-polka-dots": 0.68,
+            "the-exaggerated-drop-waist": 0.70,
+            "sheer-printed-midis": 0.69,
+        },
+        "evidence_rules": (
+            {
+                "keywords": ("smocked bodices", "halter ties", "prints", "vacation mini"),
+                "manual_tags": ("vacation",),
+                "excerpt_anchor": "smocked bodices",
+            },
+            {
+                "keywords": ("fairy sleeves", "fluttery", "romance"),
+                "manual_tags": ("airy", "romantic"),
+                "excerpt_anchor": "soft, fluttery",
+            },
+            {
+                "keywords": ("polka dots", "micro-dot", "dotted dress"),
+                "manual_tags": (),
+                "excerpt_anchor": "whether you go micro-dot",
+            },
+            {
+                "keywords": ("drop-waist dresses", "dramatic volume", "structure"),
+                "manual_tags": (),
+                "excerpt_anchor": "drop-waist dresses",
+            },
+            {
+                "keywords": ("sheer", "soft printed dresses", "playful and polished"),
+                "manual_tags": ("airy",),
+                "excerpt_anchor": "soft printed dresses",
+            },
+        ),
+    },
+    "whowhatwear-summer-dress-trends-2025": {
+        "adapter_version": "whowhatwear_editorial_v1",
+        "section_confidence": {
+            "shirred-bodices": 0.74,
+            "drop-waist": 0.76,
+            "elegant-bandeaus": 0.69,
+            "chic-stripes": 0.68,
+            "romantic-sleeves": 0.71,
+            "bubble-hems": 0.66,
+            "lingerie-slips": 0.67,
+            "halterneck-dresses": 0.72,
+        },
+        "evidence_rules": (
+            {
+                "keywords": ("shirred dress trend", "smocked bodices", "shirring"),
+                "manual_tags": ("feminine",),
+                "excerpt_anchor": "shirred dress trend",
+            },
+            {
+                "keywords": ("drop-waist dress trend", "drop-waist", "lengthened effect"),
+                "manual_tags": ("feminine",),
+                "excerpt_anchor": "drop-waist dress trend",
+            },
+            {
+                "keywords": ("absence of straps", "bustiers", "bandeau dress"),
+                "manual_tags": ("party",),
+                "excerpt_anchor": "absence of straps",
+            },
+            {
+                "keywords": ("stripes", "neapolitan", "discrete lines"),
+                "manual_tags": (),
+                "excerpt_anchor": "stripes have rightfully earned",
+            },
+            {
+                "keywords": ("romantic", "puff sleeves", "broderie anglaise"),
+                "manual_tags": ("romantic",),
+                "excerpt_anchor": "romantic, dreamy takes",
+            },
+            {
+                "keywords": ("bubble-hem trend", "bubble hems"),
+                "manual_tags": (),
+                "excerpt_anchor": "bubble-hem trend",
+            },
+            {
+                "keywords": ("slip dresses", "open button-down shirt", "summer aesthetic"),
+                "manual_tags": (),
+                "excerpt_anchor": "slip dresses will never go out of style",
+            },
+            {
+                "keywords": ("halter neck trend", "halterneck", "in-demand trends"),
+                "manual_tags": (),
+                "excerpt_anchor": "halter neck trend",
+            },
+        ),
+    },
+    "marieclaire-summer-2025-dress-trends": {
+        "adapter_version": "marieclaire_editorial_v1",
+        "section_confidence": {
+            "linen-dresses": 0.71,
+            "smocked-dresses": 0.76,
+            "chocolate-brown-dresses": 0.67,
+            "polka-dot-dresses": 0.72,
+            "gingham-dresses": 0.70,
+            "boho-dresses": 0.75,
+            "babydoll-dresses": 0.69,
+        },
+        "evidence_rules": (
+            {
+                "keywords": ("linen dresses", "summer wardrobe", "mid-summer refresh"),
+                "manual_tags": ("lightweight",),
+                "excerpt_anchor": "linen dresses are fundamental",
+            },
+            {
+                "keywords": ("smocked dresses", "throw-on-and-go", "hottest days"),
+                "manual_tags": (),
+                "excerpt_anchor": "smocked dresses have quietly saved",
+            },
+            {
+                "keywords": ("chocolate brown", "summer neutral shade", "comfort zone"),
+                "manual_tags": (),
+                "excerpt_anchor": "chocolate brown is making a strong case",
+            },
+            {
+                "keywords": ("polka dot", "it-print", "strong comeback"),
+                "manual_tags": (),
+                "excerpt_anchor": "polka dot is summer's it-print",
+            },
+            {
+                "keywords": ("gingham", "major print trend", "must-buy status"),
+                "manual_tags": (),
+                "excerpt_anchor": "major print trend for the season",
+            },
+            {
+                "keywords": ("boho fashion trend", "floaty silhouettes", "sheer fabrics"),
+                "manual_tags": ("airy", "romantic"),
+                "excerpt_anchor": "boho fashion trend is going strong",
+            },
+            {
+                "keywords": ("babydoll silhouette", "low-key days", "heat waves"),
+                "manual_tags": (),
+                "excerpt_anchor": "rise of the babydoll silhouette",
+            },
+        ),
+    },
 }
-_EVIDENCE_RULES = (
-    {
-        "keywords": ("smocked bodices", "halter ties", "prints", "vacation mini"),
-        "manual_tags": ("vacation",),
-        "excerpt_anchor": "smocked bodices",
-    },
-    {
-        "keywords": ("fairy sleeves", "fluttery", "romance"),
-        "manual_tags": ("airy", "romantic"),
-        "excerpt_anchor": "soft, fluttery",
-    },
-    {
-        "keywords": ("polka dots", "micro-dot", "dotted dress"),
-        "manual_tags": (),
-        "excerpt_anchor": "whether you go micro-dot",
-    },
-    {
-        "keywords": ("drop-waist dresses", "dramatic volume", "structure"),
-        "manual_tags": (),
-        "excerpt_anchor": "drop-waist dresses",
-    },
-    {
-        "keywords": ("sheer", "soft printed dresses", "playful and polished"),
-        "manual_tags": ("airy",),
-        "excerpt_anchor": "soft printed dresses",
-    },
-)
 _CANONICAL_SIGNAL_REQUIRED_FIELDS = {
     "canonical_signal_id",
     "source_id",
@@ -98,7 +207,9 @@ def _build_canonical_signal(
     default_price_band: str,
     index: int,
 ) -> dict[str, Any]:
-    evidence_excerpt, matched_keywords = _derive_evidence(section)
+    profile = _optional_source_profile(str(snapshot["source_id"]))
+    evidence_rules = tuple(profile["evidence_rules"]) if profile is not None else ()
+    evidence_excerpt, matched_keywords = _derive_evidence(section, evidence_rules)
     return {
         "canonical_signal_id": f"{snapshot['source_id']}-{section['section_id']}-{index:03d}",
         "source_id": snapshot["source_id"],
@@ -113,19 +224,19 @@ def _build_canonical_signal(
         "evidence_excerpt": evidence_excerpt,
         "observed_occasion_tags": _derive_occasion_tags(section),
         "observed_season_tags": _derive_season_tags(section),
-        "manual_tags": _derive_manual_tags(section, matched_keywords),
+        "manual_tags": _derive_manual_tags(section, matched_keywords, evidence_rules),
         "observed_price_band": default_price_band,
         "price_band_resolution": "source_default",
         "status": "active",
-        "extraction_provenance": _build_provenance(section, matched_keywords),
+        "extraction_provenance": _build_provenance(snapshot, section, matched_keywords, profile),
     }
 
 
-def _derive_evidence(section: dict[str, Any]) -> tuple[str, list[str]]:
+def _derive_evidence(section: dict[str, Any], evidence_rules: tuple[dict[str, Any], ...]) -> tuple[str, list[str]]:
     metadata = _section_evidence_metadata(section)
     if metadata is not None:
         return metadata
-    rule = _best_evidence_rule(section)
+    rule = _best_evidence_rule(section, evidence_rules)
     if rule is None:
         return _default_excerpt(str(section["text"])), []
     matched_keywords = _matched_keywords(rule, _section_corpus(section))
@@ -142,11 +253,14 @@ def _section_evidence_metadata(section: dict[str, Any]) -> tuple[str, list[str]]
     return excerpt, matched_keywords or []
 
 
-def _best_evidence_rule(section: dict[str, Any]) -> dict[str, Any] | None:
+def _best_evidence_rule(
+    section: dict[str, Any],
+    evidence_rules: tuple[dict[str, Any], ...],
+) -> dict[str, Any] | None:
     corpus = _section_corpus(section)
     best_rule: dict[str, Any] | None = None
     best_score = 0
-    for rule in _EVIDENCE_RULES:
+    for rule in evidence_rules:
         score = len(_matched_keywords(rule, corpus))
         if score > best_score:
             best_rule = dict(rule)
@@ -163,8 +277,12 @@ def _section_corpus(section: dict[str, Any]) -> str:
 
 
 def _excerpt_from_text(text: str, anchor: str) -> str:
-    normalized_anchor = _normalize_text(anchor)
+    casefold_anchor = anchor.casefold().strip()
     for sentence in _split_sentences(text):
+        direct_index = sentence.casefold().find(casefold_anchor)
+        if direct_index >= 0:
+            return sentence[direct_index:].strip().rstrip(".!?")
+        normalized_anchor = _normalize_text(anchor)
         index = _normalize_text(sentence).find(normalized_anchor)
         if index >= 0:
             return sentence[index:].strip().rstrip(".!?")
@@ -188,40 +306,78 @@ def _derive_season_tags(section: dict[str, Any]) -> list[str]:
     return _supported_source_tags(list(section["tags"]), "allowed_seasons")
 
 
-def _derive_manual_tags(section: dict[str, Any], matched_keywords: list[str]) -> list[str]:
+def _derive_manual_tags(
+    section: dict[str, Any],
+    matched_keywords: list[str],
+    evidence_rules: tuple[dict[str, Any], ...],
+) -> list[str]:
     values = [
         *_supported_source_tags(list(section["tags"]), "allowed_tags"),
-        *_manual_tags_from_keywords(matched_keywords),
+        *_manual_tags_from_keywords(matched_keywords, evidence_rules),
     ]
     return _validated_tags(values, "allowed_tags", "manual_tags")
 
 
-def _manual_tags_from_keywords(matched_keywords: list[str]) -> list[str]:
+def _manual_tags_from_keywords(
+    matched_keywords: list[str],
+    evidence_rules: tuple[dict[str, Any], ...],
+) -> list[str]:
     values: list[str] = []
     matched = set(matched_keywords)
-    for rule in _EVIDENCE_RULES:
+    for rule in evidence_rules:
         if matched.intersection(rule["keywords"]):
             values.extend(list(rule["manual_tags"]))
     return values
 
 
-def _section_confidence(section: dict[str, Any]) -> float:
+def _source_profile(source_id: str) -> dict[str, Any]:
+    profile = _SOURCE_PROFILES.get(source_id)
+    if profile is not None:
+        return profile
+    raise _builder_error("snapshot.source_id", "unsupported raw source snapshot source_id")
+
+
+def _optional_source_profile(source_id: str) -> dict[str, Any] | None:
+    return _SOURCE_PROFILES.get(source_id)
+
+
+def _section_confidence(profile: dict[str, Any] | None, section: dict[str, Any]) -> float:
     value = section.get("confidence")
-    if isinstance(value, bool):
-        raise _builder_error("section.confidence", "section.confidence must be numeric")
-    if isinstance(value, (int, float)):
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
         return float(value)
-    return _SECTION_CONFIDENCE.get(str(section["section_id"]), 0.65)
+    if profile is None:
+        return 0.65
+    return profile["section_confidence"].get(str(section["section_id"]), 0.65)
 
 
-def _build_provenance(section: dict[str, Any], matched_keywords: list[str]) -> dict[str, Any]:
+def _build_provenance(
+    snapshot: dict[str, Any],
+    section: dict[str, Any],
+    matched_keywords: list[str],
+    profile: dict[str, Any] | None,
+) -> dict[str, Any]:
     return {
-        "source_section": section["section_id"],
+        "source_section": str(section["section_id"]),
         "matched_keywords": matched_keywords,
-        "adapter_version": _optional_string(section, "adapter_version") or "whowhatwear_editorial_v1",
+        "adapter_version": _adapter_version(snapshot, section, profile),
         "warnings": _optional_string_list(section, "warnings") or ["price band defaulted from source registry"],
-        "confidence": _section_confidence(section),
+        "confidence": _section_confidence(profile, section),
     }
+
+
+def _adapter_version(snapshot: dict[str, Any], section: dict[str, Any], profile: dict[str, Any] | None) -> str:
+    section_version = _optional_string(section, "adapter_version")
+    if section_version:
+        return section_version
+    snapshot_version = _optional_string(snapshot, "adapter_version")
+    if snapshot_version:
+        return snapshot_version
+    if profile is not None:
+        return str(profile["adapter_version"])
+    source_id = str(snapshot["source_id"])
+    if source_id.startswith("vogue-"):
+        return "vogue_editorial_v1"
+    return "profileless_editorial_v1"
 
 
 def _build_signal_bundle_record(signal: dict[str, Any]) -> dict[str, Any]:
