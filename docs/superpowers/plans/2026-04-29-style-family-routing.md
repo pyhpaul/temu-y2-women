@@ -1,6 +1,6 @@
 # Style Family Routing Implementation Plan
 
-> Completion status: implementation tasks 1-7 are on `main` and verified with focused style-family suites, style modules `py_compile`, function-length guard on `temu_y2_women tests`, and forbidden-pattern guard on 2026-05-01. Task 8 remains pending because it requires local image generation under `tmp/style-family-routing/`.
+> Completion status: implementation tasks 1-7 are on `main` and verified with focused style-family suites, style modules `py_compile`, function-length guard on `temu_y2_women tests`, and forbidden-pattern guard on 2026-05-01. Task 8 is partially executed under `tmp/style-family-routing/`: requests, concepts, hero-front prompts, render-error outputs, smoke diagnostics, and manifest exist locally, but image files and visual acceptance remain blocked because callxyq `/images/generations` returns 500 `task_failed`. PR #61 fixed the smoke harness transport so diagnostics now match the real provider path: `GET /models` returns 200 and `POST /images/generations` returns 500.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -128,13 +128,14 @@
 **Files:**
 - Create local only: `tmp/style-family-routing/`
 
-- [ ] 准备 4 个请求：
+- [x] 准备 4 个请求：
   - `vacation-romantic`
   - `clean-minimal`
   - `city-polished`
   - `party-fitted`
-- [ ] 只跑 `hero_front generate`
-- [ ] 落盘 prompt / concept / image / manifest
+- [x] 只跑 `hero_front generate`（4 个 family 均已尝试，均被 callxyq 500 `task_failed` 阻断）
+- [x] 落盘 prompt / concept / render-error / manifest
+- [ ] 落盘 image
 - [ ] 验收“只看图是否一眼能区分”
 
 ### Task 9: 提交、推送、创建 PR
