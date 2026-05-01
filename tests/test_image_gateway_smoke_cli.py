@@ -89,6 +89,39 @@ class ImageGatewaySmokeCliTest(unittest.TestCase):
         self.assertEqual(settings.expansion_api_key, "cli-expansion")
         self.assertEqual(payload["requested_checks"], ["models"])
 
+    def test_cli_uses_curl_http_client_for_callxyq_base_url(self) -> None:
+        from temu_y2_women.image_gateway_smoke_cli import main
+        from temu_y2_women.image_gateway_smoke_http import GatewaySmokeCurlHttpClient
+
+        stdout = io.StringIO()
+        captured: list[dict[str, object]] = []
+        with TemporaryDirectory() as temp_dir:
+            with patch.dict(os.environ, {"CODEX_HOME": str(Path(temp_dir) / ".codex")}, clear=True):
+                with _isolated_dotenv(temp_dir):
+                    with patch(
+                        "temu_y2_women.image_gateway_smoke_cli.run_gateway_smoke",
+                        side_effect=_capture_smoke_runner_with_client(captured),
+                    ):
+                        with patch("sys.stdout", stdout):
+                            exit_code = main(
+                                [
+                                    "run",
+                                    "--base-url",
+                                    "https://callxyq.xyz/v1",
+                                    "--anchor-api-key",
+                                    "anchor-key",
+                                    "--expansion-api-key",
+                                    "expansion-key",
+                                    "--check",
+                                    "models",
+                                ]
+                            )
+
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(exit_code, 0)
+        self.assertIsInstance(captured[0]["http_client"], GatewaySmokeCurlHttpClient)
+        self.assertEqual(payload["requested_checks"], ["models"])
+
     def test_cli_returns_structured_provider_config_error(self) -> None:
         from temu_y2_women.image_gateway_smoke_cli import main
 
@@ -109,6 +142,28 @@ class ImageGatewaySmokeCliTest(unittest.TestCase):
 def _capture_smoke_runner(captured: list[object]) -> object:
     def run_smoke(settings: object, *, check_ids: list[str] | None = None, http_client: object = None) -> dict[str, object]:
         captured.append(settings)
+        return {
+            "schema_version": "image-gateway-smoke-report-v1",
+            "model": getattr(settings, "model"),
+            "base_url": getattr(settings, "base_url"),
+            "timeout_sec": getattr(settings, "timeout_sec"),
+            "requested_checks": check_ids or [
+                "models",
+                "generate-anchor",
+                "generate-expansion",
+                "edit-anchor",
+                "edit-expansion",
+            ],
+            "checks": [],
+            "summary": {"total": 0, "passed": 0, "failed": 0},
+        }
+
+    return run_smoke
+
+
+def _capture_smoke_runner_with_client(captured: list[dict[str, object]]) -> object:
+    def run_smoke(settings: object, *, check_ids: list[str] | None = None, http_client: object = None) -> dict[str, object]:
+        captured.append({"settings": settings, "http_client": http_client})
         return {
             "schema_version": "image-gateway-smoke-report-v1",
             "model": getattr(settings, "model"),
