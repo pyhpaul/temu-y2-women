@@ -9,6 +9,69 @@ from temu_y2_women.errors import GenerationError
 
 
 class ImageProviderConfigTest(unittest.TestCase):
+    def test_diagnostics_show_process_env_overrides_dotenv_without_secrets(self) -> None:
+        from temu_y2_women.image_provider_config import ProviderCliOptions, diagnose_openai_provider_config
+
+        with TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            codex_home.mkdir()
+            dotenv_path = Path(temp_dir) / ".env"
+            dotenv_path.write_text(
+                "\n".join(
+                    [
+                        "OPENAI_COMPAT_BASE_URL=https://dotenv.test/v1?token=dotenv-secret",
+                        "OPENAI_COMPAT_ANCHOR_API_KEY=dotenv-anchor-secret",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            diagnostics = diagnose_openai_provider_config(
+                ProviderCliOptions(model="gpt-image-2"),
+                codex_home=codex_home,
+                environ={
+                    "OPENAI_COMPAT_BASE_URL": "https://process.test/v1/images?token=process-secret",
+                    "OPENAI_COMPAT_ANCHOR_API_KEY": "process-anchor-secret",
+                },
+                env_path=dotenv_path,
+            )
+
+        serialized = json.dumps(diagnostics, sort_keys=True)
+        api_key_candidates = diagnostics["api_key"]["candidates"]
+        dotenv_candidate = _candidate_by_source(api_key_candidates, "dotenv:OPENAI_COMPAT_ANCHOR_API_KEY")
+        self.assertEqual(diagnostics["api_key"]["source"], "process_env:OPENAI_COMPAT_ANCHOR_API_KEY")
+        self.assertEqual(diagnostics["api_key"]["length"], len("process-anchor-secret"))
+        self.assertEqual(
+            diagnostics["api_key"]["fingerprint_prefix"],
+            _fingerprint_prefix("process-anchor-secret"),
+        )
+        self.assertEqual(dotenv_candidate["overridden_by"], "process_env:OPENAI_COMPAT_ANCHOR_API_KEY")
+        self.assertEqual(diagnostics["base_url"]["source"], "process_env:OPENAI_COMPAT_BASE_URL")
+        self.assertEqual(diagnostics["base_url"]["host"], "process.test")
+        self.assertEqual(diagnostics["base_url"]["path"], "/v1/images")
+        self.assertNotIn("process-anchor-secret", serialized)
+        self.assertNotIn("dotenv-anchor-secret", serialized)
+        self.assertNotIn("process-secret", serialized)
+        self.assertNotIn("dotenv-secret", serialized)
+
+    def test_diagnostics_report_missing_api_key_without_raising(self) -> None:
+        from temu_y2_women.image_provider_config import ProviderCliOptions, diagnose_openai_provider_config
+
+        with TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            codex_home.mkdir()
+
+            diagnostics = diagnose_openai_provider_config(
+                ProviderCliOptions(),
+                codex_home=codex_home,
+                environ={},
+                env_path=Path(temp_dir) / "missing.env",
+            )
+
+        self.assertIsNone(diagnostics["api_key"]["source"])
+        self.assertFalse(diagnostics["api_key"]["present"])
+        self.assertEqual(diagnostics["model"]["value"], "gpt-image-2")
+
     def test_resolve_openai_provider_config_reads_auth_json_and_config_toml(self) -> None:
         from temu_y2_women.image_provider_config import ProviderCliOptions, resolve_openai_provider_config
 
@@ -109,6 +172,24 @@ class ImageProviderConfigTest(unittest.TestCase):
             )
 
         self.assertEqual(resolved.api_key, "env-key")
+
+    def test_process_openai_api_key_overrides_dotenv_openai_api_key(self) -> None:
+        from temu_y2_women.image_provider_config import ProviderCliOptions, resolve_openai_provider_config
+
+        with TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            codex_home.mkdir()
+            dotenv_path = Path(temp_dir) / ".env"
+            dotenv_path.write_text("OPENAI_API_KEY=dotenv-openai-key\n", encoding="utf-8")
+
+            resolved = resolve_openai_provider_config(
+                ProviderCliOptions(),
+                codex_home=codex_home,
+                environ={"OPENAI_API_KEY": "process-openai-key"},
+                env_path=dotenv_path,
+            )
+
+        self.assertEqual(resolved.api_key, "process-openai-key")
 
     def test_resolve_openai_provider_configs_reads_dual_keys_from_dotenv(self) -> None:
         from temu_y2_women.image_provider_config import ProviderCliOptions, resolve_openai_provider_configs
@@ -252,3 +333,16 @@ def _write_auth_json(path: Path, api_key: str) -> None:
 
 def _write_config_toml(path: Path, base_url: str) -> None:
     path.write_text(f'base_url = "{base_url}"\n', encoding="utf-8")
+
+
+def _candidate_by_source(candidates: object, source: str) -> dict[str, object]:
+    for candidate in candidates:
+        if candidate["source"] == source:
+            return candidate
+    raise AssertionError(f"missing candidate source: {source}")
+
+
+def _fingerprint_prefix(api_key: str) -> str:
+    import hashlib
+
+    return "sha256:" + hashlib.sha256(api_key.encode("utf-8")).hexdigest()[:12]

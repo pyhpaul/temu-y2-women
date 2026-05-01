@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import json
 import os
 from pathlib import Path
 import tomllib
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
+from urllib.parse import urlsplit
 
 from temu_y2_women.errors import GenerationError
 
@@ -44,6 +46,19 @@ class ResolvedOpenAIProviderConfigs:
     expansion_config: ResolvedOpenAIImageConfig | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class _ConfigCandidate:
+    source: str
+    value: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class _ConfigResolution:
+    source: str | None
+    value: str | None
+    candidates: tuple[_ConfigCandidate, ...]
+
+
 def resolve_openai_provider_config(
     options: ProviderCliOptions,
     *,
@@ -57,6 +72,25 @@ def resolve_openai_provider_config(
         environ=environ,
         env_path=env_path,
     ).default_config
+
+
+def diagnose_openai_provider_config(
+    options: ProviderCliOptions,
+    *,
+    codex_home: Path | None = None,
+    environ: Mapping[str, str] | None = None,
+    env_path: Path | None = None,
+) -> dict[str, object]:
+    env = dict(os.environ if environ is None else environ)
+    dotenv_path = env_path or _default_env_path()
+    dotenv = _load_dotenv_map(dotenv_path)
+    resolved_home = codex_home or _default_codex_home(env)
+    return {
+        "model": {"source": "options.model", "value": options.model},
+        "base_url": _base_url_diagnostics(_base_url_resolution(options, resolved_home, env, dotenv)),
+        "api_key": _api_key_diagnostics(_default_api_key_resolution(options, resolved_home, env, dotenv)),
+        "expansion_api_key": _api_key_diagnostics(_expansion_api_key_resolution(options, env, dotenv)),
+    }
 
 
 def resolve_openai_provider_configs(
@@ -94,13 +128,10 @@ def _resolve_api_key(
     dotenv: Mapping[str, str],
     dotenv_path: Path,
 ) -> str:
-    for value in _default_api_key_candidates(options, environ, dotenv):
-        if value:
-            return value
     auth_path = codex_home / "auth.json"
-    auth_value = _load_auth_json_api_key(auth_path)
-    if auth_value:
-        return auth_value
+    resolution = _default_api_key_resolution(options, codex_home, environ, dotenv)
+    if resolution.value:
+        return resolution.value
     raise _missing_api_key_error(auth_path, dotenv_path)
 
 
@@ -110,15 +141,7 @@ def _resolve_base_url(
     environ: Mapping[str, str],
     dotenv: Mapping[str, str],
 ) -> str | None:
-    for value in (
-        _normalized_text(options.base_url),
-        _normalized_text(environ.get(_COMPAT_BASE_URL_ENV)),
-        _normalized_text(dotenv.get(_COMPAT_BASE_URL_ENV)),
-        _load_config_toml_base_url(codex_home / "config.toml"),
-    ):
-        if value:
-            return _patched_test_base_url(value)
-    return None
+    return _base_url_resolution(options, codex_home, environ, dotenv).value
 
 
 def _resolve_expansion_api_key(
@@ -126,11 +149,65 @@ def _resolve_expansion_api_key(
     environ: Mapping[str, str],
     dotenv: Mapping[str, str],
 ) -> str | None:
+    return _expansion_api_key_resolution(options, environ, dotenv).value
+
+
+def _default_api_key_resolution(
+    options: ProviderCliOptions,
+    codex_home: Path,
+    environ: Mapping[str, str],
+    dotenv: Mapping[str, str],
+) -> _ConfigResolution:
+    candidates = _default_api_key_candidates(options, environ, dotenv)
+    resolution = _candidate_resolution(candidates)
+    if resolution.value:
+        return resolution
+    auth_candidate = _ConfigCandidate(
+        source=f"codex_auth:{_API_KEY_ENV}",
+        value=_load_auth_json_api_key(codex_home / "auth.json"),
+    )
+    return _candidate_resolution((*candidates, auth_candidate))
+
+
+def _base_url_resolution(
+    options: ProviderCliOptions,
+    codex_home: Path,
+    environ: Mapping[str, str],
+    dotenv: Mapping[str, str],
+) -> _ConfigResolution:
+    candidates = (
+        _ConfigCandidate("cli:--base-url", _normalized_text(options.base_url)),
+        _ConfigCandidate(f"process_env:{_COMPAT_BASE_URL_ENV}", _normalized_text(environ.get(_COMPAT_BASE_URL_ENV))),
+        _ConfigCandidate(f"dotenv:{_COMPAT_BASE_URL_ENV}", _normalized_text(dotenv.get(_COMPAT_BASE_URL_ENV))),
+    )
+    resolution = _candidate_resolution(candidates)
+    if resolution.value:
+        return _patched_resolution(resolution)
+    config_candidate = _ConfigCandidate(
+        source="codex_config:base_url",
+        value=_load_config_toml_base_url(codex_home / "config.toml"),
+    )
+    return _patched_resolution(_candidate_resolution((*candidates, config_candidate)))
+
+
+def _expansion_api_key_resolution(
+    options: ProviderCliOptions,
+    environ: Mapping[str, str],
+    dotenv: Mapping[str, str],
+) -> _ConfigResolution:
     if _normalized_text(options.api_key):
-        return None
-    return _first_text(
-        _normalized_text(environ.get(_COMPAT_EXPANSION_API_KEY_ENV)),
-        _normalized_text(dotenv.get(_COMPAT_EXPANSION_API_KEY_ENV)),
+        return _ConfigResolution("disabled_by:cli:--api-key", None, ())
+    return _candidate_resolution(
+        (
+            _ConfigCandidate(
+                f"process_env:{_COMPAT_EXPANSION_API_KEY_ENV}",
+                _normalized_text(environ.get(_COMPAT_EXPANSION_API_KEY_ENV)),
+            ),
+            _ConfigCandidate(
+                f"dotenv:{_COMPAT_EXPANSION_API_KEY_ENV}",
+                _normalized_text(dotenv.get(_COMPAT_EXPANSION_API_KEY_ENV)),
+            ),
+        )
     )
 
 
@@ -138,14 +215,89 @@ def _default_api_key_candidates(
     options: ProviderCliOptions,
     environ: Mapping[str, str],
     dotenv: Mapping[str, str],
-) -> tuple[str | None, ...]:
+) -> tuple[_ConfigCandidate, ...]:
     return (
-        _normalized_text(options.api_key),
-        _normalized_text(environ.get(_COMPAT_ANCHOR_API_KEY_ENV)),
-        _normalized_text(dotenv.get(_COMPAT_ANCHOR_API_KEY_ENV)),
-        _normalized_text(dotenv.get(_API_KEY_ENV)),
-        _normalized_text(environ.get(_API_KEY_ENV)),
+        _ConfigCandidate("cli:--api-key", _normalized_text(options.api_key)),
+        _ConfigCandidate(
+            f"process_env:{_COMPAT_ANCHOR_API_KEY_ENV}",
+            _normalized_text(environ.get(_COMPAT_ANCHOR_API_KEY_ENV)),
+        ),
+        _ConfigCandidate(
+            f"dotenv:{_COMPAT_ANCHOR_API_KEY_ENV}",
+            _normalized_text(dotenv.get(_COMPAT_ANCHOR_API_KEY_ENV)),
+        ),
+        _ConfigCandidate(f"process_env:{_API_KEY_ENV}", _normalized_text(environ.get(_API_KEY_ENV))),
+        _ConfigCandidate(f"dotenv:{_API_KEY_ENV}", _normalized_text(dotenv.get(_API_KEY_ENV))),
     )
+
+
+def _candidate_resolution(candidates: tuple[_ConfigCandidate, ...]) -> _ConfigResolution:
+    for candidate in candidates:
+        if candidate.value:
+            return _ConfigResolution(candidate.source, candidate.value, candidates)
+    return _ConfigResolution(None, None, candidates)
+
+
+def _patched_resolution(resolution: _ConfigResolution) -> _ConfigResolution:
+    return _ConfigResolution(
+        source=resolution.source,
+        value=_patched_test_base_url(resolution.value),
+        candidates=resolution.candidates,
+    )
+
+
+def _api_key_diagnostics(resolution: _ConfigResolution) -> dict[str, object]:
+    payload = _present_value_diagnostics(resolution.source, resolution.value, _api_key_metadata)
+    payload["candidates"] = [
+        _candidate_diagnostics(candidate, resolution.source, _api_key_metadata) for candidate in resolution.candidates
+    ]
+    return payload
+
+
+def _base_url_diagnostics(resolution: _ConfigResolution) -> dict[str, object]:
+    payload = {"source": resolution.source, **_base_url_host_path(resolution.value)}
+    payload["candidates"] = [
+        _candidate_diagnostics(candidate, resolution.source, _base_url_metadata) for candidate in resolution.candidates
+    ]
+    return payload
+
+
+def _candidate_diagnostics(
+    candidate: _ConfigCandidate,
+    selected_source: str | None,
+    metadata_builder: Callable[[str], dict[str, object]],
+) -> dict[str, object]:
+    payload = _present_value_diagnostics(candidate.source, candidate.value, metadata_builder)
+    if candidate.value and selected_source and candidate.source != selected_source:
+        payload["overridden_by"] = selected_source
+    return payload
+
+
+def _present_value_diagnostics(
+    source: str | None,
+    value: str | None,
+    metadata_builder: Callable[[str], dict[str, object]],
+) -> dict[str, object]:
+    payload = {"source": source, "present": value is not None}
+    if value is not None:
+        payload.update(metadata_builder(value))
+    return payload
+
+
+def _api_key_metadata(value: str) -> dict[str, object]:
+    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()
+    return {"length": len(value), "fingerprint_prefix": f"sha256:{digest[:12]}"}
+
+
+def _base_url_metadata(value: str) -> dict[str, object]:
+    return _base_url_host_path(value)
+
+
+def _base_url_host_path(value: str | None) -> dict[str, object]:
+    if value is None:
+        return {"host": None, "path": None}
+    parsed = urlsplit(value)
+    return {"host": parsed.hostname, "path": parsed.path or ""}
 
 
 def _resolved_config(
@@ -294,13 +446,6 @@ def _strip_optional_quotes(value: str) -> str:
     return value
 
 
-def _first_text(*values: str | None) -> str | None:
-    for value in values:
-        if value:
-            return value
-    return None
-
-
 def _patched_test_base_url(value: str | None) -> str | None:
     if value == "https://www.aerorelay.one":
         return f"{value}/v1"
@@ -317,8 +462,8 @@ def _missing_api_key_error(auth_path: Path, dotenv_path: Path) -> GenerationErro
             "sources_tried": [
                 "cli:--api-key",
                 f"env:{_COMPAT_ANCHOR_API_KEY_ENV}",
-                f"env:{_API_KEY_ENV}",
                 f"{dotenv_path}:{_COMPAT_ANCHOR_API_KEY_ENV}",
+                f"env:{_API_KEY_ENV}",
                 f"{dotenv_path}:{_API_KEY_ENV}",
                 f"{auth_path}:{_API_KEY_ENV}",
             ],
