@@ -1,14 +1,14 @@
 # Image Gateway Smoke Harness Implementation Plan
 
-> Completion status: implemented on `main` and verified with focused smoke/provider tests, smoke module `py_compile`, function-length guard on `temu_y2_women tests`, and forbidden-pattern guard on 2026-05-01.
+> Completion status: implemented on `main` and verified with focused smoke/provider tests, smoke module `py_compile`, function-length guard on `temu_y2_women tests`, and forbidden-pattern guard on 2026-05-01. PR #61 extended the smoke HTTP layer with a callxyq-only curl transport so local diagnostics match the real image provider path.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 固化 `gpt-image-2` 网关连通性探测，提供可重复执行的本地 smoke CLI，并输出结构化 JSON 诊断报告。
 
-**Architecture:** 独立 CLI 负责参数与配置解析，smoke orchestration 模块负责定义和执行 5 个默认检查，原始 HTTP 模块负责 JSON/multipart 请求与 timeout/error body 捕获。整个实现不接入真实联网单测，也不改变现有 render workflow。
+**Architecture:** 独立 CLI 负责参数与配置解析，smoke orchestration 模块负责定义和执行 5 个默认检查，原始 HTTP 模块负责 JSON/multipart 请求与 timeout/error body 捕获。默认 HTTP transport 保持 `urllib.request`，但 callxyq base URL 复用真实 provider 的 curl-only host rule，避免 Cloudflare 1010 误报。整个实现不接入真实联网单测，也不改变现有 render workflow。
 
-**Tech Stack:** Python 3 标准库、`urllib.request`、`json`、`unittest`、现有 `image_provider_config.py` 配置解析。
+**Tech Stack:** Python 3 标准库、`urllib.request`、`subprocess.run`/`curl`、`json`、`unittest`、现有 `image_provider_config.py` 配置解析。
 
 ---
 
