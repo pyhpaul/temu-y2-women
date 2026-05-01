@@ -6,6 +6,7 @@ from typing import Sequence
 
 from temu_y2_women.errors import GenerationError
 from temu_y2_women.image_gateway_smoke import GatewaySmokeSettings, VALID_SMOKE_CHECK_IDS, run_gateway_smoke
+from temu_y2_women.image_gateway_smoke_http import build_gateway_smoke_http_client
 from temu_y2_women.image_provider_config import ProviderCliOptions, resolve_openai_provider_configs
 
 
@@ -35,7 +36,12 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _run_command(args: argparse.Namespace) -> dict[str, object]:
     try:
-        return run_gateway_smoke(_smoke_settings_from_args(args), check_ids=args.checks)
+        settings = _smoke_settings_from_args(args)
+        return run_gateway_smoke(
+            settings,
+            check_ids=args.checks,
+            http_client=build_gateway_smoke_http_client(settings.base_url),
+        )
     except GenerationError as error:
         return error.to_dict()
 
