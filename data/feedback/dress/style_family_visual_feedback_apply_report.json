@@ -1,0 +1,103 @@
+{
+  "schema_version": "style-family-visual-feedback-apply-report-v1",
+  "status": "applied",
+  "source_artifacts": {
+    "proposal": "tmp\\style-family-routing\\visual_feedback_apply_proposal.json",
+    "active_elements": "data\\mvp\\dress\\elements.json",
+    "taxonomy": "data\\mvp\\dress\\evidence_taxonomy.json"
+  },
+  "summary": {
+    "recommended": 7,
+    "applied": 7,
+    "held": 23,
+    "net_applied_delta": 0.32
+  },
+  "applied_changes": [
+    {
+      "element_id": "dress-neckline-square-001",
+      "slot": "neckline",
+      "value": "square neckline",
+      "old_base_score": 0.73,
+      "new_base_score": 0.77,
+      "delta": 0.04,
+      "families": [
+        "city-polished",
+        "vacation-romantic"
+      ]
+    },
+    {
+      "element_id": "dress-sleeve-cap-001",
+      "slot": "sleeve",
+      "value": "cap sleeve",
+      "old_base_score": 0.73,
+      "new_base_score": 0.77,
+      "delta": 0.04,
+      "families": [
+        "city-polished",
+        "clean-minimal"
+      ]
+    },
+    {
+      "element_id": "dress-length-mini-001",
+      "slot": "dress_length",
+      "value": "mini",
+      "old_base_score": 0.79,
+      "new_base_score": 0.83,
+      "delta": 0.04,
+      "families": [
+        "party-fitted",
+        "vacation-romantic"
+      ]
+    },
+    {
+      "element_id": "dress-length-midi-001",
+      "slot": "dress_length",
+      "value": "midi",
+      "old_base_score": 0.74,
+      "new_base_score": 0.78,
+      "delta": 0.04,
+      "families": [
+        "city-polished",
+        "clean-minimal"
+      ]
+    },
+    {
+      "element_id": "dress-waistline-natural-waist-001",
+      "slot": "waistline",
+      "value": "natural waist",
+      "old_base_score": 0.72,
+      "new_base_score": 0.78,
+      "delta": 0.06,
+      "families": [
+        "city-polished",
+        "clean-minimal",
+        "party-fitted"
+      ]
+    },
+    {
+      "element_id": "dress-print-scale-micro-print-001",
+      "slot": "print_scale",
+      "value": "micro print",
+      "old_base_score": 0.73,
+      "new_base_score": 0.77,
+      "delta": 0.04,
+      "families": [
+        "city-polished",
+        "vacation-romantic"
+      ]
+    },
+    {
+      "element_id": "dress-opacity-level-opaque-001",
+      "slot": "opacity_level",
+      "value": "opaque",
+      "old_base_score": 0.7,
+      "new_base_score": 0.76,
+      "delta": 0.06,
+      "families": [
+        "city-polished",
+        "clean-minimal",
+        "party-fitted"
+      ]
+    }
+  ]
+}
