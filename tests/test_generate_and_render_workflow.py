@@ -60,6 +60,26 @@ class GenerateAndRenderWorkflowSuccessTest(unittest.TestCase):
             self.assertEqual(_read_json(output_dir / "image_render_report.json"), result)
             self.assertFalse((output_dir / "concept_result.json.tmp").exists())
 
+    def test_generate_and_render_can_filter_to_one_prompt_id(self) -> None:
+        from temu_y2_women.generate_and_render_workflow import generate_and_render_dress_concept
+        from temu_y2_women.image_generation_output import FakeImageProvider
+
+        with TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "render-output"
+            result = generate_and_render_dress_concept(
+                request_path=_REQUEST_FIXTURE_PATH,
+                output_dir=output_dir,
+                provider_factory=lambda: FakeImageProvider(),
+                prompt_ids=("hero_front",),
+            )
+
+            hero_exists = (output_dir / "hero_front.png").exists()
+            back_exists = (output_dir / "hero_back.png").exists()
+
+        self.assertEqual([image["prompt_id"] for image in result["images"]], ["hero_front"])
+        self.assertTrue(hero_exists)
+        self.assertFalse(back_exists)
+
     def test_generate_and_render_can_use_refresh_experiment_evidence_snapshot(self) -> None:
         from temu_y2_women.generate_and_render_workflow import generate_and_render_dress_concept
         from temu_y2_women.public_signal_refresh import run_public_signal_refresh

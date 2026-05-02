@@ -27,12 +27,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--elements-path", help="Optional path to elements.json override.")
     parser.add_argument("--strategies-path", help="Optional path to strategy_templates.json override.")
     parser.add_argument("--taxonomy-path", help="Optional path to evidence_taxonomy.json override.")
+    parser.add_argument("--prompt-id", action="append", default=[], help="Render only matching prompt_id; repeatable.")
     args = parser.parse_args(argv)
     result = generate_and_render_dress_concept(
         request_path=Path(args.input),
         output_dir=Path(args.output_dir),
         provider_factory=_provider_factory_from_args(args),
         evidence_paths=_evidence_paths_from_args(args),
+        prompt_ids=tuple(args.prompt_id),
     )
     print(json.dumps(result, ensure_ascii=False))
     return 0 if "error" not in result else 1

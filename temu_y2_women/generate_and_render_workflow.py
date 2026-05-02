@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 from temu_y2_women.evidence_paths import EvidencePaths
 from temu_y2_women.errors import GenerationError
@@ -21,6 +21,7 @@ def generate_and_render_dress_concept(
     output_dir: Path,
     provider_factory: ImageProviderFactory,
     evidence_paths: EvidencePaths | None = None,
+    prompt_ids: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     try:
         payload = _load_request_payload(request_path)
@@ -32,6 +33,7 @@ def generate_and_render_dress_concept(
             result_path=result_path,
             output_dir=output_dir,
             provider=_resolve_provider(provider_factory),
+            prompt_ids=prompt_ids,
         )
     except GenerationError as error:
         return error.to_dict()
