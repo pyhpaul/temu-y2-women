@@ -113,7 +113,7 @@ class FeedbackExperimentApplyTest(unittest.TestCase):
                 workspace_name="reject-shift",
                 experiment_id="exp-fixed-002",
                 runner_timestamp="2026-04-27T14:00:00Z",
-                source_overrides={"v_neck_score": 0.84},
+                source_overrides={"v_neck_score": 0.88},
             )
             result = _apply_review(
                 prepared=prepared,
