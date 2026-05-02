@@ -51,6 +51,29 @@ class ImageRenderWorkflowTest(unittest.TestCase):
                 result,
             )
 
+    def test_render_dress_concept_image_can_filter_to_one_prompt_id(self) -> None:
+        from temu_y2_women.image_generation_workflow import render_dress_concept_image
+
+        with TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "render-output"
+            result_path = Path(temp_dir) / "bundle-result.json"
+            _write_json(result_path, _two_job_result_payload())
+            provider = _RecordingWorkflowProvider()
+
+            result = render_dress_concept_image(
+                result_path=result_path,
+                output_dir=output_dir,
+                provider=provider,
+                prompt_ids=("hero_front",),
+            )
+            hero_exists = (output_dir / "hero_front.png").exists()
+            back_exists = (output_dir / "hero_back.png").exists()
+
+        self.assertEqual(provider.calls, [("hero_front", "generate", None)])
+        self.assertEqual([image["prompt_id"] for image in result["images"]], ["hero_front"])
+        self.assertTrue(hero_exists)
+        self.assertFalse(back_exists)
+
     def test_render_dress_concept_image_passes_anchor_bytes_to_edit_jobs(self) -> None:
         from temu_y2_women.image_generation_workflow import render_dress_concept_image
 

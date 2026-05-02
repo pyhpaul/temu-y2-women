@@ -38,6 +38,36 @@ class ImageGenerationCliTest(unittest.TestCase):
             self.assertTrue((output_dir / "rendered_image.png").exists())
             self.assertEqual(payload["provider"], "fake")
 
+    def test_cli_can_render_only_requested_prompt_id(self) -> None:
+        from temu_y2_women.image_generation_cli import main
+
+        stdout = io.StringIO()
+        with TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "render-output"
+            result_path = Path(temp_dir) / "bundle-result.json"
+            _write_json(result_path, _bundle_result_payload())
+            with patch("sys.stdout", stdout):
+                exit_code = main(
+                    [
+                        "--result",
+                        str(result_path),
+                        "--output-dir",
+                        str(output_dir),
+                        "--provider",
+                        "fake",
+                        "--prompt-id",
+                        "hero_front",
+                    ]
+                )
+            hero_exists = (output_dir / "hero_front.png").exists()
+            back_exists = (output_dir / "hero_back.png").exists()
+
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(exit_code, 0)
+        self.assertEqual([image["prompt_id"] for image in payload["images"]], ["hero_front"])
+        self.assertTrue(hero_exists)
+        self.assertFalse(back_exists)
+
     def test_cli_reads_openai_config_from_codex_home(self) -> None:
         from temu_y2_women.image_generation_cli import main
 
@@ -213,3 +243,30 @@ def _write_auth_json(path: Path, api_key: str) -> None:
 
 def _write_config_toml(path: Path, base_url: str) -> None:
     path.write_text(f'base_url = "{base_url}"\n', encoding="utf-8")
+
+
+def _write_json(path: Path, payload: dict[str, object]) -> None:
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _bundle_result_payload() -> dict[str, object]:
+    payload = json.loads(_RESULT_FIXTURE_PATH.read_text(encoding="utf-8"))
+    payload["prompt_bundle"]["render_jobs"] = [
+        {
+            "prompt_id": "hero_front",
+            "group": "hero",
+            "output_name": "hero_front.png",
+            "prompt": "hero front prompt",
+            "render_strategy": "generate",
+            "reference_prompt_id": None,
+        },
+        {
+            "prompt_id": "hero_back",
+            "group": "hero",
+            "output_name": "hero_back.png",
+            "prompt": "hero back prompt",
+            "render_strategy": "edit",
+            "reference_prompt_id": "hero_front",
+        },
+    ]
+    return payload

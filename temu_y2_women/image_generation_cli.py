@@ -24,6 +24,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--quality", default="high", help="Image quality for the OpenAI provider.")
     parser.add_argument("--background", default="auto", help="Background mode for the OpenAI provider.")
     parser.add_argument("--style", default="natural", help="Image style for the OpenAI provider.")
+    parser.add_argument("--prompt-id", action="append", default=[], help="Render only matching prompt_id; repeatable.")
     args = parser.parse_args(argv)
     result = _run_command(args)
     print(json.dumps(result, ensure_ascii=False))
@@ -39,6 +40,7 @@ def _run_command(args: argparse.Namespace) -> dict[str, object]:
         result_path=Path(args.result),
         output_dir=Path(args.output_dir),
         provider=provider,
+        prompt_ids=tuple(args.prompt_id),
     )
 
 

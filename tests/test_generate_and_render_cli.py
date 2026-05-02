@@ -47,6 +47,34 @@ class GenerateAndRenderCliTest(unittest.TestCase):
             self.assertTrue((output_dir / "hem_and_drape_closeup.png").exists())
             self.assertEqual(len(payload["images"]), 6)
 
+    def test_cli_can_render_only_requested_prompt_id(self) -> None:
+        from temu_y2_women.generate_and_render_cli import main
+
+        stdout = io.StringIO()
+        with TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "render-output"
+            with patch("sys.stdout", stdout):
+                exit_code = main(
+                    [
+                        "--input",
+                        str(_REQUEST_FIXTURE_PATH),
+                        "--output-dir",
+                        str(output_dir),
+                        "--provider",
+                        "fake",
+                        "--prompt-id",
+                        "hero_front",
+                    ]
+                )
+            hero_exists = (output_dir / "hero_front.png").exists()
+            back_exists = (output_dir / "hero_back.png").exists()
+
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(exit_code, 0)
+        self.assertEqual([image["prompt_id"] for image in payload["images"]], ["hero_front"])
+        self.assertTrue(hero_exists)
+        self.assertFalse(back_exists)
+
     def test_cli_reads_openai_config_from_codex_home(self) -> None:
         from temu_y2_women.generate_and_render_cli import main
 

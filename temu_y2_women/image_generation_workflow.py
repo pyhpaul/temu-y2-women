@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from temu_y2_women.errors import GenerationError
 from temu_y2_women.image_generation_output import (
@@ -23,9 +23,13 @@ def render_dress_concept_image(
     result_path: Path,
     output_dir: Path,
     provider: ImageProvider,
+    prompt_ids: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     try:
-        render_input = load_dress_image_render_input(result_path)
+        render_input = _filtered_render_input(
+            load_dress_image_render_input(result_path),
+            prompt_ids,
+        )
         rendered_images = _render_bundle(provider, render_input)
         report = _build_render_report(render_input, output_dir, rendered_images)
         _write_output_bundle(output_dir, rendered_images, report)
@@ -44,6 +48,43 @@ def _render_bundle(provider: ImageProvider, render_input: ImageRenderInput) -> l
         rendered_bytes[job.prompt_id] = provider_result.image_bytes
         rendered_images.append(_rendered_image_item(job, provider_result))
     return rendered_images
+
+
+def _filtered_render_input(
+    render_input: ImageRenderInput,
+    prompt_ids: Sequence[str] | None,
+) -> ImageRenderInput:
+    requested = _prompt_id_filter(prompt_ids)
+    if not requested:
+        return render_input
+    jobs = tuple(job for job in render_input.render_jobs if job.prompt_id in requested)
+    if not jobs:
+        raise GenerationError(
+            code="INVALID_IMAGE_RENDER_INPUT",
+            message="image render prompt filter matched no render jobs",
+            details={"prompt_ids": sorted(requested)},
+        )
+    first_job = jobs[0]
+    return ImageRenderInput(
+        source_result_path=render_input.source_result_path,
+        category=render_input.category,
+        mode=render_input.mode,
+        prompt=first_job.prompt,
+        prompt_id=first_job.prompt_id,
+        group=first_job.group,
+        output_name=first_job.output_name,
+        render_strategy=first_job.render_strategy,
+        reference_prompt_id=first_job.reference_prompt_id,
+        reference_image_bytes=render_input.reference_image_bytes,
+        render_notes=render_input.render_notes,
+        render_jobs=jobs,
+    )
+
+
+def _prompt_id_filter(prompt_ids: Sequence[str] | None) -> set[str]:
+    if prompt_ids is None:
+        return set()
+    return {str(prompt_id).strip() for prompt_id in prompt_ids if str(prompt_id).strip()}
 
 
 def _render_with_provider(provider: ImageProvider, render_input: ImageRenderInput) -> ImageProviderResult:
